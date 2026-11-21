@@ -24,8 +24,6 @@ set(EXTRA_COMPONENT_DIRS
     "${CMAKE_CURRENT_LIST_DIR}/app/nes"
     "${CMAKE_CURRENT_LIST_DIR}/components/board_support"
 )
-# Профиль зафиксирован в исходниках; продукт не выбирает экспериментальные ветви.
-set(NES_HOSTED_EXPLICIT_INIT ON)
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/NesC6Audio.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/../../cmake/P4CpuClock.cmake")
 nes_p4_cpu_prepare_config()
@@ -38,37 +36,6 @@ project(bitvyr_nes_p4c6)
 nes_p4_cpu_apply()
 nes_c6_audio_attach_hosted()
 
-if(NES_HOSTED_EXPLICIT_INIT)
-    # Hosted 2.13.1 starts its transport in a constructor. At that point P4
-    # startup-stack memory is still reserved. Our Bluetooth task explicitly
-    # starts the same public API after app_main, without changing SDK sources.
-    idf_component_get_property(NES_HOSTED_LIB espressif__esp_hosted COMPONENT_LIB)
-    get_target_property(NES_HOSTED_SOURCES ${NES_HOSTED_LIB} SOURCES)
-    set(NES_HOSTED_DEFERRED_SOURCES "${NES_HOSTED_SOURCES}")
-    list(FILTER NES_HOSTED_DEFERRED_SOURCES EXCLUDE REGEX "(^|/)port_esp_hosted_host_init[.]c$")
-    list(LENGTH NES_HOSTED_SOURCES NES_HOSTED_SOURCE_COUNT)
-    list(LENGTH NES_HOSTED_DEFERRED_SOURCES NES_HOSTED_DEFERRED_SOURCE_COUNT)
-    math(EXPR NES_HOSTED_REMOVED "${NES_HOSTED_SOURCE_COUNT} - ${NES_HOSTED_DEFERRED_SOURCE_COUNT}")
-    if(NOT NES_HOSTED_REMOVED EQUAL 1)
-        message(FATAL_ERROR "Review Hosted constructor selection after changing its pinned version.")
-    endif()
-    set_property(TARGET ${NES_HOSTED_LIB} PROPERTY SOURCES "${NES_HOSTED_DEFERRED_SOURCES}")
-    idf_component_get_property(NES_BOARD_LIB board_support COMPONENT_LIB)
-    target_compile_definitions(${NES_BOARD_LIB} PRIVATE NES_HOSTED_EXPLICIT_INIT=1)
-endif()
-
-# On Windows, Picolibc's default relative sysroot can push multilib C++
-# header paths past MAX_PATH in a nested SDK installation. Keep the chosen
-# install location and pass its canonical prefix instead of modifying the SDK.
-if(CMAKE_HOST_WIN32 AND CONFIG_LIBC_PICOLIBC
-   AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
-   AND COMMAND idf_toolchain_add_flags)
-    get_filename_component(NES_COMPILER_BIN "${CMAKE_CXX_COMPILER}" DIRECTORY)
-    get_filename_component(NES_COMPILER_ROOT "${NES_COMPILER_BIN}/.." REALPATH)
-    file(TO_CMAKE_PATH "${NES_COMPILER_ROOT}" NES_COMPILER_ROOT)
-    # ESP-IDF also passes cflags/cxxflags to the linker driver. Adding the
-    # prefix to ldflags too would expand Picolibc's specs twice.
-    idf_toolchain_add_flags(
-        COMPILE_OPTIONS "--picolibc-prefix=${NES_COMPILER_ROOT}"
-    )
-endif()
+include("${CMAKE_CURRENT_LIST_DIR}/../../cmake/P4SdkCompatibility.cmake")
+nes_defer_hosted_init()
+nes_picolibc_windows_prefix()

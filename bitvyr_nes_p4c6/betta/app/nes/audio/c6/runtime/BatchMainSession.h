@@ -176,7 +176,9 @@ public:
     std::size_t occupiedPcm()const noexcept{return pcm_.occupied();}
     /** @brief Только cold policy и Main maxima; они не заменяют real join/drain. */
     unsigned pcmTicketCapacity()const noexcept{return pcm_.ticketCapacity();}
+    /** @brief Возвращает максимальное число одновременно занятых PCM-слотов для сводки. */
     unsigned peakOccupiedPcm()const noexcept{return pcm_.peakOccupied();}
+    /** @brief Возвращает максимальное отставание звукового вывода в гостевых кадрах. */
     unsigned maximumOutputLag()const noexcept{return pcm_.maxOutputLag();}
     /** @brief Cold policy допускает lag1 либо lag1..2; caller продолжает poll/I2S между отказами. */
     bool canDispatch(std::uint64_t input)const noexcept{return mode_==Mode::Running&&pcm_.canDispatch(input);}

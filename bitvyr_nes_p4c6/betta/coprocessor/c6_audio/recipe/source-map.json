@@ -1,5 +1,5 @@
 {
-  "status": "SINGLE_SOURCE_C6_PROJECTION_INPUT_MAP_WITH_EXPLICIT_UNBIND_REVISION",
+  "status": "SINGLE_SOURCE_C6_PROJECTION_WITHOUT_ROM_DERIVED_FILTER_PROBE",
   "rows": [
     {
       "projection": "AudioPacketWire.cpp",
@@ -214,8 +214,8 @@
       "projection": "C6Endpoint.cpp",
       "source": {
         "path": "coprocessor/c6_audio/src/C6Endpoint.cpp",
-        "bytes": 5339,
-        "sha256": "b8fd418ea22ca06d2e952711a6b28f7f112bffbdbcdc14c8d5cd9e060eb45404"
+        "bytes": 5592,
+        "sha256": "f53b855391cc5bff3438093b83f5d1d132fde2e1d2b6ef94a87048c50d50a701"
       },
       "historical": {
         "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/C6Endpoint.cpp",
@@ -330,21 +330,6 @@
       "projection_method": "forward-header"
     },
     {
-      "projection": "FilterFixtures.h",
-      "source": {
-        "path": "coprocessor/c6_audio/src/FilterFixtures.h",
-        "bytes": 26913,
-        "sha256": "031c93792ce62a355d39fdc7510ae26a63ef0a1b93a263ee9c06fe3e9a33f130"
-      },
-      "historical": {
-        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/FilterFixtures.h",
-        "bytes": 26913,
-        "sha256": "031c93792ce62a355d39fdc7510ae26a63ef0a1b93a263ee9c06fe3e9a33f130"
-      },
-      "kind": "c6-specific",
-      "projection_method": "copy-bytes"
-    },
-    {
       "projection": "FixedFilter.cpp",
       "source": {
         "path": "coprocessor/c6_audio/apu_fixed/FixedFilter.cpp",
@@ -372,36 +357,6 @@
         "sha256": "4f97aa3a28aef328c34cd2246e6190ee1e67d5c5a6e890765acfd27f8cb88bf1"
       },
       "kind": "c6-specific-fixed-apu",
-      "projection_method": "copy-bytes"
-    },
-    {
-      "projection": "FloatReference.cpp",
-      "source": {
-        "path": "coprocessor/c6_audio/src/FloatReference.cpp",
-        "bytes": 1181,
-        "sha256": "5979d0a131395b97ec61115343da933ff1aa75201814b8371ec5293e968029d7"
-      },
-      "historical": {
-        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/FloatReference.cpp",
-        "bytes": 1181,
-        "sha256": "5979d0a131395b97ec61115343da933ff1aa75201814b8371ec5293e968029d7"
-      },
-      "kind": "c6-specific",
-      "projection_method": "copy-bytes"
-    },
-    {
-      "projection": "FloatReference.h",
-      "source": {
-        "path": "coprocessor/c6_audio/src/FloatReference.h",
-        "bytes": 661,
-        "sha256": "96942dcea6757f75c2682eee616c20ad4923a6310e9736927baeeda3050c8cca"
-      },
-      "historical": {
-        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/FloatReference.h",
-        "bytes": 661,
-        "sha256": "96942dcea6757f75c2682eee616c20ad4923a6310e9736927baeeda3050c8cca"
-      },
-      "kind": "c6-specific",
       "projection_method": "copy-bytes"
     },
     {
@@ -522,36 +477,6 @@
       "projection_method": "forward-header"
     },
     {
-      "projection": "ProbeControl.cpp",
-      "source": {
-        "path": "coprocessor/c6_audio/src/ProbeControl.cpp",
-        "bytes": 5402,
-        "sha256": "55b90f55d50beab92f1c20ab5393b0ab6a40c3fea8f290887eb9e7fb0f1e481a"
-      },
-      "historical": {
-        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/ProbeControl.cpp",
-        "bytes": 5402,
-        "sha256": "55b90f55d50beab92f1c20ab5393b0ab6a40c3fea8f290887eb9e7fb0f1e481a"
-      },
-      "kind": "c6-specific",
-      "projection_method": "copy-bytes"
-    },
-    {
-      "projection": "ProbeControl.h",
-      "source": {
-        "path": "coprocessor/c6_audio/src/ProbeControl.h",
-        "bytes": 1266,
-        "sha256": "897c5dfac0a50832c04609d8e0f825a8612da3167b512a75bc41f48673d5e0be"
-      },
-      "historical": {
-        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/ProbeControl.h",
-        "bytes": 1266,
-        "sha256": "897c5dfac0a50832c04609d8e0f825a8612da3167b512a75bc41f48673d5e0be"
-      },
-      "kind": "c6-specific",
-      "projection_method": "copy-bytes"
-    },
-    {
       "projection": "RawIdleGate.h",
       "source": {
         "path": "coprocessor/c6_audio/src/RawIdleGate.h",
@@ -655,8 +580,8 @@
       "projection": "RawWorker.inc",
       "source": {
         "path": "coprocessor/c6_audio/src/RawWorker.inc",
-        "bytes": 15876,
-        "sha256": "aaf426a9c5a3ce299db259c7fadff45e91d346d2b3cd654b7545527e20eb6d2b"
+        "bytes": 15430,
+        "sha256": "e74b3aa243300abb3519308930ea99b5ba526be3f75376860e4b0d99fbac8404"
       },
       "historical": {
         "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/RawWorker.inc",
@@ -1264,10 +1189,10 @@
       },
       "current": {
         "path": "coprocessor/c6_audio/src/C6Endpoint.cpp",
-        "bytes": 5339,
-        "sha256": "b8fd418ea22ca06d2e952711a6b28f7f112bffbdbcdc14c8d5cd9e060eb45404"
+        "bytes": 5592,
+        "sha256": "f53b855391cc5bff3438093b83f5d1d132fde2e1d2b6ef94a87048c50d50a701"
       },
-      "reason": "Explicit UNBIND source change; ordered argv/flags/projection path/archive order unchanged"
+      "reason": "Explicit UNBIND source revision and removal of unused opcode11 filter diagnostics; remaining ordered argv unchanged"
     },
     {
       "member": "BatchFrameService.cpp.obj",

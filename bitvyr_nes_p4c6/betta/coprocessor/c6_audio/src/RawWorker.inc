@@ -106,10 +106,6 @@ void rawExecute(RawSlot& slot) noexcept {
         nes::c6raw::batch::Metrics metrics{};std::size_t written=0;
         status=std::uint32_t(batchStream.process(view.key,view.payload,view.size,out+12,nes::c6raw::payloadBytes-12,written,metrics,readClock));
         if(!status){body=written;nes::c6raw::batch::put(out+24,slot.rxCycles,4);}
-    }else if(view.key.opcode==11&&view.key.session==rawSession){
-        // Только immutable встроенный corpus; текущие colour state/очередь не переиспользуются.
-        if(batchStream.frameOpen()||rawRowValid)status=30;
-        else{const auto written=nes::audio_probe::filterProbe(view.payload,view.size,out+12,nes::c6raw::payloadBytes-12,readClock);if(!written)status=32;else body=written;}
     }else if(view.key.opcode==10&&view.size==0&&view.key.session==rawSession){
         if(batchStream.frameOpen()||rawRowValid)status=30;
         else{std::size_t written=0;const int rc=c6BootMeta(out+12,nes::c6raw::payloadBytes-12,written);if(rc)status=31;else body=written;}

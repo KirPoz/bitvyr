@@ -25,27 +25,6 @@ set(PROJECT_VER "0.1")
 project(bitvyr_nes_p4)
 nes_p4_cpu_apply()
 
-# Hosted 2.13.1 запускается из Bluetooth-задачи после app_main, когда доступен heap.
-idf_component_get_property(NES_HOSTED_LIB espressif__esp_hosted COMPONENT_LIB)
-get_target_property(NES_HOSTED_SOURCES ${NES_HOSTED_LIB} SOURCES)
-set(NES_HOSTED_DEFERRED_SOURCES "${NES_HOSTED_SOURCES}")
-list(FILTER NES_HOSTED_DEFERRED_SOURCES EXCLUDE REGEX "(^|/)port_esp_hosted_host_init[.]c$")
-list(LENGTH NES_HOSTED_SOURCES NES_HOSTED_SOURCE_COUNT)
-list(LENGTH NES_HOSTED_DEFERRED_SOURCES NES_HOSTED_DEFERRED_SOURCE_COUNT)
-math(EXPR NES_HOSTED_REMOVED "${NES_HOSTED_SOURCE_COUNT} - ${NES_HOSTED_DEFERRED_SOURCE_COUNT}")
-if(NOT NES_HOSTED_REMOVED EQUAL 1)
-    message(FATAL_ERROR "Review Hosted constructor selection after changing its pinned version.")
-endif()
-set_property(TARGET ${NES_HOSTED_LIB} PROPERTY SOURCES "${NES_HOSTED_DEFERRED_SOURCES}")
-
-# Короткий sysroot обходит MAX_PATH без изменения установленного SDK.
-if(CMAKE_HOST_WIN32 AND CONFIG_LIBC_PICOLIBC
-   AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
-   AND COMMAND idf_toolchain_add_flags)
-    get_filename_component(NES_COMPILER_BIN "${CMAKE_CXX_COMPILER}" DIRECTORY)
-    get_filename_component(NES_COMPILER_ROOT "${NES_COMPILER_BIN}/.." REALPATH)
-    file(TO_CMAKE_PATH "${NES_COMPILER_ROOT}" NES_COMPILER_ROOT)
-    idf_toolchain_add_flags(
-        COMPILE_OPTIONS "--picolibc-prefix=${NES_COMPILER_ROOT}"
-    )
-endif()
+include("${CMAKE_CURRENT_LIST_DIR}/../../cmake/P4SdkCompatibility.cmake")
+nes_defer_hosted_init()
+nes_picolibc_windows_prefix()

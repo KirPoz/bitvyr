@@ -18,6 +18,7 @@
 extern "C" {
 extern char _iram_start;
 extern char _iram_end;
+/** @brief Для linker --wrap обозначает исходную SDK-функцию включения HPM. */
 esp_err_t __real_spi_flash_enable_high_performance_mode(void);
 }
 

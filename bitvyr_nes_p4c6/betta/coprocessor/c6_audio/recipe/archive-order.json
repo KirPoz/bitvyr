@@ -29,8 +29,6 @@
   "BatchColour.cpp.obj",
   "C6BootMeta.cpp.obj",
   "FixedFilter.cpp.obj",
-  "FloatReference.cpp.obj",
-  "ProbeControl.cpp.obj",
   "Apu.cpp.obj",
   "ApuExpansion.cpp.obj",
   "AudioRenderer.cpp.obj",

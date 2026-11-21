@@ -5,7 +5,6 @@
 #include "BatchColour.h"
 #include "C6BootMeta.h"
 #include "RawWire.h"
-#include "ProbeControl.h"
 #include "RawPort.h"
 #include "ResolvedColourRun.h"
 #include "ResolvedColourCodec.h"
@@ -86,8 +85,10 @@ void receive(std::uint32_t id, const std::uint8_t* data, std::size_t bytes, void
 extern "C" void nes_hosted_raw_rx(const std::uint8_t* data,std::size_t bytes) { receiveRaw(data,bytes); }
 
 /**
- * @brief Однократно регистрирует compute handler после esp_hosted_coprocessor_init().
- * @return ESP_OK либо ошибка SDK; повторная попытка запрещена до reboot.
+ * @brief Однократно создаёт задачу C6 и callback после esp_hosted_coprocessor_init().
+ * @return ESP_OK либо ошибка SDK; повторный вызов возвращает ESP_ERR_INVALID_STATE.
+ * @details Флаг initialized ставится до создания задачи: даже после ошибки повтор
+ * не создаёт вторую задачу или callback. Автоматического отката нет; нужен reboot.
  * @details Один priority1 worker и stack4096Б. Старый probe хранит два input4144Б,
  * reply4160Б и TCB; сверх них существуют четыре RawSlot, FullAudioControl и
  * цветной consumer. Полный SRAM/стек бюджет проверяется по actual C6 ELF и

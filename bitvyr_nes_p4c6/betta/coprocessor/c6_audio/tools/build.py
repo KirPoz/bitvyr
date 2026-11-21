@@ -1,10 +1,10 @@
-"""C6 build: новый SDK bootstrap и41 fresh TU по сохранённым ordered argv.
+"""C6 build: новый SDK bootstrap и39 fresh TU по сохранённым ordered argv.
 
 По умолчанию --audit/--prepare не запускают SDK. Исполнение требует --execute-root.
 Скрипт не читает прежний build/experiments и никогда не выполняет flash/OTA/COM.
 """
 from pathlib import Path
-import argparse,hashlib,json,os,re,shutil,subprocess,sys,time
+import argparse,hashlib,json,os,re,shutil,subprocess,sys,tempfile,time
 PROJECT=Path(__file__).resolve().parents[1]
 ROOT=PROJECT.parents[1]
 
@@ -99,7 +99,8 @@ def external_inputs(lock,variables):
 def effective_compile_sources(mapping,recipe):
     """Разрешает только явно перечисленные old→current source revisions без смены argv.
 
-    compile41 сохраняет исходные ordered flags и historical source pins. Изменённый
+    Имя compile41 сохранено для совместимости рецепта; текущие39 TU сохраняют
+    исходные ordered flags и historical source pins. Изменённый
     CPP разрешён лишь при exact совпадении старого member/pin, нового projection/pin
     и прежнего source path. Любой неизвестный drift остаётся ошибкой checked().
     """
@@ -128,21 +129,24 @@ def effective_compile_sources(mapping,recipe):
     return result
 
 def audit():
-    """Проверяет все projection pins,41 vectors и только явные изменения CPP исходников."""
+    """Проверяет все projection pins,39 vectors и только явные изменения CPP исходников."""
     mapping=read(PROJECT/'recipe/source-map.json');recipe=read(PROJECT/'recipe/compile41.json')
     lock=read(PROJECT/'recipe/external-lock.json');checked(lock['sdkconfig'])
     assert lock['sdkconfig']['path']=='coprocessor/c6_audio/config/sdkconfig.profile'
     assert all(row['root']in['IDF','TOOLCHAIN']and not Path(row['path']).is_absolute()for row in lock['files'])
-    assert len(recipe['rows'])==41 and len({x['member']for x in recipe['rows']})==41
+    assert len(recipe['rows'])==39 and len({x['member']for x in recipe['rows']})==39
     for row in mapping['rows']:checked(row['source'])
     effective=effective_compile_sources(mapping,recipe)
     for row in recipe['rows']:
         assert '-c'in row['argv']and '-o'in row['argv']
         assert not any('build/experiments/'in x.replace('\\','/')for x in row['argv'])
-    assert len(read(PROJECT/'recipe/archive-order.json'))==41
+    ordered=read(PROJECT/'recipe/archive-order.json')
+    assert len(ordered)==39 and len(set(ordered))==39
+    assert set(ordered)=={row['member']for row in recipe['rows']}
+    assert len(mapping['rows'])==62
     for p in [PROJECT/'recipe/link.rsp.in',PROJECT/'recipe/link-image.json']:
         assert 'build/experiments/'not in p.read_text('utf-8').replace('\\','/')
-    return dict(status='PASS_DURABLE_C6_SOURCE_MAPPING_ORDERED41_RECIPE_AUDIT_NOT_BUILD',projection_sources=len(mapping['rows']),private21=21,inherited_sources20=20,
+    return dict(status='PASS_DURABLE_C6_SOURCE_MAPPING_ORDERED39_RECIPE_AUDIT_NOT_BUILD',projection_sources=len(mapping['rows']),private_sources=19,inherited_sources=20,translation_units=39,
         explicit_compile_source_revisions=[row['member']for row in effective if row['explicit_revision']],
         ordered_argv_unchanged=True,public_sdkconfig_seed=pin(checked(lock['sdkconfig'])),effective_config_check='after_explicit_configure_before_compile',external_roots_from_environment=True,SDK=False,COM=False,FullClean_build_verified=False)
 
@@ -152,11 +156,18 @@ def replace(value,variables):
     assert '${'not in value,value
     return value
 
+def checked_output(path):
+    """Разрешает новый выход только в build либо выделенном временном корне C6."""
+    out=path.resolve()
+    roots=[(ROOT/'build').resolve(),(Path(tempfile.gettempdir())/'bitvyr-c6-audio').resolve()]
+    assert any(out!=root and out.is_relative_to(root)for root in roots),'Output must be inside betta/build or TEMP/bitvyr-c6-audio.'
+    return out
+
 def prepare(args):
     """Проецирует single-source headers и локальный fixed APU только в Root build."""
     audit();lock=read(PROJECT/'recipe/external-lock.json');resolved=resolve_environment(args,lock)
     external=external_inputs(lock,resolved)
-    out=args.out.resolve();assert out.is_relative_to(ROOT/'build')and out!=ROOT/'build'
+    out=checked_output(args.out)
     out.mkdir(parents=True,exist_ok=False);projection=out/'projection';projection.mkdir();(out/'objects').mkdir()
     variables=dict(PROJECT=PROJECT,ROOT=ROOT,OUT=out,PROJECTION=projection,SDK_BUILD=out/'sdk',**resolved)
     for row in read(PROJECT/'recipe/source-map.json')['rows']:
@@ -176,7 +187,7 @@ def prepare(args):
     for row in recipes:commands.append(dict(label='compile-'+row['member'],argv=[replace(x,variables)for x in row['argv']],cwd=str(out/'sdk')))
     compiler=Path(commands[0]['argv'][0]);ar=compiler.with_name('riscv32-esp-elf-ar.exe')
     ordered=read(PROJECT/'recipe/archive-order.json')
-    commands.append(dict(label='archive41',argv=[str(ar),'rcs',str(out/'libc6_audio.a'),*[str(out/'objects'/n)for n in ordered]],cwd=str(out/'sdk')))
+    commands.append(dict(label='archive39',argv=[str(ar),'rcs',str(out/'libc6_audio.a'),*[str(out/'objects'/n)for n in ordered]],cwd=str(out/'sdk')))
     for label,argv in read(PROJECT/'recipe/link-image.json').items():
         if label in ['link','image']:commands.append(dict(label=label,argv=[replace(x,variables)for x in argv],cwd=str(out/'sdk')))
     rsp=(out/'link.rsp').read_text('utf-8')
@@ -184,19 +195,22 @@ def prepare(args):
     targets=sorted(set(re.findall(r'"((?:esp-idf/[^"\n]+\.a)|(?:CMakeFiles/[^"\n]+\.obj))"',rsp)))
     assert targets and all('main/libmain.a'not in x for x in targets)
     defaults=';'.join(str(PROJECT/'config'/n)for n in ['sdkconfig.defaults','sdkconfig.defaults.esp32c6','sdkconfig.probe.defaults'])
-    save(out/'plan.json',dict(status='PREPARED_NEW_C6_ROOT_SDK_BOOTSTRAP_AND_ORDERED41_NOT_EXECUTED',variables={k:str(v)for k,v in variables.items()},configure=[str(variables['PYTHON']),str(variables['IDF']/'tools/idf.py'),'-C',str(generated_project),'-B',str(out/'sdk'),'-D','SDKCONFIG='+str(out/'sdkconfig'),'-D','SDKCONFIG_DEFAULTS='+defaults,'-D','IDF_TARGET=esp32c6','reconfigure'],sdk_targets=targets,commands=commands,external=external,host_tools={name:pin(variables[name.upper()])for name in lock['host_tools']},sdkconfig_seed=pin(checked(lock['sdkconfig'])),effective_sdkconfig_sha256=lock['effective_sdkconfig_sha256'],source_audit=audit(),effective_compile_sources=effective,source_recipe=[pin(PROJECT/'recipe'/n)for n in ['compile41.json','source-map.json','link-image.json','link.rsp.in','archive-order.json','external-lock.json']],SDK_executed=False,COM=False,flash=False))
+    save(out/'plan.json',dict(status='PREPARED_NEW_C6_ROOT_SDK_BOOTSTRAP_AND_ORDERED39_NOT_EXECUTED',variables={k:str(v)for k,v in variables.items()},configure=[str(variables['PYTHON']),str(variables['IDF']/'tools/idf.py'),'-C',str(generated_project),'-B',str(out/'sdk'),'-D','SDKCONFIG='+str(out/'sdkconfig'),'-D','SDKCONFIG_DEFAULTS='+defaults,'-D','IDF_TARGET=esp32c6','reconfigure'],sdk_targets=targets,commands=commands,external=external,host_tools={name:pin(variables[name.upper()])for name in lock['host_tools']},sdkconfig_seed=pin(checked(lock['sdkconfig'])),effective_sdkconfig_sha256=lock['effective_sdkconfig_sha256'],source_audit=audit(),effective_compile_sources=effective,source_recipe=[pin(PROJECT/'recipe'/n)for n in ['compile41.json','source-map.json','link-image.json','link.rsp.in','archive-order.json','external-lock.json']],SDK_executed=False,COM=False,flash=False))
     return out/'plan.json'
 
 def execute(path,args):
-    """Root выполняет fresh dependencies и exact active41; timeout сохраняет HOLD без flash."""
+    """Root выполняет fresh dependencies и exact active39; timeout сохраняет HOLD без flash."""
     path=path.resolve();plan=read(path);out=path.parent
-    assert out.is_relative_to(ROOT/'build')and not(out/'result.json').exists();audit()
+    checked_output(out);assert not(out/'result.json').exists();audit()
     for ref in plan['source_recipe']:
         p=Path(ref['path']);assert digest(p)==ref['sha256']
     lock=read(PROJECT/'recipe/external-lock.json')
     env=dict(os.environ);env['IDF_PATH']=plan['variables']['IDF']
     env['IDF_TOOLS_PATH']=plan['variables']['IDF_TOOLS']
     env['ESP_IDF_VERSION']='6.1'
+    # idf.py должен использовать уже сверенный virtualenv, а не угаданный default path.
+    env['IDF_PYTHON_ENV_PATH']=str(Path(plan['variables']['PYTHON']).parent.parent)
+    env['PYTHONUTF8']='1'
     prefixes=[str(Path(plan['variables']['TOOLCHAIN'])/'bin')]
     external_inputs(lock,{name:Path(value)for name,value in plan['variables'].items()})
     for name in ['cmake','ninja','python']:

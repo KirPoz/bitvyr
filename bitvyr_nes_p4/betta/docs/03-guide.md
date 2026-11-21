@@ -1,9 +1,9 @@
-# Сборка и использование P4
+# Сборка и использование Bitvyr
 
-1. Откройте [Bitvyr.code-workspace](../../../Bitvyr.code-workspace) в VS Code. Для сборки при отдельном открытии папки `betta` оставьте её в дереве Bitvyr: сборочные модули двух редакций находятся в корне репозитория. В **ESP-IDF: Pick a Workspace Folder** выберите **Bitvyr NES P4**.
+1. Откройте [Bitvyr.code-workspace](../../../Bitvyr.code-workspace) в VS Code. Для сборки при отдельном открытии папки `betta` оставьте её в дереве Bitvyr: сборочные модули двух редакций находятся в корне репозитория. В **ESP-IDF: Pick a Workspace Folder** выберите **Bitvyr NES P4** или **Bitvyr NES P4+C6**.
 2. Выполните **ESP-IDF: Select Current ESP-IDF Version** и выберите установленный ESP-IDF 6.1. Проект задаёт цель `esp32p4`.
 3. Выполните **ESP-IDF: Build Your Project**. Для пересборки удалите `build` через **ESP-IDF: Full Clean Project** и снова выполните **Build Your Project**.
-4. Выберите UART платы. При первой установке P4 используйте **ESP-IDF: Flash (UART) Your Project**. Для обновления приложения используйте **ESP-IDF: Flash App Only (UART)**. Monitor работает на 115200 бод.
+4. Если выбрали редакцию P4+C6, проверьте [прошивку сопроцессора](../../../bitvyr_nes_p4c6/betta/docs/03-guide.md). Выберите UART платы. При первой установке P4 используйте **ESP-IDF: Flash (UART) Your Project**. Для обновления приложения используйте **ESP-IDF: Flash App Only (UART)**. Monitor работает на 115200 бод.
 
 Эквивалент для терминала ESP-IDF из папки этой редакции:
 

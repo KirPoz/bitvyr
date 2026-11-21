@@ -2,7 +2,7 @@
 
 Один CMake build содержит продуктовый Core и два test-only reference target:
 
-- `nes_core`: фиксированные81 PUBLIC/21 PRIVATE definitions выбранного P4-профиля.
+- `nes_core`: фиксированные 80 PUBLIC/21 PRIVATE definitions выбранного P4-профиля.
 - `nes_scalar_reference`: те же исходники, независимые виртуальные CPU/PPU bus
   и raw packet-APU.
 - `nes_fastcap_scalar_audio`: scalar CPU/PPU с качеством APU выбранного профиля;

@@ -131,6 +131,7 @@ private:
     static_assert(sizeof(ExtraPcm)==4096,"Third PCM is a separate 4096-byte tail object");
     /** @brief Размер третьего блока в PSRAM. Ноль сохраняет конфигурацию из двух блоков для тестов. */
     static constexpr std::size_t extraPcmBytes()noexcept{return NES_EXPERIMENTAL_C6_PCM_THREE_TICKETS?sizeof(ExtraPcm):0U;}
+    /** @brief Возвращает полный размер PSRAM-выделения с хвостовым PCM-блоком. */
     static constexpr std::size_t payloadBytes()noexcept{return sizeof(Payload)+extraPcmBytes();}
     /** @brief Возвращает массив PCM, созданный при выделении памяти за основным буфером. */
     std::int16_t*thirdPcm()noexcept{
