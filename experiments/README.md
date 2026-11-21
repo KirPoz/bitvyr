@@ -18,4 +18,4 @@ python -B tools/experiments.py --sha <SHA256-исходного-отчёта>
 Аппаратные FPS относятся к программной подаче кадров. Сравнение требует
 одинаковых ROM, региона, ввода, интервала и звука. Для установленной
 прошивки смотрите [P4](../bitvyr_nes_p4/betta/docs/04-results.md) и
-[P4+C6](../bitvyr_nes_p4c6/betta/docs/04-results.md).
+[P4+C6](../bitvyr_nes_p4c6/beta_0_1/docs/04-results.md).

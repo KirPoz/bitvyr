@@ -1,0 +1,11 @@
+# C6 исполняет основной DSP удалённо: локальные82KB Tables нужны лишь cold/full fallback.
+# Переносится ровно один static BSS object; guard, Core timing и packet/wire не меняются.
+[scheme:nes_c6_cold_tables_external]
+entries:
+    bss -> extern_ram
+    common -> extern_ram
+
+[mapping:nes_c6_cold_tables_psram]
+archive: libnes_core.a
+entries:
+    unity_0_cxx:_ZZN3nes4core3Apu12sharedTablesEvE6tables (nes_c6_cold_tables_external)

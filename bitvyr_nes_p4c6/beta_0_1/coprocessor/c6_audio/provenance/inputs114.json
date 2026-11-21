@@ -1,0 +1,918 @@
+{
+  "rows": [
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared01/result.json",
+        "bytes": 4577,
+        "sha256": "0a7212929b8906381888114e57a647a0a5793313ad37449ff87ec8f49a72d69e"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared01/before.json",
+        "bytes": 90449,
+        "sha256": "1304a3a87d4479a98341f37950d5cab76973d401a68387c03316ce0f692e3a46"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared01/commands.json",
+        "bytes": 162399,
+        "sha256": "d1b328c554f9ce83abf9239d8be016baecf2c1b8440544261f7e4f7f6a5708e0"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared01/link.rsp",
+        "bytes": 21550,
+        "sha256": "9ba8270bd60c9f5538dee2d20f973dfde46d9a903802c05456bd1dfc9842cb85"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared01/libprivate_main.a",
+        "bytes": 11204688,
+        "sha256": "bbdfcce672046b0a44a625590152ad7742d45386f60565c11fa020721edffea8"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/select-retained-agent/source02.json",
+        "bytes": 3067,
+        "sha256": "090e0f6662c31c7047f4ee2d81f1f0e04b86faab4a04f598c78f0ace11cb3227"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "firmware/c6-active/recovery-a09/retained-a09-manifest.json",
+        "bytes": 5622,
+        "sha256": "7d384d44736171719885a1ef229450f7a3b73d8b11ff404d966a6e21407654d0"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/root_build01.py",
+        "bytes": 15027,
+        "sha256": "2be5dcc2a30047f36dd51f368f7fd84f8cf2dd18a7715a5587de5dd8faddaa69"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-app-sdk-link-agent/archive_reader02.py",
+        "bytes": 1727,
+        "sha256": "8fc38db7638fd2b88ded91cd0f759961a66a29eba3e78169f8e9c937eb9f091e"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-full-service-prep-agent/candidate02/result.json",
+        "bytes": 5503,
+        "sha256": "355e06b15ef085f8b36a59ed6da5be94e597d653d6fea1425c2b8931d6d67ea6"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-full-service-prep-agent/candidate02/before.json",
+        "bytes": 47978,
+        "sha256": "b4fdf76da3498b296727b2781eaeda2c2ee7b7209ca9305005b2b16140a2a2c3"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-full-service-prep-agent/candidate02/commands.json",
+        "bytes": 246530,
+        "sha256": "8d765743164f28aa60e48bed3113c894be1ae27a2b9d6cf1efc3846cea2209b0"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-full-service-prep-agent/candidate02/libprivate_main.a",
+        "bytes": 11061718,
+        "sha256": "f226bef3e14c9aae8c4cae66d715621abdc512c7b99d87eba70570707918aab4"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-full-service-prep-agent/candidate02/link.rsp",
+        "bytes": 21528,
+        "sha256": "e224ebcba37ea3e6b979f1fae8c9b0190e14d24f7bbe814c6f4c0d9109be185a"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/service-agent/readiness03.json",
+        "bytes": 5519,
+        "sha256": "337c1d7ab1de55aff833b2866e9a49fe99d69327ae8e7a01589e3ebcfdd4f075"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/service-agent/source02.json",
+        "bytes": 3351,
+        "sha256": "757a14f75e9230c913757ac22134fe93063964de52fc40ecb5fd9bbf8dc16d3c"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-mtu-agent/source02.json",
+        "bytes": 4730,
+        "sha256": "bc171800cae65002136533e516c3934c1379704f167c1af7cb3b3fb43df8d3f2"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/adapter-agent/source01.json",
+        "bytes": 1285,
+        "sha256": "c237e406ef607a707c06f6922e8210f7f479ae60a6e3d35cfee0cadfa10c71c5"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/compile_commands.json",
+        "bytes": 8589189,
+        "sha256": "9d30a95d92e36488e66f69da7d2deff3c0eb5f4dea9a1e6e938cd6c5c0251167"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-app-sdk-link-agent/archive_reader02.py",
+        "bytes": 1727,
+        "sha256": "8fc38db7638fd2b88ded91cd0f759961a66a29eba3e78169f8e9c937eb9f091e"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdkconfig",
+        "bytes": 93868,
+        "sha256": "8c9683105b7d06c442274053c909a80de4816f881ba86155ad2608ea31cfee23"
+      },
+      "kind": "historical-audit-only"
+    },
+    {
+      "historical": {
+        "path": "${TOOLCHAIN}/bin/riscv32-esp-elf-g++.exe",
+        "bytes": 2648576,
+        "sha256": "420df714d316aa3c4c7f002a3332b0a3b9c47a6b6833388ed1589a5ce75b52ee"
+      },
+      "kind": "external-pinned"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/toolchain/cflags",
+        "bytes": 291,
+        "sha256": "213a847f8df3dd05c6cd3425346b2119caedc0f2426dfd4bf159360af0f9587a"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/CMakeFiles/network_adapter.elf.dir/project_elf_src_esp32c6.c.obj",
+        "bytes": 844,
+        "sha256": "e52dfd2586e5930fae5b57796e8a32ea6adc8744d3c58cc0a494e023cbc11bad"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/riscv/libriscv.a",
+        "bytes": 66658,
+        "sha256": "b43ef2821a6a6af8b3a86b3a0e6a87eaa64d3d865d61a345001f9fa910ea309f"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_stdio/libesp_stdio.a",
+        "bytes": 118410,
+        "sha256": "bc7fb008ae88f90501c92658b6eef04c158e6caf03b6acd88a1e0fe2c23e191a"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_dma/libesp_hal_dma.a",
+        "bytes": 167196,
+        "sha256": "8f3a94e97264dafd5ffa7fcc707e92a00b2ddcebcd4b7a7bb8bc2f2887ff66c6"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_gpspi/libesp_hal_gpspi.a",
+        "bytes": 559010,
+        "sha256": "ac152567d7cbeb5555c5396353c1fb5213d7b18dc901a6d45f89a4e45d5a5fc7"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_clock/libesp_hal_clock.a",
+        "bytes": 112082,
+        "sha256": "ae56c1511898d617a9a9b3be3f4ac6a9ae08b2677942ab6dc97c4b5909b05b00"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_mspi/libesp_hal_mspi.a",
+        "bytes": 528834,
+        "sha256": "a75e98096b428c2726041f8aba36cd83635cff80bcd70f3fe384c3bfa87dc08d"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_security/libesp_hal_security.a",
+        "bytes": 354036,
+        "sha256": "a79c90ce77017c1ab6fdb002e2b4ebdff7b31ae1748a960afda3533907282b30"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_partition/libesp_partition.a",
+        "bytes": 280526,
+        "sha256": "1cf5a4960e87f176e891594e73bfd47a46b356d6054775deaf9f4ed6dc2327c7"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_app_format/libesp_app_format.a",
+        "bytes": 33584,
+        "sha256": "0da40ef34b123672e329a21c785f87aace2d6751c5902cd31e60accafc6aefdd"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/efuse/libefuse.a",
+        "bytes": 661244,
+        "sha256": "3660a191fa874b080de12cf80aaa054fc0b48323f4d0acabf03519d99ad76204"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_timg/libesp_hal_timg.a",
+        "bytes": 45946,
+        "sha256": "7386b25f756313d41e9d30a9c0aa5ac49410ab9c2152d942e6a1bb95ac73143a"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_systimer/libesp_hal_systimer.a",
+        "bytes": 15690,
+        "sha256": "3dc1b5163853dfe6014ffe1cccff724838b06d193b85416ba3e6f6652536df54"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_timer/libesp_timer.a",
+        "bytes": 372892,
+        "sha256": "81920903683e1a96d6baf4aa32d7162e1c8fa6140fae08c8807dae4001434816"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_security/libesp_security.a",
+        "bytes": 221536,
+        "sha256": "decedb4b40d30b747095b350d4fdcba056603106a14c663b646cfa69a462a583"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_driver_gpio/libesp_driver_gpio.a",
+        "bytes": 1083346,
+        "sha256": "5506300dcce0f5b61b8413d6d9cffd9ddd68c7cee28c4abfd59b56ece3b7b617"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_uart/libesp_hal_uart.a",
+        "bytes": 276480,
+        "sha256": "3163d9e0581c59a18e166fcfc4b85842510e9ac377015307ce8c9d019ee9c12b"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_pm/libesp_pm.a",
+        "bytes": 159046,
+        "sha256": "a1f79c5e03a0caed0e48a906602a0fab1b3aea21cbcfb0cc6d7dd3ca6266532c"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_mm/libesp_mm.a",
+        "bytes": 319372,
+        "sha256": "4b0e337ba9373988ee0a404b4fa92d1d16013f047293d575d60b60725cc4ab0d"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_driver_dma/libesp_driver_dma.a",
+        "bytes": 806858,
+        "sha256": "006e69a8388e3cae5a4b3836f072be9a6f31f92cfef4761803a1b65174333892"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/mbedtls/libmbedtls.a",
+        "bytes": 201772,
+        "sha256": "f7fa974ccebbe232718729f03f8bbd0aa18a2baedc05bda31fcb218033515176"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_bootloader_format/libesp_bootloader_format.a",
+        "bytes": 6056,
+        "sha256": "72c7f65a13056dcb6bbcc67c8fddb0b09b06c16757727dc4e06739be33114498"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_wdt/libesp_hal_wdt.a",
+        "bytes": 83106,
+        "sha256": "11063be7b4520e8fd55cd7348205939925cc99cd2ed7d0639c5d5f8e18ef22c9"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_ana_conv/libesp_hal_ana_conv.a",
+        "bytes": 371038,
+        "sha256": "d6461c051552718a8ac03e3fb3f45d280c4c6ed9af44aa7211b657b65ba838b5"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/bootloader_support/libbootloader_support.a",
+        "bytes": 1131368,
+        "sha256": "8003a1bd04e727ac77ae0925dce79b3a7c64230c6726da7209e467221222398a"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/spi_flash/libspi_flash.a",
+        "bytes": 1503266,
+        "sha256": "4c8aed86aef672d0a31fb39d24c1cafff385ddfa0b7c51671f7c1d3669a110b1"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_system/libesp_system.a",
+        "bytes": 1526038,
+        "sha256": "98538fd75cdcbf7dc80e84c264a3124498e95ba6fa531e80e0ada2e34e962553"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_common/libesp_common.a",
+        "bytes": 27742,
+        "sha256": "03e86af102449f1390fc1e27e54564a2b394d47a7e82699ecbb4b50e100192b6"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_rom/libesp_rom.a",
+        "bytes": 115236,
+        "sha256": "20c0150e204d5e58939126c498d9c3e96dbd593b14a005703f76f518993dd77f"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/hal/libhal.a",
+        "bytes": 636728,
+        "sha256": "fa2dd78a2d2e16a567bdac0b9bf18f8f71667fffe4d6db4aecd52cfc0abae832"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/log/liblog.a",
+        "bytes": 245446,
+        "sha256": "a78b34cfbf8722faddd45e7375893308bb717fbbd2e92fba818de389ee08d843"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/heap/libheap.a",
+        "bytes": 433448,
+        "sha256": "79c142e9c986b917e996e38ba85d38e584fe9685aa5b56d6bad471e3f56018c9"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/soc/libsoc.a",
+        "bytes": 53858,
+        "sha256": "55d333a5ac3494f5b238c1cebd5716931c1f5c44464c6da2d46b1ebd57d7ec0d"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_gpio/libesp_hal_gpio.a",
+        "bytes": 150402,
+        "sha256": "1b1e500deccd2141fdf8e40b276f046b09e07a1132b975f1f96494782ccc7cff"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_usb/libesp_hal_usb.a",
+        "bytes": 22870,
+        "sha256": "019dfc537482a2dd8a023d1bd9462b6ec74d9da93f9e5bd49b13744c6f1a8498"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_pmu/libesp_hal_pmu.a",
+        "bytes": 114482,
+        "sha256": "174d4f7ffcd61038a1d95042fd5c1be5c8552220069b09956e497fdcc2e83955"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_regi2c/libesp_hal_regi2c.a",
+        "bytes": 40112,
+        "sha256": "6bd4f2240b4827974ca24352ffd96602a017b2f73fd07e2d1e22a62e02f0cc67"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hw_support/libesp_hw_support.a",
+        "bytes": 5107552,
+        "sha256": "b33526a2e9f2d5be92493fb3d97d227cebd31bb35105c1e1cb90f7b4b0757ef4"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/freertos/libfreertos.a",
+        "bytes": 1494630,
+        "sha256": "ccbfa02b17d4cd231c5fcb39d81c06fbfb4f5af9aad3ac53fee4564a2ce809c5"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_libc/libesp_libc.a",
+        "bytes": 749400,
+        "sha256": "a42f6553c53f040b4f40d4ac79a01d274d6922fd236cd693ae937fa5b786b0c6"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/pthread/libpthread.a",
+        "bytes": 512730,
+        "sha256": "c07a7396e5151efe42268c8b078df61df0fa327e5af5c8a03b5e71a57fced0c3"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/cxx/libcxx.a",
+        "bytes": 103652,
+        "sha256": "72c9f277f0ded461ce23d9f91f47ab513a360e06871828b94d3bc4d1bda4882d"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/app_update/libapp_update.a",
+        "bytes": 284956,
+        "sha256": "c9b79b2b3d66477499b95250d62de09ab6166c4a836e5544f4cab04b46853220"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_i2c/libesp_hal_i2c.a",
+        "bytes": 153936,
+        "sha256": "a64e3ecdbdcc7aac2f17612b5f6464dd549d8f58743f9147427bfb9a6a6fd1d3"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_twai/libesp_hal_twai.a",
+        "bytes": 199262,
+        "sha256": "6730773878cfe863781e4f3a4f548448a5bf211a1ab852e82730bfbcd1343472"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_ringbuf/libesp_ringbuf.a",
+        "bytes": 332670,
+        "sha256": "4efb975b2deefb3d36aa30cc0c70d3286f87249b53c0af022b242d7bc6f4bbbc"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/driver/libdriver.a",
+        "bytes": 885312,
+        "sha256": "7260f3711ec33d0202ffd52bbfb6a215a4db10e9bec3627771878e4dc9054075"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_sd/libesp_hal_sd.a",
+        "bytes": 374844,
+        "sha256": "0d5c3f4881efcd5a8871c4a8fc3dbaf9ddbc9d3dfdb35a2e914e9422c4062fd8"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_driver_sdio/libesp_driver_sdio.a",
+        "bytes": 371150,
+        "sha256": "2a647bed57ab1cccca4437e7f5b4741825f651720dc50aa93f90435f65035053"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_event/libesp_event.a",
+        "bytes": 290540,
+        "sha256": "fa0e26a5bbcef067e2f08bd7342154b105ed9f7cb1f222688283c775d8e5c078"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/nvs_sec_provider/libnvs_sec_provider.a",
+        "bytes": 71594,
+        "sha256": "1e98901e6bfc317eefaf3c19df1d534adf56dbcb5baa82d0b8009a3d389c0e9e"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/nvs_flash/libnvs_flash.a",
+        "bytes": 3041566,
+        "sha256": "075c1d9b4b4247d4e4d257cf0a6e09d3c73f0fd7af62c70ec9a27ca875226893"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_phy/libesp_phy.a",
+        "bytes": 240702,
+        "sha256": "65e13f0061942445d91ac0203fb3e55625ffaf15cac9a021871b3d27016d66df"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_psram/libesp_psram.a",
+        "bytes": 5212,
+        "sha256": "bb8f35613ccf90e52a5ef13c253d3fed52b78a74678b463318be541c6feff629"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_driver_uart/libesp_driver_uart.a",
+        "bytes": 1499396,
+        "sha256": "e56dde4ad26d65f5dc7eed7287489f2f146b65b73ee8e4e53b5c4fc611dbf29b"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_driver_usb_serial_jtag/libesp_driver_usb_serial_jtag.a",
+        "bytes": 346272,
+        "sha256": "ef65526855f2d334a1091ea80e0a9a2743b0c7de567e212419ed603a13477520"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/vfs/libvfs.a",
+        "bytes": 885550,
+        "sha256": "9d9b11c8d02388c6c766ea5d4d0762401270b8abbf8b3dee88222c33353b32be"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/lwip/liblwip.a",
+        "bytes": 6399164,
+        "sha256": "2a5d3ac20dd5d85f341502a7ae0afeb6cb561b36cb26f2ad53f25add38253693"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_netif/libesp_netif.a",
+        "bytes": 1025080,
+        "sha256": "1ab911ee7d5b4533476e70415bac52d5a69c8034675e296c420b8c8a9e61ef1d"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/wpa_supplicant/libwpa_supplicant.a",
+        "bytes": 12213370,
+        "sha256": "a100334a6b83ffe0cd0dd698d39d1163ee0cb2db76ec0b03018052fe8eb2184b"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_coex/libesp_coex.a",
+        "bytes": 74240,
+        "sha256": "a8a5d1a808b608d9c01ddfb21774cc10e83a150cdce5d45b2300f8b55aef33b1"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_wifi/libesp_wifi.a",
+        "bytes": 1049498,
+        "sha256": "89d75821d3c8225dc8bbfcaaa4d14337e7254bde0c8559ac079745df72609236"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_driver_spi/libesp_driver_spi.a",
+        "bytes": 1375078,
+        "sha256": "13f6650cc283521aae7501f931ecf14f09c9a5a18a8ff8634ec4b07aad114ac7"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/console/libconsole.a",
+        "bytes": 1715016,
+        "sha256": "cbc68607e957e05649b609088c6dc229ba480200739d8c29549bfaf037dface6"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_hal_ieee802154/libesp_hal_ieee802154.a",
+        "bytes": 10552,
+        "sha256": "09e2836028d2cb77cd64146bb64d2f5780bc330a5c06f02e59a663a33e65ca5b"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/ieee802154/libieee802154.a",
+        "bytes": 887442,
+        "sha256": "d4c353a32c0eb41eeab6bcb77c79c3ef66472181225b71fe858842cf4a6e1f2a"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_gdbstub/libesp_gdbstub.a",
+        "bytes": 281786,
+        "sha256": "6ebd2b89c81e084e0adbe546f538291eaecf081fb5657a06c41a0f65401535ef"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/bt/libbt.a",
+        "bytes": 2719276,
+        "sha256": "0d3d8ed8431255817d9f18b2e525f05de0b5264b479208fefcb9568236649465"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/protobuf-c/libprotobuf-c.a",
+        "bytes": 952920,
+        "sha256": "f97bb1f0699a5512808b5280693e47cee9b7d935180099ffab9c6889d423cc26"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/http_parser/libhttp_parser.a",
+        "bytes": 370040,
+        "sha256": "b2983a44f8204809ad81527172df99fe72f5d5feaaef3711bc09bb15673ade32"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_http_server/libesp_http_server.a",
+        "bytes": 891242,
+        "sha256": "55ae08434f4281e56fc55a361fb3deabc59699190dee82409a0a9c7f4eafdb9d"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/protocomm/libprotocomm.a",
+        "bytes": 1021506,
+        "sha256": "843e4a8da60f224df37b708bc2321bfe84b20826a05ff7ae9d9904cbb6674a22"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/main/libmain.a",
+        "bytes": 7563186,
+        "sha256": "e6b8614680e9bddf33ce1d6982b9e5a6da6ebfdc90b2e0aba6aa520f3f2856cb"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "${IDF}/components/bt/controller/lib_esp32c6/esp32c6-bt-lib/esp32c6/libble_app.a",
+        "bytes": 1818848,
+        "sha256": "88ad3871130c3424c75c864f1d7ec00c8d990dc60ae965626234b345dbb401b2"
+      },
+      "kind": "external-pinned"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/mbedtls/mbedtls/library/libmbedtls.a",
+        "bytes": 1999850,
+        "sha256": "325f69345841b057ba8d170633742d4803ed1fdb4a3c4bb1af73fd28d2c1dce2"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/mbedtls/mbedtls/library/libmbedx509.a",
+        "bytes": 952926,
+        "sha256": "b2e75495c51ab6ca14e4386d9978b12520e3327f253206fb702509eedf004792"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/mbedtls/mbedtls/tf-psa-crypto/core/libtfpsacrypto.a",
+        "bytes": 7882622,
+        "sha256": "7b7d78d852b6405b94a9cd510a21f822cff908289af3d3c46bca4b4fe1f7b3e4"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "${IDF}/components/esp_phy/lib/esp32c6/libbtbb.a",
+        "bytes": 19818,
+        "sha256": "1843c31dbd6abfabe33439882bf1ad4ffa5ac60d885da98040c0d909872187e2"
+      },
+      "kind": "external-pinned"
+    },
+    {
+      "historical": {
+        "path": "${IDF}/components/esp_phy/lib/esp32c6/libphy.a",
+        "bytes": 188362,
+        "sha256": "5ebda577864f5e90a34d90317360a5957d6c5ba133446461d697d65297caf04e"
+      },
+      "kind": "external-pinned"
+    },
+    {
+      "historical": {
+        "path": "${IDF}/components/esp_coex/lib/esp32c6/libcoexist.a",
+        "bytes": 99618,
+        "sha256": "86b40f13090563c026cf531e8173260778f6e236791aa540b0cf82ce86d2dca7"
+      },
+      "kind": "external-pinned"
+    },
+    {
+      "historical": {
+        "path": "${IDF}/components/esp_wifi/lib/esp32c6/libcore.a",
+        "bytes": 4108,
+        "sha256": "2177652780cfde29ff7f2000299a41408bfc65fdf3df49d5ba71211badd84a5b"
+      },
+      "kind": "external-pinned"
+    },
+    {
+      "historical": {
+        "path": "${IDF}/components/esp_wifi/lib/esp32c6/libespnow.a",
+        "bytes": 66916,
+        "sha256": "ceec66eea0cd5a597285d7cdf4fa650f8c30718c792a91ff35e741958848bd86"
+      },
+      "kind": "external-pinned"
+    },
+    {
+      "historical": {
+        "path": "${IDF}/components/esp_wifi/lib/esp32c6/libmesh.a",
+        "bytes": 1004804,
+        "sha256": "26c053e45fc4b75c9ea3ee1fcd5bfd7785b97dce9124161075e83e6693983067"
+      },
+      "kind": "external-pinned"
+    },
+    {
+      "historical": {
+        "path": "${IDF}/components/esp_wifi/lib/esp32c6/libnet80211.a",
+        "bytes": 1487158,
+        "sha256": "6cd630f338006fdb7dde1f895eeceff653b1c97fdc8e6b7daeac20759690edbf"
+      },
+      "kind": "external-pinned"
+    },
+    {
+      "historical": {
+        "path": "${IDF}/components/esp_wifi/lib/esp32c6/libpp.a",
+        "bytes": 885636,
+        "sha256": "4be44aeb1df591f15ca711fa09ffb9c39cb3f46b139545c9043bbc40fa31f0d6"
+      },
+      "kind": "external-pinned"
+    },
+    {
+      "historical": {
+        "path": "${IDF}/components/esp_wifi/lib/esp32c6/libsmartconfig.a",
+        "bytes": 200346,
+        "sha256": "cd891316ade55231a991c753c53efffa0d38a034289ca44f6834301bc39135a8"
+      },
+      "kind": "external-pinned"
+    },
+    {
+      "historical": {
+        "path": "${IDF}/components/esp_wifi/lib/esp32c6/libwapi.a",
+        "bytes": 46870,
+        "sha256": "72f37d369a015ff7db679710f7d859cea89189800924df9103ab83c9f565e663"
+      },
+      "kind": "external-pinned"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/toolchain/cxxflags",
+        "bytes": 302,
+        "sha256": "4d473b73bfcd13dca61f41a14e2ee780b174546d884d310c8390de1de9c7e45d"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/toolchain/ldflags",
+        "bytes": 26,
+        "sha256": "f268a782a4de6a6a6dde787717453b398564e6655f2add9116147094f454e9ec"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_system/ld/memory.ld",
+        "bytes": 6575,
+        "sha256": "e619d19adfbc558f9fbe6561c0393d786343a1af92a611c111cc511e15c56379"
+      },
+      "kind": "sdk-generated-rebuild"
+    },
+    {
+      "historical": {
+        "path": "build/experiments/c6-offload-20261112/c6-review/c6-project01/sdk-build/esp-idf/esp_system/ld/sections.ld",
+        "bytes": 127769,
+        "sha256": "d42ecf14112a428759d788cb2aa6ddf3655715e6c027fca6216d2b50f9a378e7"
+      },
+      "kind": "sdk-generated-rebuild"
+    }
+  ],
+  "historical_count": 114,
+  "active_build_reads_historical_paths": false
+}

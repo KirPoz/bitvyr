@@ -444,7 +444,7 @@ def main(argv=None):
     p.add_argument("--admission", type=Path)
     p.add_argument("--execute-root", action="store_true")
     p.add_argument("--attest-admitted-image-current", action="store_true")
-    p.add_argument("--output",type=Path,default=COMMON.parent/"bitvyr_nes_p4c6"/"betta"/"build"/"validation"/"device-runs")
+    p.add_argument("--output",type=Path,default=base.local_project_build(PROJECT)/"validation"/"device-runs")
     p.add_argument("--expected-volume",type=int,required=True,choices=range(1,101))
     a=p.parse_args(argv)
     if a.movies is None:

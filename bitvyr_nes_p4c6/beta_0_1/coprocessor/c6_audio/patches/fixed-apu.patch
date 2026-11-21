@@ -1,0 +1,163 @@
+--- app/nes/core/apu/Apu.cpp
++++ coprocessor/c6_audio/apu_fixed/Apu.cpp
+@@ -191,6 +191,7 @@
+     cpuRate_ = pal ? 1662607 : 1789773;
+     fiveStep_ = irqInhibit_ = frameIrq_ = false;
+     highPass90_ = highPass440_ = lowPass14000_ = previousInput_ = previousHighPass90_ = 0;
++    fixedFilter_={};fixedFilterFault_=false;
+ }
+ 
+ /**
+@@ -520,14 +521,22 @@
+         --momentCountdown_; // Свернуть 16-й хвост ДО достижения нуля.
+     }
+     const auto outputIntegral = integrator_ / 16384;
++#else
++    const auto outputIntegral = integrator_;
++#endif
++#if defined(NES_CORE_APU_FIXED_OUTPUT) && NES_CORE_APU_FIXED_OUTPUT
++    // Только PCM-реконструкция: integer channel/FIR, APU IRQ и guest clocks выше не меняются.
++    std::int16_t sample{};
++    if(fixedFilterFault_||!nes::audio_probe::fixedSample(fixedFilter_,outputIntegral,sample)){
++        fixedFilterFault_=true;return; // Renderer вернёт fault, частичный PCM не публикуется как valid.
++    }
++    ++totalSamples_;
++    if(sampleCount_<samples_.size())samples_[sampleCount_++]=sample;
++    else ++droppedSamples_;
++#else
+     const float integrated = outputIntegral >= (-2147483647LL - 1) && outputIntegral <= 2147483647LL
+         ? static_cast<float>(static_cast<std::int32_t>(outputIntegral))
+         : static_cast<float>(outputIntegral);
+-#else
+-    const float integrated = integrator_ >= (-2147483647LL - 1) && integrator_ <= 2147483647LL
+-        ? static_cast<float>(static_cast<std::int32_t>(integrator_))
+-        : static_cast<float>(integrator_);
+-#endif
+     const float input = integrated * (1.0F / (65535.0F * 32768.0F));
+     highPass90_ = 0.988288F * (highPass90_ + input - previousInput_);
+     previousInput_ = input;
+@@ -540,6 +549,7 @@
+     ++totalSamples_;
+     if (sampleCount_ < samples_.size()) samples_[sampleCount_++] = static_cast<std::int16_t>(scaled);
+     else ++droppedSamples_;
++#endif // отдельный portable fixed-output профиль
+ }
+ 
+ /**
+--- app/nes/core/apu/Apu.h
++++ coprocessor/c6_audio/apu_fixed/Apu.h
+@@ -8,6 +8,7 @@
+ #include <array>
+ #include <cstddef>
+ #include <cstdint>
++#include "FixedFilter.h"
+ 
+ namespace nes::core {
+ 
+@@ -486,6 +487,10 @@
+     bool pal_ = false, fiveStep_ = false, irqInhibit_ = false, frameIrq_ = false;
+     float highPass90_ = 0, highPass440_ = 0, lowPass14000_ = 0;
+     float previousInput_ = 0, previousHighPass90_ = 0;
++    // Layout одинаков при exact/fixed CPP-профилях; active цифровой APU это поле не читает.
++    // Состояние принадлежит только render-владельцу; overflow отравляет весь DSP-пакет.
++    nes::audio_probe::FixedState fixedFilter_{};
++    bool fixedFilterFault_=false;
+ #if defined(NES_CORE_APU_HYBRID_RANK4) && NES_CORE_APU_HYBRID_RANK4
+     std::uint8_t momentCountdown_ = 0;
+ #endif
+--- app/nes/core/apu/AudioRenderer.cpp
++++ coprocessor/c6_audio/apu_fixed/AudioRenderer.cpp
+@@ -6,6 +6,18 @@
+ #include "AudioRenderer.h"
+ 
+ namespace nes::core {
++
++/** @brief Вычисляет cold CRC реальных LUT; обновляет по байтам LE16 без padding и alias casts. */
++void AudioRenderer::diagnosticTableCrcs(std::uint32_t(&out)[6])const noexcept {
++    const auto byte=[](std::uint32_t c,std::uint8_t b)noexcept {c^=b;for(unsigned i=0;i<8;++i)c=(c>>1U)^(0xedb88320U&(0U-(c&1U)));return c;};
++    const auto word=[&](std::uint32_t c,std::uint16_t v)noexcept {return byte(byte(c,std::uint8_t(v)),std::uint8_t(v>>8U));};
++    const auto&t=apu_.tables_;std::uint32_t pulse=~0U,tnd=~0U,impulse=~0U;
++    for(const auto v:t.pulse)pulse=word(pulse,v);
++    for(const auto v:t.tnd)tnd=word(tnd,v);
++    for(const auto&row:t.impulse)for(const auto v:row)impulse=word(impulse,std::uint16_t(v));
++    out[0]=std::uint32_t(t.pulse.size());out[1]=~pulse;out[2]=std::uint32_t(t.tnd.size());out[3]=~tnd;
++    out[4]=std::uint32_t(t.impulse.size()*t.impulse[0].size());out[5]=~impulse;
++}
+ namespace {
+ /** @brief PRIVATE-политика только звукового consumer; цифровой APU и layout не меняются. */
+ [[maybe_unused]] constexpr bool nativeTriangleMean =
+@@ -88,7 +100,14 @@
+  * @param packet Запечатанный неизменяемый AudioPacket с реальными DMC-байтами; сохраняется до завершения render.
+  */
+ AudioRenderResult AudioRenderer::render(const AudioPacket& packet) noexcept {
++    const auto view=AudioPacketView::from(packet);
++    return render(view);
++}
++
++/** @brief Прежний renderer использует только immutable used view; SDK/wire/lease ему не принадлежат. */
++AudioRenderResult AudioRenderer::render(const AudioPacketView& packet) noexcept {
+     valid_=false;
++    if(!packet.readable())return AudioRenderResult::InvalidPacket;
+     const auto& h=packet.header();
+     if(!h.generation||h.fault!=AudioFault::None||h.endCycle<h.baseCycle||h.endCycle-h.baseCycle>65535||
+         h.inputCount>AudioPacket::inputCapacity||h.dmcCount>AudioPacket::dmcCapacity
+@@ -171,6 +190,7 @@
+     advance(h.endCycle);packet_=nullptr;
+     if(dmcFault_||dmcRead_!=h.dmcCount||dmcStall_!=h.dmcCount){poisoned_=true;return AudioRenderResult::DmcMismatch;}
+     if(statusFault){poisoned_=true;return AudioRenderResult::StatusMismatch;}
++    if(apu_.fixedFilterFault_){poisoned_=true;return AudioRenderResult::FixedFilterFault;}
+     valid_=true;lastSequence_=h.sequence;ppuFrame_=h.ppuFrame;++nextSequence_;return AudioRenderResult::Ok;
+ }
+ } // пространство имён nes::core
+--- app/nes/core/apu/AudioRenderer.h
++++ coprocessor/c6_audio/apu_fixed/AudioRenderer.h
+@@ -6,9 +6,10 @@
+ #pragma once
+ #include "Apu.h"
+ #include "AudioPacket.h"
++#include "AudioPacketView.h"
+ 
+ namespace nes::core {
+-enum class AudioRenderResult : std::uint8_t { Ok,InvalidPacket,StaleGeneration,SequenceMismatch,TimelineMismatch,StatusMismatch,DmcMismatch,NeedsReset };
++enum class AudioRenderResult : std::uint8_t { Ok,InvalidPacket,StaleGeneration,SequenceMismatch,TimelineMismatch,StatusMismatch,DmcMismatch,NeedsReset,FixedFilterFault };
+ 
+ // Отдельный объект потока владельца. Не хранит ссылки на Machine/Cartridge и
+ // получает DMC-байты только из текущего неизменяемого retired-пакета.
+@@ -23,6 +24,14 @@
+      * @details Он владеет своим полным APU/PCM, но не исполняет CPU производителя и не читает его текущую ROM вместо сохранённых DMC-ответов.
+      */
+     AudioRenderer() noexcept:apu_(*this){}
++    /**
++     * @brief PRIVATE cold query: counts/CRC32 pulse,TND,FIR в явном LE16 порядке.
++     * @param out Шесть writable u32: count,CRC для каждой таблицы; не пересекает renderer.
++     * @details После полного constructor; единственный worker, до первого render. Не сбрасывает
++     * и не продвигает APU; CRC не подтверждает качество PCM или произвольный ROM.
++     */
++    void diagnosticTableCrcs(std::uint32_t(&out)[6])const noexcept;
++
+     /**
+      * @brief Запрещает копирование идентичности и заимствованных ресурсов этого владельца.
+      * @details Удалённый метод не имеет исполняемого тела; перенос владения через обычное копирование недопустим.
+@@ -45,6 +54,13 @@
+      * @param packet Запечатанный неизменяемый AudioPacket с реальными DMC-байтами; сохраняется до завершения render.
+      */
+     [[nodiscard]] AudioRenderResult render(const AudioPacket& packet) noexcept;
++    /**
++     * @brief Рендерит caller-owned immutable used-record view без full packet allocation.
++     * @param packet Header/записи удерживаются внешним single owner до полного возврата.
++     * @return Старый AudioRenderResult; неверный extent/count отвергается до мутации APU.
++     * @details Все прежние timestamp/sequence/status/DMC/merge проверки сохраняются.
++     */
++    [[nodiscard]] AudioRenderResult render(const AudioPacketView& packet) noexcept;
+     /**
+      * @brief Возвращает состояние или результат текущей привязки.
+      * @details Ошибка, наличие хранилища и готовность изображения различаются; эти признаки сами по себе не выполняют повтор или аппаратное ожидание.
+@@ -108,7 +124,7 @@
+      */
+     void dmcStall(unsigned count) noexcept override;
+     Apu apu_;
+-    const AudioPacket* packet_=nullptr;
++    const AudioPacketView* packet_=nullptr;
+     std::uint64_t generation_=0,nextSequence_=0,lastSequence_=0,ppuFrame_=0;
+     unsigned dmcRead_=0,dmcStall_=0;
+     Region region_=Region::Ntsc;

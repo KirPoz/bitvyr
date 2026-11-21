@@ -1,0 +1,29 @@
+--- upstream/esp_hosted_coprocessor.c
++++ bitvyr/esp_hosted_coprocessor.c
+@@ -1,6 +1,6 @@
+ /*
+  * SPDX-FileCopyrightText: 2021-2026 Espressif Systems (Shanghai) CO LTD
+- *
++ * Modified by Bitvyr contributors (2026): Raw SERIAL1 worker handoff and bounded transport; see patches/esp_hosted_coprocessor.c.patch.
+  * SPDX-License-Identifier: Apache-2.0
+  */
+ 
+@@ -18,6 +18,7 @@
+ #include "xtensa/core-macros.h"
+ #endif
+ #include "interface.h"
++#include "RawPort.h"
+ 
+ #ifdef CONFIG_ESP_HOSTED_CP_WIFI
+ #include "esp_private/wifi.h"
+@@ -790,7 +791,9 @@
+ #if ESP_PKT_STATS
+ 		pkt_stats.serial_rx++;
+ #endif
+-		process_serial_rx_pkt(buf_handle->payload);
++		if (buf_handle->if_num == 1) {
++			if (payload_len <= 1400 && header->flags == 0) nes_hosted_raw_rx(payload, payload_len);
++		} else process_serial_rx_pkt(buf_handle->payload);
+ 	} else if (buf_handle->if_type == ESP_PRIV_IF) {
+ 		process_priv_pkt(payload, payload_len);
+ 	}

@@ -1,0 +1,43 @@
+# Управление Output на cache-enabled Main/Worker, без ISR и изменения guest clocks.
+# cancel/stop требуют joined-владения; outputWritableResult проверяет только адреса при seal.
+# Размещение общее для OFF/ON; guest clocks, данные и SDK memory map не меняются.
+[mapping:nes_joined_output_controls_flash]
+archive: libnes_core.a
+entries:
+    unity_0_cxx:_ZN3nes4core7Machine18cancelOutputFramesERKNS0_16OutputFrameLeaseE (default)
+    unity_0_cxx:_ZNK3nes4core7Machine20outputWritableResultEPKvj (default)
+    unity_0_cxx:_ZN3nes4core7Machine16stopOutputWriterERKNS0_16OutputFrameLeaseE (default)
+# Диагностический relief: один seal после Core timer, не M2/ISR.
+    unity_0_cxx:_ZN3nes4core7Machine15sealOutputFrameERKNS0_17OutputFrameTicketERPKNS0_11VideoPacketERNS0_14OutputFrameCutE (default)
+# Cold Main factory constructor: no per-frame/ISR/cache-off calls.
+    unity_0_cxx:_ZN3nes4core13VideoRendererC2ERNS0_12VideoStorageENS1_13RgbRowScratchE (default)
+# Общий placement-only опыт: эти три функции не являются ISR/cache-off entrypoints.
+# begin/copy выполняются один раз на кадр вне M2, с прежними owner/fault/counter checks.
+    unity_0_cxx:_ZN3nes4core7Machine20copyOutputVisibleRamERKNS0_17OutputFrameTicketEPhj (default)
+    unity_0_cxx:_ZN3nes4core7Machine16beginOutputFrameERKNS0_17OutputFrameTicketE (default)
+# Waveform полного Apu активен у Main AudioRenderer; Worker Output использует TimingApu.
+# Generic Legacy может вызывать полный Apu на Worker: это не универсально cold-размещение.
+    unity_0_cxx:_ZN3nes4core3Apu10emitSampleEv (default)
+
+# Candidate20: factory/per-frame tape controls on cache-enabled tasks only.
+# Exact .part.0 clone is selected by the local section mapping below.
+    unity_0_cxx:_ZNK3nes4core7Machine22outputVrc7BindingValidERKNS0_18OutputFrameBindingERKNS0_16OutputFrameLeaseE (default)
+    unity_0_cxx:_ZNK3nes4core7Machine14outputVrc7TapeERKNS0_17OutputFrameTicketERNS0_13Vrc7WriteTape4ViewE (default)
+    unity_0_cxx:_ZN3nes4core7Machine18sealOutputVrc7TapeERKNS0_17OutputFrameTicketE (default)
+    unity_0_cxx:_ZN3nes4core7Machine19beginOutputVrc7TapeERKNS0_17OutputFrameTicketE (default)
+    unity_0_cxx:_ZN3nes4core9Cartridge15armExternalVrc7Ey (default)
+    unity_0_cxx:_ZN3nes4core9Cartridge14sealVrc7WriterEPNS0_13Vrc7WriteTapeEy (default)
+
+# Mapping symbol grammar disallows dots; use a scoped exact input section.
+[sections:nes_c6_vrc7_tape_clone_text]
+entries:
+    .text._ZN3nes4core7Machine18sealOutputVrc7TapeERKNS0_17OutputFrameTicketE.part.0
+
+[scheme:nes_c6_vrc7_tape_clone_flash]
+entries:
+    nes_c6_vrc7_tape_clone_text -> flash_text
+
+[mapping:nes_c6_vrc7_tape_clone_flash]
+archive: libnes_core.a
+entries:
+    unity_0_cxx (nes_c6_vrc7_tape_clone_flash)

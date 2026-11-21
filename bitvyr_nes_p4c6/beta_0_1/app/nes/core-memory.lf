@@ -1,0 +1,6 @@
+# The emulation hot path runs from internal SRAM. Keep this board placement
+# outside the portable core; compiler-generated jump tables follow into DRAM.
+[mapping:nes_core_internal]
+archive: libnes_core.a
+entries:
+    * (noflash)

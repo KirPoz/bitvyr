@@ -123,11 +123,17 @@ def admit_boot(text, elf, project):
     return prefix, tail
 
 
+def local_project_build(project):
+    """Возвращает каталог сборки действующего проекта указанной редакции."""
+    root = Path(__file__).resolve().parent.parent
+    edition = "beta" if project == "bitvyr_nes_p4c6" else "betta"
+    return root / project / edition / "build"
+
+
 def local_image(project, expected, path=None):
     """Проверяет SHA256 рабочего или явно указанного ELF перед открытием порта."""
     if path is None:
-        root = Path(__file__).resolve().parent.parent
-        path = root / project / "betta" / "build" / (project + ".elf")
+        path = local_project_build(project) / (project + ".elf")
     path = path.resolve()
     require(path.is_file(), "Build the selected project before recording: " + str(path))
     entry = pin(path)

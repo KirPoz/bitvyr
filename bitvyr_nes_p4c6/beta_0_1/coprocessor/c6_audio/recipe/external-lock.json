@@ -1,0 +1,125 @@
+{
+  "files": [
+    {
+      "path": "bin/riscv32-esp-elf-g++.exe",
+      "bytes": 2648576,
+      "sha256": "420df714d316aa3c4c7f002a3332b0a3b9c47a6b6833388ed1589a5ce75b52ee",
+      "root": "TOOLCHAIN"
+    },
+    {
+      "path": "components/bt/controller/lib_esp32c6/esp32c6-bt-lib/esp32c6/libble_app.a",
+      "bytes": 1818848,
+      "sha256": "88ad3871130c3424c75c864f1d7ec00c8d990dc60ae965626234b345dbb401b2",
+      "root": "IDF"
+    },
+    {
+      "path": "components/esp_phy/lib/esp32c6/libbtbb.a",
+      "bytes": 19818,
+      "sha256": "1843c31dbd6abfabe33439882bf1ad4ffa5ac60d885da98040c0d909872187e2",
+      "root": "IDF"
+    },
+    {
+      "path": "components/esp_phy/lib/esp32c6/libphy.a",
+      "bytes": 188362,
+      "sha256": "5ebda577864f5e90a34d90317360a5957d6c5ba133446461d697d65297caf04e",
+      "root": "IDF"
+    },
+    {
+      "path": "components/esp_coex/lib/esp32c6/libcoexist.a",
+      "bytes": 99618,
+      "sha256": "86b40f13090563c026cf531e8173260778f6e236791aa540b0cf82ce86d2dca7",
+      "root": "IDF"
+    },
+    {
+      "path": "components/esp_wifi/lib/esp32c6/libcore.a",
+      "bytes": 4108,
+      "sha256": "2177652780cfde29ff7f2000299a41408bfc65fdf3df49d5ba71211badd84a5b",
+      "root": "IDF"
+    },
+    {
+      "path": "components/esp_wifi/lib/esp32c6/libespnow.a",
+      "bytes": 66916,
+      "sha256": "ceec66eea0cd5a597285d7cdf4fa650f8c30718c792a91ff35e741958848bd86",
+      "root": "IDF"
+    },
+    {
+      "path": "components/esp_wifi/lib/esp32c6/libmesh.a",
+      "bytes": 1004804,
+      "sha256": "26c053e45fc4b75c9ea3ee1fcd5bfd7785b97dce9124161075e83e6693983067",
+      "root": "IDF"
+    },
+    {
+      "path": "components/esp_wifi/lib/esp32c6/libnet80211.a",
+      "bytes": 1487158,
+      "sha256": "6cd630f338006fdb7dde1f895eeceff653b1c97fdc8e6b7daeac20759690edbf",
+      "root": "IDF"
+    },
+    {
+      "path": "components/esp_wifi/lib/esp32c6/libpp.a",
+      "bytes": 885636,
+      "sha256": "4be44aeb1df591f15ca711fa09ffb9c39cb3f46b139545c9043bbc40fa31f0d6",
+      "root": "IDF"
+    },
+    {
+      "path": "components/esp_wifi/lib/esp32c6/libsmartconfig.a",
+      "bytes": 200346,
+      "sha256": "cd891316ade55231a991c753c53efffa0d38a034289ca44f6834301bc39135a8",
+      "root": "IDF"
+    },
+    {
+      "path": "components/esp_wifi/lib/esp32c6/libwapi.a",
+      "bytes": 46870,
+      "sha256": "72f37d369a015ff7db679710f7d859cea89189800924df9103ab83c9f565e663",
+      "root": "IDF"
+    },
+    {
+      "path": "bin/riscv32-esp-elf-gcc.exe",
+      "bytes": 2644480,
+      "sha256": "9a96e8e77c263d4f7f16c084e8a2dfe89dfa8598c31fd3f9b152db35ccbb2a74",
+      "root": "TOOLCHAIN"
+    },
+    {
+      "path": "bin/riscv32-esp-elf-ar.exe",
+      "bytes": 1047040,
+      "sha256": "2dffbd03e60f09f5314282277940ce54d04a2aff841a6bead520cd1ce0a22a8d",
+      "root": "TOOLCHAIN"
+    },
+    {
+      "path": "tools/idf.py",
+      "bytes": 69351,
+      "sha256": "d956946ba2b7291d0bc2cbf8bc76e14a08524a7d4086ba7fe373ffc9fb37443b",
+      "root": "IDF"
+    }
+  ],
+  "sdkconfig": {
+    "path": "coprocessor/c6_audio/config/sdkconfig.profile",
+    "bytes": 2841,
+    "sha256": "0db60075864aba65b217d65dedd182cee8f23433c7109005973f7c06765c337f",
+    "kind": "reviewed_minimal_seed_63_nondefault_settings"
+  },
+  "version": "ESP-IDF6.1 / riscv32-esp-elf15.2.0_20251204",
+  "new_SDK_build_required": true,
+  "host_tools": {
+    "cmake": {
+      "path": "cmake.exe",
+      "bytes": 12190800,
+      "sha256": "392ab4d6c3c91543fd297ed6c7e7354bf62edcd26fdf2706ad8613ad620cc45e"
+    },
+    "ninja": {
+      "path": "ninja.exe",
+      "bytes": 569856,
+      "sha256": "68865c3276d449d746cea5065fdec2baf755d7813e161ab04205b0907b2629b8"
+    },
+    "python": {
+      "path": "python.exe",
+      "bytes": 255320,
+      "sha256": "4b8c3912806b3c1591ba3cb403bff77ad309c3fe5756f87c20b7a6f8f0174262"
+    }
+  },
+  "path_bases": {
+    "IDF": "--idf or IDF_PATH",
+    "TOOLCHAIN": "--toolchain, activated PATH, or matching IDF_TOOLS_PATH installation"
+  },
+  "platform": "windows-pinned-binaries",
+  "effective_sdkconfig_sha256": "17fa54645c23f266e02ba9e46f2dbcb475e8826c56155ba196affdc190d6ab55"
+}

@@ -40,6 +40,9 @@ python -B tools/qualify_p4_device.py --expected-volume 28 --games c9ffbbdb
 python -B tools/qualify_c6_device.py --expected-volume 28 --crcs c9ffbbdb
 ```
 
+Для P4+C6 локальный ELF и журналы по умолчанию находятся в `bitvyr_nes_p4c6/beta/build`.
+Для замера выпуска из `beta_0_1` укажите его ELF через `--local-elf` и папку журнала через `--output`.
+
 Для прогона добавьте `--execute-root --attest-admitted-image-current`,
 `--port COM4 --serial <USB-серийный-номер>`, `--elf-sha <полный-SHA256>` и
 `--admission <boot.log>`. Лог загрузки и локальный ELF должны соответствовать
@@ -59,8 +62,8 @@ DSP. Для сравнения редакций используйте один 
 команды ниже готовит банк и рядом файл с покрытием.
 
 ```powershell
-python -B tools/prepare_c6_routes.py --rom-dir ./roms/nes_rom --source catalog --windows 3 --output bitvyr_nes_p4c6/betta/build/routes-360.json
-python -B tools/qualify_c6_device.py --movies bitvyr_nes_p4c6/betta/build/routes-360.json --expected-volume 28
+python -B tools/prepare_c6_routes.py --rom-dir ./roms/nes_rom --source catalog --windows 3 --output bitvyr_nes_p4c6/beta/build/routes-360.json
+python -B tools/qualify_c6_device.py --movies bitvyr_nes_p4c6/beta/build/routes-360.json --expected-volume 28
 ```
 
 Для дополнительного боя Battletoads & Double Dragon на 18720–19079
@@ -69,8 +72,8 @@ python -B tools/qualify_c6_device.py --movies bitvyr_nes_p4c6/betta/build/routes
 до 19200 и проверяет CRC локальной игры.
 
 ```powershell
-python -B tools/prepare_c6_routes.py --rom-dir ./roms/nes_rom --source human --crcs 53b02f3d --variant 53b02f3d-v01 --roi-start 53b02f3d:18720 --windows 3 --output bitvyr_nes_p4c6/betta/build/bdd-later.json
-python -B tools/qualify_c6_device.py --movies bitvyr_nes_p4c6/betta/build/bdd-later.json --expected-volume 28
+python -B tools/prepare_c6_routes.py --rom-dir ./roms/nes_rom --source human --crcs 53b02f3d --variant 53b02f3d-v01 --roi-start 53b02f3d:18720 --windows 3 --output bitvyr_nes_p4c6/beta/build/bdd-later.json
+python -B tools/qualify_c6_device.py --movies bitvyr_nes_p4c6/beta/build/bdd-later.json --expected-volume 28
 ```
 
 Режим `catalog` собирает маршруты из [записи прохождения](c6-scene-recipe.json),
