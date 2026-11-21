@@ -1,0 +1,12 @@
+{
+  "folders": [
+    {
+      "name": "Bitvyr NES P4",
+      "path": "bitvyr_nes_p4/betta"
+    },
+    {
+      "name": "Bitvyr NES P4+C6",
+      "path": "bitvyr_nes_p4c6/betta"
+    }
+  ]
+}

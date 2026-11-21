@@ -1,0 +1,29 @@
+# Частный C6_FRAME_VIDEO: Frame Timing groups и общий tick остаются в IRAM.
+# MMC5-only legacy renderer и прежние Thin joined controls сохраняют Flash baseline.
+[mapping:nes_c6_frame_video_cold]
+archive: libnes_core.a
+entries:
+    unity_0_cxx:_ZN3nes4core9TimingPpu16runMmc5InplaceBgEjRNS0_4Mmc5E (default)
+    unity_0_cxx:_ZN3nes4core9TimingPpu16runMmc5QuietTileERNS1_16Mmc5TrustedStateERNS0_4Mmc5E (default)
+    unity_0_cxx:_ZN3nes4core9TimingPpu26replayMmc5InplaceDotsEagerEjb (default)
+    unity_0_cxx:_ZN3nes4core9TimingPpu20replayMmc5QuietBlockEj (default)
+    unity_0_cxx:_ZN3nes4core9TimingPpu21loadMmc5TrustedPlanesERNS1_16Mmc5TrustedStateE (default)
+    unity_0_cxx:_ZZN3nes4core3Ppu13fetchTileSpanILb0ELb0ELb0EEEvjENKUlT_E_clIZNS2_ILb0ELb0ELb0EEEvjEUltjE0_EEDaS3_ (default)
+    unity_0_cxx:_ZZN3nes4core3Ppu13fetchTileSpanILb0ELb0ELb0EEEvjENKUlT_E_clIZNS2_ILb0ELb0ELb0EEEvjEUltjE1_EEDaS3_ (default)
+    unity_0_cxx:_ZZN3nes4core3Ppu13fetchTileSpanILb0ELb0ELb0EEEvjENKUlT_E_clIZNS2_ILb0ELb0ELb0EEEvjEUltjE2_EEDaS3_ (default)
+    unity_0_cxx:_ZZN3nes4core3Ppu13fetchTileSpanILb0ELb0ELb0EEEvjENKUlT_E_clIZNS2_ILb0ELb0ELb0EEEvjEUltjE3_EEDaS3_ (default)
+    unity_0_cxx:_ZZN3nes4core3Ppu13fetchTileSpanILb0ELb0ELb0EEEvjENKUlT_E_clIZNS2_ILb0ELb0ELb0EEEvjEUltjE_EEDaS3_ (default)
+    unity_0_cxx:_ZN3nes4core7Machine24configureObservableVideoEb (default)
+    ThinPpu:_ZN3nes4core7Machine16configureThinPpuEPNS0_14ThinPpuChannelERKNS0_11ColourLeaseENS0_8ThinModeE (default)
+    unity_0_cxx:_ZN3nes4core15sameAudioHeaderERKNS0_11AudioPacket6HeaderES4_ (default)
+    unity_0_cxx:_ZNK3nes4core7Machine18audioStageBoundaryEb (default)
+    unity_0_cxx:_ZN3nes4core7Machine29stageAudioPacketForThinCommitERNS0_11AudioPacketERNS0_15AudioStageTokenE (default)
+    unity_0_cxx:_ZN3nes4core7Machine32finalizeAudioPacketForThinCommitERNS0_15AudioStageTokenE (default)
+    unity_0_cxx:_ZN3nes4core7Machine37abandonAudioPacketForThinCommitJoinedERNS0_15AudioStageTokenE (default)
+# Pilot02: bind/reset/fault controls donate IRAM to measured Frame groups; prefix/read/commit/clock guards remain resident.
+    ThinPpu:_ZN3nes4core14ThinReplaySink5beginERKNS0_11ColourLeaseERKNS0_9ColourCutE (default)
+    ThinPpu:_ZN3nes4core14ThinPpuChannel4bindERKNS0_11ColourLeaseERKNS0_9ColourCutENS0_8ThinModeEy (default)
+    ThinPpu:_ZNK3nes4core14ThinPpuChannel12storageValidERKNS0_7MachineERKNS0_11ColourLeaseE (default)
+    ColourStream:_ZN3nes4core7Machine23invalidateColourCaptureEv (default)
+    ThinPpu:_ZN3nes4core7Machine17invalidateThinPpuEv (default)
+    unity_0_cxx:_ZN3nes4core7Machine18refreshVideoPolicyEv (default)

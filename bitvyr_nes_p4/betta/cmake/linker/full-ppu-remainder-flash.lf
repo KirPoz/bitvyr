@@ -1,0 +1,6 @@
+# Full-Ppu helper только Main-задачи; обычные CPU1 Timing groups остаются hot.
+[mapping:nes_frame_full_ppu_remainder_flash]
+archive: libnes_core.a
+entries:
+    unity_0_cxx:_ZN3nes4core3Ppu11invalidYRunEjjj (default)
+    Ppu:_ZN3nes4core3Ppu11invalidYRunEjjj (default)

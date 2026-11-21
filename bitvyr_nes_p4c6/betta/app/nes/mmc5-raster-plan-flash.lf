@@ -1,0 +1,5 @@
+# Только новый самостоятельный backend; прежние горячие PPU/CPU kernels остаются на своих местах.
+[mapping:nes_mmc5_raster_plan_flash]
+archive: libnes_core.a
+entries:
+    TimingMmc5Raster (default)

@@ -1,0 +1,5 @@
+# Полный Ppu renderer не вызывается в доказанном App Output domain; TimingPpu и consumer не перемещаются.
+[mapping:nes_app_output_inactive_legacy_flash]
+archive: libnes_core.a
+entries:
+    unity_0_cxx:_ZN3nes4core3Ppu18renderFetchedTilesEPKmj (default)

@@ -1,0 +1,119 @@
+# Правила Board для полного Ppu; точные исключения размещения заданы символами ниже.
+# Более точные символы переопределяют общее noflash-размещение Core.
+[mapping:nes_frame_render_fetched_iram]
+archive: libnes_core.a
+entries:
+    Ppu (default)
+    unity_0_cxx:_ZN3nes4core3Ppu10incrementXEv (default)
+    unity_0_cxx:_ZN3nes4core3Ppu10incrementYEv (default)
+    unity_0_cxx:_ZN3nes4core3Ppu10queuePixelEv (default)
+    unity_0_cxx:_ZN3nes4core3Ppu11renderPixelEv (default)
+    unity_0_cxx:_ZN3nes4core3Ppu12fetchSpritesEv (default)
+    unity_0_cxx:_ZN3nes4core3Ppu12tickLongDotsEj (default)
+    unity_0_cxx:_ZN3nes4core3Ppu13fetchTileSpanILb0ELb0ELb0EEEvj (default)
+    unity_0_cxx:_ZN3nes4core3Ppu13fetchTileSpanILb0ELb0ELb1EEEvj (default)
+    unity_0_cxx:_ZN3nes4core3Ppu13fetchTileSpanILb0ELb1ELb0EEEvj (default)
+    unity_0_cxx:_ZN3nes4core3Ppu13fetchTileSpanILb1ELb0ELb0EEEvj (default)
+    unity_0_cxx:_ZN3nes4core3Ppu13fetchTileSpanILb1ELb1ELb0EEEvj (default)
+    unity_0_cxx:_ZN3nes4core3Ppu14buildSpriteRowEv (default)
+    unity_0_cxx:_ZN3nes4core3Ppu14loadBackgroundEv (default)
+    unity_0_cxx:_ZN3nes4core3Ppu14nonVisibleSpanEj (default)
+    unity_0_cxx:_ZN3nes4core3Ppu14paletteAddressEt (default)
+    unity_0_cxx:_ZN3nes4core3Ppu15fetchBackgroundEv (default)
+    unity_0_cxx:_ZN3nes4core3Ppu16spriteFetchGroupILb0EEEvj (default)
+    unity_0_cxx:_ZN3nes4core3Ppu16spriteFetchGroupILb1EEEvj (default)
+    Ppu:_ZN3nes4core3Ppu18renderFetchedTilesEPKmj (noflash)
+    unity_0_cxx:_ZN3nes4core3Ppu18synchronizeSpritesEv (default)
+    unity_0_cxx:_ZN3nes4core3Ppu19fetchLegacyTileSpanEj (default)
+    unity_0_cxx:_ZN3nes4core3Ppu20incrementDataAddressEv (default)
+    unity_0_cxx:_ZN3nes4core3Ppu21visibleUnclockedGroupEj (default)
+    unity_0_cxx:_ZN3nes4core3Ppu27synchronizeSpriteEvaluationEj (default)
+    unity_0_cxx:_ZN3nes4core3Ppu4readEt (default)
+    unity_0_cxx:_ZN3nes4core3Ppu4tickEv (default)
+    unity_0_cxx:_ZN3nes4core3Ppu5resetEb (default)
+    unity_0_cxx:_ZN3nes4core3Ppu5writeEth (default)
+    unity_0_cxx:_ZN3nes4core3Ppu7addressEt (default)
+    unity_0_cxx:_ZN3nes4core3Ppu7cpuReadEt (default)
+    unity_0_cxx:_ZN3nes4core3Ppu7reverseEh (default)
+    unity_0_cxx:_ZN3nes4core3Ppu7takeNmiEv (default)
+    unity_0_cxx:_ZN3nes4core3Ppu8cpuWriteEth (default)
+    unity_0_cxx:_ZN3nes4core3Ppu8dmaWriteEh (default)
+    unity_0_cxx:_ZN3nes4core3Ppu8tickDotsEj (default)
+    unity_0_cxx:_ZN3nes4core3Ppu9updateNmiEv (default)
+    unity_0_cxx:_ZNK3nes4core3Ppu11flushPixelsEv (default)
+    unity_0_cxx:_ZNK3nes4core3Ppu13spritePatternEj (default)
+    unity_0_cxx:_ZNK3nes4core3Ppu18materializeSpritesEv (default)
+    unity_0_cxx:_ZNK3nes4core3Ppu22rebuildBackgroundPairsEv (default)
+    # Split-backend load/reset и неиспользуемые legacy raster-таблицы.
+    unity_0_cxx:_ZN3nes4core12_GLOBAL__N_1L14pixelSelectionE (default)
+    unity_0_cxx:_ZN3nes4core13AudioRenderer5resetEv (default)
+    unity_0_cxx:_ZN3nes4core13VideoRenderer5resetEv (default)
+    unity_0_cxx:_ZN3nes4core3Apu5resetEb (default)
+    unity_0_cxx:_ZN3nes4core7Cpu65025resetEv (default)
+    unity_0_cxx:_ZN3nes4core7Machine10videoResetEv (default)
+    unity_0_cxx:_ZN3nes4core7Machine19configureSplitAudioEPNS0_11AudioPacketEb (default)
+    unity_0_cxx:_ZN3nes4core7Machine19configureSplitVideoEPNS0_11VideoPacketEPNS0_13VideoObserverE (default)
+    unity_0_cxx:_ZN3nes4core7Machine4loadEPKhjNS0_6RegionE (default)
+    unity_0_cxx:_ZN3nes4core7Machine5resetEv (default)
+    unity_0_cxx:_ZN3nes4core9Cartridge4loadEPKhj (default)
+    unity_0_cxx:_ZN3nes4core9Cartridge5resetEv (default)
+    unity_0_cxx:_ZN3nes4core9TimingPpu5resetEb (default)
+    # Передача владельца и диагностика раз в кадр, вне NES execution kernels.
+    unity_0_cxx:_ZN3nes4core7Machine17retireAudioPacketERNS0_11AudioPacketE (default)
+    unity_0_cxx:_ZN3nes4core7Machine15swapVideoPacketERNS0_11VideoPacketERPS2_ (default)
+    unity_0_cxx:_ZNK3nes4core7Machine12observeVideoEv (default)
+    unity_0_cxx:_ZNK3nes4core9Cartridge9errorTextENS0_10LoadResultE (default)
+    # Таблицы APU строятся один раз при инициализации приложения.
+    unity_0_cxx:_ZN3nes4core3Apu6TablesC1Ev (default)
+    unity_0_cxx:_ZN3nes4core3Apu6TablesC2Ev (default)
+    # Machine конструируется один раз, до старта emulation Worker.
+    unity_0_cxx:_ZN3nes4core7MachineC1Ev (default)
+    unity_0_cxx:_ZN3nes4core7MachineC2Ev (default)
+    # Кадровый packet dispatch исполняется на CPU0, вне waveform/DSP kernels.
+    unity_0_cxx:_ZN3nes4core13AudioRenderer6renderERKNS0_11AudioPacketE (default)
+
+    # CPU0 protocol/row control; packed pixel и waveform kernels остаются в SRAM.
+    unity_0_cxx:_ZN3nes4core13VideoRendererC1ERNS0_12VideoStorageE (default)
+    unity_0_cxx:_ZN3nes4core13VideoRendererC2ERNS0_12VideoStorageE (default)
+    unity_0_cxx:_ZN3nes4core13VideoRenderer15setRgb565OutputEPt (default)
+    unity_0_cxx:_ZN3nes4core13VideoRenderer13refreshRgb565Ev (default)
+    unity_0_cxx:_ZN3nes4core13VideoRenderer6renderERKNS0_11VideoPacketE (default)
+    unity_0_cxx:_ZN3nes4core13VideoRenderer12observeVideoERKNS0_11VideoPacketE (default)
+    unity_0_cxx:_ZN3nes4core13VideoRenderer13backgroundRunERKNS0_10VideoEventEPS3_ (default)
+    unity_0_cxx:_ZN3nes4core13VideoRenderer14backgroundSpanERKNS0_10VideoEventES4_ (default)
+    unity_0_cxx:_ZN3nes4core13VideoRenderer14backgroundViewERKNS0_10VideoEventEPS3_ (default)
+    unity_0_cxx:_ZN3nes4core13VideoRenderer7consumeERKNS0_11VideoPacketEb (default)
+    unity_0_cxx:_ZN3nes4core13VideoRenderer5applyERKNS0_10VideoEventE (default)
+    unity_0_cxx:_ZN3nes4core13VideoRenderer14buildSpriteRowEv (default)
+
+    # Audio reset выполняется на load/reset, вне кадровых execution kernels.
+    unity_0_cxx:_ZN3nes4core7Machine10audioResetEv (default)
+    unity_0_cxx:_ZN3nes4core9TimingApu5resetEb (default)
+
+    # Setup/input раз в кадр и load/reset control; execution kernels остаются в SRAM.
+    unity_0_cxx:_ZN3nes4core7Machine17audioClearSamplesEv (default)
+    unity_0_cxx:_ZN3nes4core7Machine13setControllerEjh (default)
+    unity_0_cxx:_ZN3nes4core9Legacy1605resetEjj (default)
+    # Проверки audio status/control находятся вне oscillator/FIR kernels.
+    unity_0_cxx:_ZN3nes4core3Apu10readStatusEv (default)
+    # APU конструируется при инициализации приложения/ресурсов.
+    unity_0_cxx:_ZN3nes4core3ApuC1ERNS0_6ApuBusE (default)
+    unity_0_cxx:_ZN3nes4core3ApuC2ERNS0_6ApuBusE (default)
+    # Envelope/linear/length/sweep controls секвенсора; oscillator/FIR kernels остаются в SRAM.
+    unity_0_cxx:_ZN3nes4core3Apu12quarterFrameEv (default)
+    unity_0_cxx:_ZN3nes4core3Apu9halfFrameEv (default)
+    # Только indexed observer/fallback; обычная RGB-специализация остаётся в SRAM.
+    unity_0_cxx:_ZN3nes4core13VideoRenderer19backgroundRunPixelsILb0EEENS0_17VideoRenderResultERKNS0_10VideoEventEPS5_jj (default)
+    # Перестроение PRG mapping при cartridge writes; CPU execution kernels остаются в SRAM.
+    unity_0_cxx:_ZN3nes4core9Cartridge15refreshPrgPagesEv (default)
+    # Только renderer triangle segment CPU0; CPU1 timing и FIR kernels остаются в SRAM.
+    unity_0_cxx:_ZN3nes4core3Apu24advanceRendererCpuCyclesEjb (nes_apu_renderer_cached_text_only)
+    # Literal-cache trial: compiler/API и CPU0 control/indexed пути.
+    unity_0_cxx:_ZN3nes4core7Cpu650219compileLiteralBlockERNS0_12LiteralCacheEtPKh (default)
+    unity_0_cxx:_ZN3nes4core7Machine22configureLiteralBlocksEPvj (default)
+    unity_0_cxx:_ZN3nes4core13VideoRenderer4drawILb0EEEvjjjjj (default)
+    unity_0_cxx:_ZN3nes4core3Apu5writeEth (default)
+    unity_0_cxx:_ZN3nes4core13VideoRenderer12cachePaletteEj (default)
+
+    # Только bulk snapshot helper; scalar CPU-read пути сохраняют размещение в SRAM.
+    unity_0_cxx:_ZNK3nes4core9Cartridge17copyCpu6000WindowEPhh (default)

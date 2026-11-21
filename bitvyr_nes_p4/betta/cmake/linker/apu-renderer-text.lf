@@ -1,0 +1,6 @@
+# Полный аналоговый APU работает в cache-enabled task context.
+# Только text направляется в cached Flash/XIP; mutable data остаются по noflash.
+# Сами selectors остаются в прежних условных fragments, включая RAW-профили.
+[scheme:nes_apu_renderer_cached_text_only]
+entries:
+    text -> flash_text

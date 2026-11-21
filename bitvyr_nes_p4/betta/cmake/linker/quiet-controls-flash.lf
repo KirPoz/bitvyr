@@ -1,0 +1,15 @@
+# Новые точные контроллеры не вытесняют существующий resident CPU/PPU.
+# Вывод DSP остаётся на CPU0, PRG-RAM predicate вызывается только slow-path.
+[mapping:nes_quiet_controls_flash]
+archive: libnes_core.a
+entries:
+    unity_0_cxx:_ZN3nes4core3Apu25trySetExpansionInputQuietElb (nes_apu_renderer_cached_text_only)
+    unity_0_cxx:_ZNK3nes4core7Machine21canRetainPrgRamWindowEv (default)
+    Apu:_ZN3nes4core3Apu25trySetExpansionInputQuietElb (nes_apu_renderer_cached_text_only)
+    Machine:_ZNK3nes4core7Machine21canRetainPrgRamWindowEv (default)
+    # Нативные MMIO audio operations на Main: FIR/oscillator kernels остаются resident.
+    unity_0_cxx:_ZZN3nes4core13AudioRenderer6renderERKNS0_11AudioPacketEENKUlRKNS2_5InputEE_clES7_ (default)
+    AudioRenderer:_ZZN3nes4core13AudioRenderer6renderERKNS0_11AudioPacketEENKUlRKNS2_5InputEE_clES7_ (default)
+    CpuQuietBlock:_ZNK3nes4core7Cpu650220rejectQuietMmioEntryEv (default)
+    # Только настройка защищённых заимствований, не кадровое исполнение.
+    unity_0_cxx:_ZN3nes4core13output_detailL8containsERKNS0_19OutputProtectedSpanEPKvj (default)

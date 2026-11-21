@@ -1,0 +1,119 @@
+{
+  "schema": 1,
+  "purpose": "Public source release: preserve third-party attribution and identify Bitvyr changes",
+  "vendor_source_changes": [
+    {
+      "path": "app/nes/audio/c6/hosted/p4_sdio_drv.c",
+      "before": {
+        "path": "app/nes/audio/c6/hosted/p4_sdio_drv.c",
+        "bytes": 58696,
+        "sha256": "a1766fa2db70f38df146562432335b67552f35140d5f0d7ee29d92e094a32d1c"
+      },
+      "after": {
+        "path": "app/nes/audio/c6/hosted/p4_sdio_drv.c",
+        "bytes": 58793,
+        "sha256": "a18a0ae8ec4ba7e7ecb5ea56e6553108558057868a125708bc12f0c130a8a071"
+      },
+      "tokens_equal": true,
+      "line_count_equal": true,
+      "notice": "Bounded SERIAL1 RX/TX and ownership; see sdio_drv.patch.",
+      "upstream": {
+        "repository": "https://github.com/espressif/esp-hosted-mcu",
+        "commit": "0e8d0e3f0c2723deaf15441200cb4d8c53fea230",
+        "path": "host/drivers/transport/sdio/sdio_drv.c",
+        "bytes": 58073,
+        "sha256": "eaa06fd0735811c8ab653c591b554a62a4aab3b9c0fd0a1b592e65866f2d76a4"
+      },
+      "patch": {
+        "path": "app/nes/audio/c6/hosted/sdio_drv.patch",
+        "bytes": 8256,
+        "sha256": "cbf3af02f4a7d6b4f9390fabaf0b20ecf2eb778d51afbb2d6f0d8222869fd0ee"
+      },
+      "previous_patch_sha256": "3bfd61442b9fe9cb6e13cddffa567897fc7c1d4861618472adefccb01f442fd9"
+    },
+    {
+      "path": "coprocessor/c6_audio/src/c6_esp_hosted_coprocessor.c",
+      "before": {
+        "path": "coprocessor/c6_audio/src/c6_esp_hosted_coprocessor.c",
+        "bytes": 36770,
+        "sha256": "859d4641ab546a9112af4375e2fcf34ea7cc95af4f4e4047f186c1424b2d0de2"
+      },
+      "after": {
+        "path": "coprocessor/c6_audio/src/c6_esp_hosted_coprocessor.c",
+        "bytes": 36904,
+        "sha256": "fb33f45420bc72cfade20189a0acc63f475a6ebcac790dc8a95f195bc4c461f7"
+      },
+      "tokens_equal": true,
+      "line_count_equal": true,
+      "notice": "Raw SERIAL1 worker handoff and bounded transport; see patches/esp_hosted_coprocessor.c.patch.",
+      "upstream": {
+        "repository": "https://github.com/espressif/esp-hosted-mcu",
+        "commit": "0e8d0e3f0c2723deaf15441200cb4d8c53fea230",
+        "path": "slave/main/esp_hosted_coprocessor.c",
+        "bytes": 36618,
+        "sha256": "5d53f7ba9f4783e58e1cc366489d616af5d8bff9d5bcdaec8f879479bc4f606a"
+      },
+      "patch": {
+        "path": "coprocessor/c6_audio/patches/esp_hosted_coprocessor.c.patch",
+        "bytes": 927,
+        "sha256": "aaff13849ad37459c74c700f2900bc699a94f06320e5d9bf3a229ba6e128d90a"
+      },
+      "previous_patch_sha256": "2bff982c7fc3e5cb2ca12a448e9ed0a8ee7c71bce0b8bca6c21f549ac6a627fe"
+    },
+    {
+      "path": "coprocessor/c6_audio/src/c6_sdio_slave_api.c",
+      "before": {
+        "path": "coprocessor/c6_audio/src/c6_sdio_slave_api.c",
+        "bytes": 26396,
+        "sha256": "1217d905497e46bde210852ab9c8d81cd8363fba33099710b806eb3c1fd48e6a"
+      },
+      "after": {
+        "path": "coprocessor/c6_audio/src/c6_sdio_slave_api.c",
+        "bytes": 26528,
+        "sha256": "ab4297b4470c6ab50c32734a893f8b48e31d2c8167e3324d7014b0d41cdd85d9"
+      },
+      "tokens_equal": true,
+      "line_count_equal": true,
+      "notice": "Caller-owned DMA reply envelopes and source completion; see patches/sdio_slave_api.c.patch.",
+      "upstream": {
+        "repository": "https://github.com/espressif/esp-hosted-mcu",
+        "commit": "0e8d0e3f0c2723deaf15441200cb4d8c53fea230",
+        "path": "slave/main/sdio_slave_api.c",
+        "bytes": 26292,
+        "sha256": "51037830bd15a58c82b01d1acff701faecc50a95b45df4c53e5d6db5d3a53fb1"
+      },
+      "patch": {
+        "path": "coprocessor/c6_audio/patches/sdio_slave_api.c.patch",
+        "bytes": 712,
+        "sha256": "eae444ef73019a0043d2160526ec4a7e34001558180576209d9fd2c4388a3466"
+      },
+      "previous_patch_sha256": "048c2c56b2c48b93a66822c0b965a49f1041019b3a8df7d01de66d896b8d08c2"
+    }
+  ],
+  "ASF_NOTICE": {
+    "repository": "https://github.com/apache/mynewt-core",
+    "commit": "ea2b7ebf6b285a2e293c4f172cbdeae7f2b6e8f3",
+    "upstream_path": "NOTICE",
+    "url": "https://raw.githubusercontent.com/apache/mynewt-core/ea2b7ebf6b285a2e293c4f172cbdeae7f2b6e8f3/NOTICE",
+    "local": {
+      "path": "coprocessor/c6_audio/LICENSES/Apache-Mynewt-NOTICE.txt",
+      "bytes": 241,
+      "sha256": "2a9f0703e9cb0e9570ca01dcd1e3570fa050be3d48e43fd83aa0ec4bc4f021bf"
+    },
+    "scope": "ASF Mynewt-derived os_mempool implementation in project/main/common/mempool/mempool_ll.c and .h",
+    "historical_copy_commit_not_claimed": true
+  },
+  "protobuf_c_license": {
+    "upstream": "https://github.com/protobuf-c/protobuf-c/blob/master/LICENSE",
+    "installed_sdk_version": "6.1.0",
+    "scope": "External protobuf-c runtime license, not a claim that generated Hosted C/H are owned by protobuf-c",
+    "local": {
+      "path": "coprocessor/c6_audio/LICENSES/protobuf-c.txt",
+      "bytes": 1613,
+      "sha256": "b8999cb392cc5bbe8cd679de59584ad8d2f26033123e76f1d662fa14b9d4f287"
+    }
+  },
+  "licenses_not_replaced_by_Bitvyr_AGPL": true,
+  "SDK_binary_libraries_external_not_packaged": true,
+  "SDK_or_COM_executed": false
+}

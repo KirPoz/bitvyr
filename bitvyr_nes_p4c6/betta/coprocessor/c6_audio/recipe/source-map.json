@@ -1,0 +1,1334 @@
+{
+  "status": "SINGLE_SOURCE_C6_PROJECTION_INPUT_MAP_WITH_EXPLICIT_UNBIND_REVISION",
+  "rows": [
+    {
+      "projection": "AudioPacketWire.cpp",
+      "source": {
+        "path": "app/nes/audio/c6/protocol/AudioPacketWire.cpp",
+        "bytes": 8329,
+        "sha256": "b9299dcd4c69d22eff7fe564fb3c0f3176f58445f5c147f16aad9a756833dac5"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/AudioPacketWire.cpp",
+        "bytes": 7884,
+        "sha256": "e625f29517db14cc9072d076d7d7b558a1e16fb93398d5a11c81c2c18cfa2075"
+      },
+      "kind": "shared-protocol",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "AudioPacketWire.h",
+      "source": {
+        "path": "app/nes/audio/c6/protocol/AudioPacketWire.h",
+        "bytes": 3773,
+        "sha256": "55a76adfb8ae88c471d0f6cba45e2faaeae8051408c0914e68e4ab299f38c251"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/AudioPacketWire.h",
+        "bytes": 3769,
+        "sha256": "c11b8d8dbd524ece7d26fa640f684550c0f93f9cc8816f199bc164c996ad5575"
+      },
+      "kind": "shared-protocol",
+      "projection_method": "forward-header"
+    },
+    {
+      "projection": "BatchAudioControl.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/src/BatchAudioControl.cpp",
+        "bytes": 8867,
+        "sha256": "0d45efcaf658db0a78d7318c372fce56f8f318ac070a9acfac9a5be6d5b2e16e"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/BatchAudioControl.cpp",
+        "bytes": 7512,
+        "sha256": "609774d5b39c5c54d4138e18cd32a96196a5748211a1c450db95b820a6562736"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes",
+      "previous_source": {
+        "path": "coprocessor/c6_audio/src/BatchAudioControl.cpp",
+        "bytes": 8012,
+        "sha256": "556bd852b48cbb4bdff4ebc5ff786e7efb83a5e6f77e5b9f7de7a9192be0f798"
+      }
+    },
+    {
+      "projection": "BatchAudioControl.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/BatchAudioControl.h",
+        "bytes": 4405,
+        "sha256": "890b421fe04785f2c207745a1aef8fc173355b62b5cd3baec2396b5e6e038d00"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/BatchAudioControl.h",
+        "bytes": 3628,
+        "sha256": "9ef1893599aebddf30ef263c4556c72362ceef2de73f069ac091b7e3a2ab2c24"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes",
+      "previous_source": {
+        "path": "coprocessor/c6_audio/src/BatchAudioControl.h",
+        "bytes": 3628,
+        "sha256": "9ef1893599aebddf30ef263c4556c72362ceef2de73f069ac091b7e3a2ab2c24"
+      },
+      "source_revision_chain": [
+        {
+          "previous": {
+            "path": "coprocessor/c6_audio/src/BatchAudioControl.h",
+            "bytes": 4312,
+            "sha256": "7475e97fa13f451dfa1c824a48db1fc76dca4d6c62e8f4351ad025da80051fc6"
+          },
+          "current": {
+            "path": "coprocessor/c6_audio/src/BatchAudioControl.h",
+            "bytes": 4405,
+            "sha256": "890b421fe04785f2c207745a1aef8fc173355b62b5cd3baec2396b5e6e038d00"
+          },
+          "approved_source": {
+            "path": "build/experiments/promotion-20261117/c6-raw-unbind01/source04.json",
+            "bytes": 2777,
+            "sha256": "56dc91544bfaaa82274cc97437f8c9129523635aa7c4d54633f1a6de654e362d"
+          },
+          "actual_native": {
+            "path": "build/experiments/promotion-20261117/c6-raw-unbind01/native04/result.json",
+            "bytes": 27767,
+            "sha256": "37722406771cf3a335b652041f077b766b8c1cadb21826419ac7956ffbf8ad02"
+          }
+        }
+      ]
+    },
+    {
+      "projection": "BatchColour.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/src/BatchColour.cpp",
+        "bytes": 7404,
+        "sha256": "7c71e63d748d12a031a10388d33900e5f1eb5a8089ca23aa40e5bf9a81aedba7"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/BatchColour.cpp",
+        "bytes": 6794,
+        "sha256": "3ce7dc3d41a5ca75baf36a0ce56d69ae51a3996121611657402a28e2624f044a"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "BatchColour.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/BatchColour.h",
+        "bytes": 3292,
+        "sha256": "0f74d26648e4441ab8e257373b32952c852404a5b96d899c61764d374bcdb69b"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/BatchColour.h",
+        "bytes": 3292,
+        "sha256": "0f74d26648e4441ab8e257373b32952c852404a5b96d899c61764d374bcdb69b"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "BatchFrameService.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/src/BatchFrameService.cpp",
+        "bytes": 19891,
+        "sha256": "718644385094f3ff0a625720eb8fea80e124382fa43d9928bc76155d8ad42266"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/BatchFrameService.cpp",
+        "bytes": 17166,
+        "sha256": "fbd14439b0a31f6cb5f0e4e8aa21576e8e10b8e2a7e3d6df7a0c6f26cea96476"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes",
+      "previous_source": {
+        "path": "coprocessor/c6_audio/src/BatchFrameService.cpp",
+        "bytes": 18793,
+        "sha256": "cfd98d63559d48148714b46c6f9ea8b9ee153a647f505768f8eacda6cedf2f76"
+      }
+    },
+    {
+      "projection": "BatchFrameService.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/BatchFrameService.h",
+        "bytes": 7062,
+        "sha256": "653e8a9dc607e2c0256886e6d3a747ac1efb98875e42bf5b09d163465550dfd0"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/BatchFrameService.h",
+        "bytes": 6252,
+        "sha256": "67dbfa21d4223cb6eac735da63befba438ff8dfc7a454fa5ec6c3e05525b6525"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes",
+      "previous_source": {
+        "path": "coprocessor/c6_audio/src/BatchFrameService.h",
+        "bytes": 6252,
+        "sha256": "67dbfa21d4223cb6eac735da63befba438ff8dfc7a454fa5ec6c3e05525b6525"
+      }
+    },
+    {
+      "projection": "BatchProtocol.h",
+      "source": {
+        "path": "app/nes/audio/c6/protocol/BatchProtocol.h",
+        "bytes": 866,
+        "sha256": "5f79408d5bb009748d3b9c43a0f89fa9a82855321b5a32da27b9bc40d43a59d4"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/BatchProtocol.h",
+        "bytes": 866,
+        "sha256": "5f79408d5bb009748d3b9c43a0f89fa9a82855321b5a32da27b9bc40d43a59d4"
+      },
+      "kind": "shared-protocol",
+      "projection_method": "forward-header"
+    },
+    {
+      "projection": "C6BootMeta.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/src/C6BootMeta.cpp",
+        "bytes": 4366,
+        "sha256": "b5dd7a80f7dbf9df0ef071a5dae82b8c7d16a891b1454124ad8488428fc8e151"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/C6BootMeta.cpp",
+        "bytes": 4223,
+        "sha256": "98d8087cce9b55369aa372cf222168de93a793720bff8b146987bee1b88a0cf2"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "C6BootMeta.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/C6BootMeta.h",
+        "bytes": 529,
+        "sha256": "3300ee67a4d6ae657241fd4e0461f2e4ebb2e9ac4609c3dee386a97a11f04353"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/C6BootMeta.h",
+        "bytes": 529,
+        "sha256": "3300ee67a4d6ae657241fd4e0461f2e4ebb2e9ac4609c3dee386a97a11f04353"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "C6Endpoint.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/src/C6Endpoint.cpp",
+        "bytes": 5339,
+        "sha256": "b8fd418ea22ca06d2e952711a6b28f7f112bffbdbcdc14c8d5cd9e060eb45404"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/C6Endpoint.cpp",
+        "bytes": 4931,
+        "sha256": "8913c1511eae556e96c0797cae0fa5e8215ca7a8ea4189c2cf06ec9b748b3261"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes",
+      "previous_source": {
+        "path": "coprocessor/c6_audio/src/C6Endpoint.cpp",
+        "bytes": 5060,
+        "sha256": "960f178bcf79bdbb1bb7fd20a2577f2a59ca1ac8bcefceaa704a47ed3dd05fab"
+      },
+      "source_revision_chain": [
+        {
+          "previous": {
+            "path": "coprocessor/c6_audio/src/C6Endpoint.cpp",
+            "bytes": 5113,
+            "sha256": "08c542714ceba188297519de73a0fef9a9ae434ff970a5717ad9bd88608b76da"
+          },
+          "current": {
+            "path": "coprocessor/c6_audio/src/C6Endpoint.cpp",
+            "bytes": 5339,
+            "sha256": "b8fd418ea22ca06d2e952711a6b28f7f112bffbdbcdc14c8d5cd9e060eb45404"
+          },
+          "approved_source": {
+            "path": "build/experiments/promotion-20261117/c6-raw-unbind01/source04.json",
+            "bytes": 2777,
+            "sha256": "56dc91544bfaaa82274cc97437f8c9129523635aa7c4d54633f1a6de654e362d"
+          },
+          "actual_native": {
+            "path": "build/experiments/promotion-20261117/c6-raw-unbind01/native04/result.json",
+            "bytes": 27767,
+            "sha256": "37722406771cf3a335b652041f077b766b8c1cadb21826419ac7956ffbf8ad02"
+          }
+        }
+      ]
+    },
+    {
+      "projection": "C6Extension.inc",
+      "source": {
+        "path": "coprocessor/c6_audio/src/C6Extension.inc",
+        "bytes": 2606,
+        "sha256": "502d94f0676985ead4a34d99f99b1841580430d483393ea8c666d549640fb129"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/C6Extension.inc",
+        "bytes": 2606,
+        "sha256": "502d94f0676985ead4a34d99f99b1841580430d483393ea8c666d549640fb129"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "C6SelectRetained.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/src/C6SelectRetained.cpp",
+        "bytes": 2243,
+        "sha256": "1fd8532afb68eb7aeafb7f3806b945f456f55bbfd78c290027bb4d681cb1ba57"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/C6SelectRetained.cpp",
+        "bytes": 2243,
+        "sha256": "1fd8532afb68eb7aeafb7f3806b945f456f55bbfd78c290027bb4d681cb1ba57"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "C6SelectRetained.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/C6SelectRetained.h",
+        "bytes": 777,
+        "sha256": "1923fa6c1c9aeb656a1082d19c44e923dd36c86786459dca46a77355bc950762"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/C6SelectRetained.h",
+        "bytes": 777,
+        "sha256": "1923fa6c1c9aeb656a1082d19c44e923dd36c86786459dca46a77355bc950762"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "C6Workload.h",
+      "source": {
+        "path": "coprocessor/c6_audio/project/main/C6Workload.h",
+        "bytes": 2320,
+        "sha256": "35b26a331ca4501fb4e48935d0d7ce7145429d927be9a6645e3187be790ab2ec"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/C6Workload.h",
+        "bytes": 2320,
+        "sha256": "35b26a331ca4501fb4e48935d0d7ce7145429d927be9a6645e3187be790ab2ec"
+      },
+      "kind": "c6-baseline-single-header",
+      "projection_method": "forward-header"
+    },
+    {
+      "projection": "Crc32IEEE.h",
+      "source": {
+        "path": "app/nes/audio/c6/protocol/Crc32IEEE.h",
+        "bytes": 1762,
+        "sha256": "2ea2b3a1ec22b73e128627787a480434414d4ed06d7d9ed0c29f2323ffe203f8"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/Crc32IEEE.h",
+        "bytes": 1762,
+        "sha256": "2ea2b3a1ec22b73e128627787a480434414d4ed06d7d9ed0c29f2323ffe203f8"
+      },
+      "kind": "shared-protocol",
+      "projection_method": "forward-header"
+    },
+    {
+      "projection": "FilterFixtures.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/FilterFixtures.h",
+        "bytes": 26913,
+        "sha256": "031c93792ce62a355d39fdc7510ae26a63ef0a1b93a263ee9c06fe3e9a33f130"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/FilterFixtures.h",
+        "bytes": 26913,
+        "sha256": "031c93792ce62a355d39fdc7510ae26a63ef0a1b93a263ee9c06fe3e9a33f130"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "FixedFilter.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/apu_fixed/FixedFilter.cpp",
+        "bytes": 3031,
+        "sha256": "e4e570aa29f66ab6cc1d5b0f91817ba9d1277961460b9b1e4a81bef81c13845c"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/FixedFilter.cpp",
+        "bytes": 3031,
+        "sha256": "e4e570aa29f66ab6cc1d5b0f91817ba9d1277961460b9b1e4a81bef81c13845c"
+      },
+      "kind": "c6-specific-fixed-apu",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "FixedFilter.h",
+      "source": {
+        "path": "coprocessor/c6_audio/apu_fixed/FixedFilter.h",
+        "bytes": 2830,
+        "sha256": "4f97aa3a28aef328c34cd2246e6190ee1e67d5c5a6e890765acfd27f8cb88bf1"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/FixedFilter.h",
+        "bytes": 2830,
+        "sha256": "4f97aa3a28aef328c34cd2246e6190ee1e67d5c5a6e890765acfd27f8cb88bf1"
+      },
+      "kind": "c6-specific-fixed-apu",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "FloatReference.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/src/FloatReference.cpp",
+        "bytes": 1181,
+        "sha256": "5979d0a131395b97ec61115343da933ff1aa75201814b8371ec5293e968029d7"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/FloatReference.cpp",
+        "bytes": 1181,
+        "sha256": "5979d0a131395b97ec61115343da933ff1aa75201814b8371ec5293e968029d7"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "FloatReference.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/FloatReference.h",
+        "bytes": 661,
+        "sha256": "96942dcea6757f75c2682eee616c20ad4923a6310e9736927baeeda3050c8cca"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/FloatReference.h",
+        "bytes": 661,
+        "sha256": "96942dcea6757f75c2682eee616c20ad4923a6310e9736927baeeda3050c8cca"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "FrameService.h",
+      "source": {
+        "path": "app/nes/audio/c6/protocol/FrameService.h",
+        "bytes": 7239,
+        "sha256": "cbaa99c3492f762bb09f139002e947cc035148766d283de228a74c55321457de"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/FrameService.h",
+        "bytes": 7239,
+        "sha256": "cbaa99c3492f762bb09f139002e947cc035148766d283de228a74c55321457de"
+      },
+      "kind": "shared-protocol",
+      "projection_method": "forward-header"
+    },
+    {
+      "projection": "FullAudioControl.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/FullAudioControl.h",
+        "bytes": 4033,
+        "sha256": "2cbe87439718c6b472277a9940a6e04e48c3233f4698acee5ef085e213f3691f"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/FullAudioControl.h",
+        "bytes": 4033,
+        "sha256": "2cbe87439718c6b472277a9940a6e04e48c3233f4698acee5ef085e213f3691f"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "IdleUnbind.h",
+      "source": {
+        "path": "app/nes/audio/c6/protocol/IdleUnbind.h",
+        "bytes": 3775,
+        "sha256": "26afda1cb00d4de61be673b29d4a49ac26baf1f6cfe7f8d84628cdfe4e50c7f4"
+      },
+      "kind": "shared-protocol",
+      "projection_method": "forward-header",
+      "introduced_by": {
+        "path": "build/experiments/promotion-20261117/c6-unbind-merge01/source02.json",
+        "bytes": 4710,
+        "sha256": "91689f770a39508fc17d98137f3dce40dce2a907f5a90f0db2bb393bf64d7fc3"
+      },
+      "historical_ae1c_source": null
+    },
+    {
+      "projection": "IdleUnbindWire.h",
+      "source": {
+        "path": "app/nes/audio/c6/protocol/IdleUnbindWire.h",
+        "bytes": 8217,
+        "sha256": "4e6d1cb51eedc3beba5f7f94756b3cbca404f3b64563608aeda9ca7dee4e9a37"
+      },
+      "kind": "shared-protocol",
+      "projection_method": "forward-header",
+      "introduced_by": {
+        "path": "build/experiments/promotion-20261117/c6-unbind-merge01/source02.json",
+        "bytes": 4710,
+        "sha256": "91689f770a39508fc17d98137f3dce40dce2a907f5a90f0db2bb393bf64d7fc3"
+      },
+      "historical_ae1c_source": null,
+      "previous_source": {
+        "path": "app/nes/audio/c6/protocol/IdleUnbindWire.h",
+        "bytes": 8054,
+        "sha256": "d5da6176032426ba5ecd681b5c5de5da5488eb905add83f3cd955ad34344c9cc"
+      },
+      "source_revision_evidence": {
+        "path": "build/experiments/promotion-20261117/c6-warm-adapter01/shared-wire-capability01.json",
+        "bytes": 713,
+        "sha256": "742a8f0447bd94ee8b602a538ba16981aa4048b2ee9e6bb6e29e25380ce033f7"
+      }
+    },
+    {
+      "projection": "IndexColourRun.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/src/IndexColourRun.cpp",
+        "bytes": 6718,
+        "sha256": "293dcb46cf1fb493f2c86418352b5dd3b1cfcc29a8215072f56a6e2a17dd98f4"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/IndexColourRun.cpp",
+        "bytes": 6578,
+        "sha256": "4bfb776111bf0cff513041b1d2789c4adfea11f96e2c12e2f572dd414c6738da"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "IndexColourRun.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/IndexColourRun.h",
+        "bytes": 1674,
+        "sha256": "d15c22a1941c0b92f307175b942ec1ead54c1320cf4c795a99d602d7eff0d6dd"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/IndexColourRun.h",
+        "bytes": 1674,
+        "sha256": "d15c22a1941c0b92f307175b942ec1ead54c1320cf4c795a99d602d7eff0d6dd"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "Palette.h",
+      "source": {
+        "path": "app/nes/core/Palette.h",
+        "bytes": 3424,
+        "sha256": "b9c5d1f59fbbb33a8f220869710d25f01de6c941f7f3b3e0a05b46378773682c"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/Palette.h",
+        "bytes": 3424,
+        "sha256": "b9c5d1f59fbbb33a8f220869710d25f01de6c941f7f3b3e0a05b46378773682c"
+      },
+      "kind": "shared-core",
+      "projection_method": "forward-header"
+    },
+    {
+      "projection": "ProbeControl.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/src/ProbeControl.cpp",
+        "bytes": 5402,
+        "sha256": "55b90f55d50beab92f1c20ab5393b0ab6a40c3fea8f290887eb9e7fb0f1e481a"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/ProbeControl.cpp",
+        "bytes": 5402,
+        "sha256": "55b90f55d50beab92f1c20ab5393b0ab6a40c3fea8f290887eb9e7fb0f1e481a"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "ProbeControl.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/ProbeControl.h",
+        "bytes": 1266,
+        "sha256": "897c5dfac0a50832c04609d8e0f825a8612da3167b512a75bc41f48673d5e0be"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/ProbeControl.h",
+        "bytes": 1266,
+        "sha256": "897c5dfac0a50832c04609d8e0f825a8612da3167b512a75bc41f48673d5e0be"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "RawIdleGate.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/RawIdleGate.h",
+        "bytes": 5243,
+        "sha256": "ce8c1ce9b5d7924e3ebf1a2779244298ba59e91f7ec15e0deacfd801ad8b62d3"
+      },
+      "kind": "c6-specific-single-header",
+      "projection_method": "forward-header",
+      "introduced_by": {
+        "path": "build/experiments/promotion-20261117/c6-raw-unbind01/root-source01.json",
+        "bytes": 1704,
+        "sha256": "0f3d2fef78a1f9c543e010a77e48474e7d959593d5e5a3700922d53df2e738fe"
+      },
+      "historical_ae1c_source": null,
+      "source_revision_chain": [
+        {
+          "previous": {
+            "path": "coprocessor/c6_audio/src/RawIdleGate.h",
+            "bytes": 4800,
+            "sha256": "71cf9fa0fe1a00d9fcec1d9a3befd9977373c69214bc03f622dd8f70fccd2c79"
+          },
+          "current": {
+            "path": "coprocessor/c6_audio/src/RawIdleGate.h",
+            "bytes": 5243,
+            "sha256": "ce8c1ce9b5d7924e3ebf1a2779244298ba59e91f7ec15e0deacfd801ad8b62d3"
+          },
+          "approved_source": {
+            "path": "build/experiments/promotion-20261117/c6-raw-unbind01/source04.json",
+            "bytes": 2777,
+            "sha256": "56dc91544bfaaa82274cc97437f8c9129523635aa7c4d54633f1a6de654e362d"
+          },
+          "actual_native": {
+            "path": "build/experiments/promotion-20261117/c6-raw-unbind01/native04/result.json",
+            "bytes": 27767,
+            "sha256": "37722406771cf3a335b652041f077b766b8c1cadb21826419ac7956ffbf8ad02"
+          }
+        }
+      ]
+    },
+    {
+      "projection": "RawLimits.h",
+      "source": {
+        "path": "app/nes/audio/c6/protocol/RawLimits.h",
+        "bytes": 912,
+        "sha256": "ff248b1806a491f2bfe11c371e5b4580d4705bb33c487200279b5d8079c57b51"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/RawLimits.h",
+        "bytes": 912,
+        "sha256": "ff248b1806a491f2bfe11c371e5b4580d4705bb33c487200279b5d8079c57b51"
+      },
+      "kind": "shared-protocol",
+      "projection_method": "forward-header"
+    },
+    {
+      "projection": "RawPort.h",
+      "source": {
+        "path": "app/nes/audio/c6/transport/RawPort.h",
+        "bytes": 1114,
+        "sha256": "09d31cddd2a2446fb9a436b99323f1b2ea99a6efb0ef3cd293802fa7ea549460"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/RawPort.h",
+        "bytes": 1114,
+        "sha256": "09d31cddd2a2446fb9a436b99323f1b2ea99a6efb0ef3cd293802fa7ea549460"
+      },
+      "kind": "shared-transport",
+      "projection_method": "forward-header"
+    },
+    {
+      "projection": "RawWire.cpp",
+      "source": {
+        "path": "app/nes/audio/c6/protocol/RawWire.cpp",
+        "bytes": 3777,
+        "sha256": "956faa39e4b1e0d861893016859cf0ee75f35b716f155cf1ddccdadea6bcdf0e"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/RawWire.cpp",
+        "bytes": 3151,
+        "sha256": "3558db0f8f7d961b3adb01740435a56ad81443d147ba79cd90e25cbe5b07590a"
+      },
+      "kind": "shared-protocol",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "RawWire.h",
+      "source": {
+        "path": "app/nes/audio/c6/protocol/RawWire.h",
+        "bytes": 2978,
+        "sha256": "3989be1a3a1f75fcfc3830460bc05c6db9a49f5ab55006073451d32563921aea"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/RawWire.h",
+        "bytes": 2978,
+        "sha256": "3989be1a3a1f75fcfc3830460bc05c6db9a49f5ab55006073451d32563921aea"
+      },
+      "kind": "shared-protocol",
+      "projection_method": "forward-header"
+    },
+    {
+      "projection": "RawWorker.inc",
+      "source": {
+        "path": "coprocessor/c6_audio/src/RawWorker.inc",
+        "bytes": 15876,
+        "sha256": "aaf426a9c5a3ce299db259c7fadff45e91d346d2b3cd654b7545527e20eb6d2b"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/RawWorker.inc",
+        "bytes": 12530,
+        "sha256": "24b465541ac31199ce816b5e53de11d2597ed50970af68dd67b133ddc4d53e18"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes",
+      "previous_source": {
+        "path": "coprocessor/c6_audio/src/RawWorker.inc",
+        "bytes": 12530,
+        "sha256": "24b465541ac31199ce816b5e53de11d2597ed50970af68dd67b133ddc4d53e18"
+      },
+      "source_revision_chain": [
+        {
+          "previous": {
+            "path": "coprocessor/c6_audio/src/RawWorker.inc",
+            "bytes": 15771,
+            "sha256": "450bbcfaedc82f5351782a830202e4b25303709f49443f8cdd5ccacd30017fe3"
+          },
+          "current": {
+            "path": "coprocessor/c6_audio/src/RawWorker.inc",
+            "bytes": 15876,
+            "sha256": "aaf426a9c5a3ce299db259c7fadff45e91d346d2b3cd654b7545527e20eb6d2b"
+          },
+          "approved_source": {
+            "path": "build/experiments/promotion-20261117/c6-raw-unbind01/source04.json",
+            "bytes": 2777,
+            "sha256": "56dc91544bfaaa82274cc97437f8c9129523635aa7c4d54633f1a6de654e362d"
+          },
+          "actual_native": {
+            "path": "build/experiments/promotion-20261117/c6-raw-unbind01/native04/result.json",
+            "bytes": 27767,
+            "sha256": "37722406771cf3a335b652041f077b766b8c1cadb21826419ac7956ffbf8ad02"
+          }
+        }
+      ]
+    },
+    {
+      "projection": "ResolvedColourCodec.cpp",
+      "source": {
+        "path": "app/nes/core/ppu/c6/ResolvedColourCodec.cpp",
+        "bytes": 3343,
+        "sha256": "c40825c099155f2d695710a923139706f0fa4ebf7eff132f1bc287909c57c4a7"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/ResolvedColourCodec.cpp",
+        "bytes": 3343,
+        "sha256": "c40825c099155f2d695710a923139706f0fa4ebf7eff132f1bc287909c57c4a7"
+      },
+      "kind": "shared-core-body",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "ResolvedColourCodec.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/ResolvedColourCodec.h",
+        "bytes": 55,
+        "sha256": "dfd62eabef322f93251924ce94bf32988ddefaa52f660e9a9bbf65a984eea76b"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/ResolvedColourCodec.h",
+        "bytes": 55,
+        "sha256": "dfd62eabef322f93251924ce94bf32988ddefaa52f660e9a9bbf65a984eea76b"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "ResolvedColourRun.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/src/ResolvedColourRun.cpp",
+        "bytes": 6756,
+        "sha256": "520f0e5ac40152448ccd621703843bcf5119d12a24111f7e9bb2f9554bafb22f"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/ResolvedColourRun.cpp",
+        "bytes": 6388,
+        "sha256": "74c53b1a5f763cfd2c671eb96c145d4815d003527e7170f0b1bfd3183d589391"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "ResolvedColourRun.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/ResolvedColourRun.h",
+        "bytes": 53,
+        "sha256": "02f2d0460556ede951f93ddef18c1e04db2fb3b5800f5d8a16a9763b8db0c4ce"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/ResolvedColourRun.h",
+        "bytes": 53,
+        "sha256": "02f2d0460556ede951f93ddef18c1e04db2fb3b5800f5d8a16a9763b8db0c4ce"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "RetainedA09Expected.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/RetainedA09Expected.h",
+        "bytes": 1019,
+        "sha256": "eeef51b6fcf4b8b0517e70bfe7d077e0693c900f2995a35e412777194f3dfb2e"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/RetainedA09Expected.h",
+        "bytes": 1019,
+        "sha256": "eeef51b6fcf4b8b0517e70bfe7d077e0693c900f2995a35e412777194f3dfb2e"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "RetainedA09Policy.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/src/RetainedA09Policy.cpp",
+        "bytes": 4293,
+        "sha256": "578e1f185027b89dcdc2cf8c1b5f6faebca2e572eaa92c4ceb1b77ed84fe19c2"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/RetainedA09Policy.cpp",
+        "bytes": 4144,
+        "sha256": "4b58a818d2d4a6a5bb59b95868d48d8e2faa00c55b6a055b2522b89d6f9a40c3"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "RetainedA09Policy.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/RetainedA09Policy.h",
+        "bytes": 2374,
+        "sha256": "c621abd271b426de33a119905985562794f51c9e3242a0557e6487393d65b290"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/RetainedA09Policy.h",
+        "bytes": 2374,
+        "sha256": "c621abd271b426de33a119905985562794f51c9e3242a0557e6487393d65b290"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "ServiceReady.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/src/ServiceReady.cpp",
+        "bytes": 970,
+        "sha256": "71bc0526af0aefabf6e0390e44e3337cc74a57a859c735f5b430aeb8e8a4ebc3"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/ServiceReady.cpp",
+        "bytes": 970,
+        "sha256": "71bc0526af0aefabf6e0390e44e3337cc74a57a859c735f5b430aeb8e8a4ebc3"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "ServiceReady.h",
+      "source": {
+        "path": "app/nes/audio/c6/protocol/ServiceReady.h",
+        "bytes": 3387,
+        "sha256": "0eddb6b56b93c837b6dfce3450f9878c4cfcc2e6bb7b6305c4d861de8bc2f1e3"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/ServiceReady.h",
+        "bytes": 3387,
+        "sha256": "0eddb6b56b93c837b6dfce3450f9878c4cfcc2e6bb7b6305c4d861de8bc2f1e3"
+      },
+      "kind": "shared-protocol",
+      "projection_method": "forward-header"
+    },
+    {
+      "projection": "c6_esp_hosted_coprocessor.c",
+      "source": {
+        "path": "coprocessor/c6_audio/src/c6_esp_hosted_coprocessor.c",
+        "bytes": 36904,
+        "sha256": "fb33f45420bc72cfade20189a0acc63f475a6ebcac790dc8a95f195bc4c461f7"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/c6_esp_hosted_coprocessor.c",
+        "bytes": 36770,
+        "sha256": "859d4641ab546a9112af4375e2fcf34ea7cc95af4f4e4047f186c1424b2d0de2"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes",
+      "previous_source": {
+        "path": "coprocessor/c6_audio/src/c6_esp_hosted_coprocessor.c",
+        "bytes": 36770,
+        "sha256": "859d4641ab546a9112af4375e2fcf34ea7cc95af4f4e4047f186c1424b2d0de2"
+      },
+      "source_revision_reason": "Apache-2.0 modification notice only; executable tokens and line count unchanged"
+    },
+    {
+      "projection": "c6_sdio_slave_api.c",
+      "source": {
+        "path": "coprocessor/c6_audio/src/c6_sdio_slave_api.c",
+        "bytes": 26528,
+        "sha256": "ab4297b4470c6ab50c32734a893f8b48e31d2c8167e3324d7014b0d41cdd85d9"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/c6_sdio_slave_api.c",
+        "bytes": 26396,
+        "sha256": "1217d905497e46bde210852ab9c8d81cd8363fba33099710b806eb3c1fd48e6a"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes",
+      "previous_source": {
+        "path": "coprocessor/c6_audio/src/c6_sdio_slave_api.c",
+        "bytes": 26396,
+        "sha256": "1217d905497e46bde210852ab9c8d81cd8363fba33099710b806eb3c1fd48e6a"
+      },
+      "source_revision_reason": "Apache-2.0 modification notice only; executable tokens and line count unchanged"
+    },
+    {
+      "projection": "core/Types.h",
+      "source": {
+        "path": "app/nes/core/Types.h",
+        "bytes": 1417,
+        "sha256": "6b7925608a804dcfab9160f1a750f45b47fac91ab659e9d5da17d30c451928ac"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/Types.h",
+        "bytes": 1417,
+        "sha256": "6b7925608a804dcfab9160f1a750f45b47fac91ab659e9d5da17d30c451928ac"
+      },
+      "kind": "shared-core",
+      "projection_method": "forward-header"
+    },
+    {
+      "projection": "core/apu/Apu.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/apu_fixed/Apu.cpp",
+        "bytes": 61885,
+        "sha256": "abf945e08dab8f9a259d15dd76550ab7547560c10a2ff7efa96088f86771e477"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/Apu.cpp",
+        "bytes": 61885,
+        "sha256": "abf945e08dab8f9a259d15dd76550ab7547560c10a2ff7efa96088f86771e477"
+      },
+      "kind": "c6-specific-fixed-apu",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "core/apu/Apu.h",
+      "source": {
+        "path": "coprocessor/c6_audio/apu_fixed/Apu.h",
+        "bytes": 37889,
+        "sha256": "20a25a17993e618ee414f12a49221ded3532f9decd7fb03602c7c5fe83166887"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/Apu.h",
+        "bytes": 37889,
+        "sha256": "20a25a17993e618ee414f12a49221ded3532f9decd7fb03602c7c5fe83166887"
+      },
+      "kind": "c6-specific-fixed-apu",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "core/apu/ApuExpansion.cpp",
+      "source": {
+        "path": "app/nes/core/apu/ApuExpansion.cpp",
+        "bytes": 480,
+        "sha256": "a8022df25f312a8cfa5bec92a50d48acc44ff2d37d74e53dfb6a2d04ebeaeb0a"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/ApuExpansion.cpp",
+        "bytes": 480,
+        "sha256": "a8022df25f312a8cfa5bec92a50d48acc44ff2d37d74e53dfb6a2d04ebeaeb0a"
+      },
+      "kind": "shared-core",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "core/apu/AudioPacket.h",
+      "source": {
+        "path": "app/nes/core/apu/AudioPacket.h",
+        "bytes": 23476,
+        "sha256": "b394583af5980486363f4cf7625d9ae24e7eb42340b4e4458356c501d1e4f4cc"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/AudioPacket.h",
+        "bytes": 23476,
+        "sha256": "b394583af5980486363f4cf7625d9ae24e7eb42340b4e4458356c501d1e4f4cc"
+      },
+      "kind": "shared-core",
+      "projection_method": "forward-header"
+    },
+    {
+      "projection": "core/apu/AudioPacketView.h",
+      "source": {
+        "path": "app/nes/core/apu/AudioPacketView.h",
+        "bytes": 4896,
+        "sha256": "fcd5242e8658f4f7671737207c5e3bd1d2c62b33a2fb905a73225490b29083ed"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/AudioPacketView.h",
+        "bytes": 4896,
+        "sha256": "fcd5242e8658f4f7671737207c5e3bd1d2c62b33a2fb905a73225490b29083ed"
+      },
+      "kind": "shared-core",
+      "projection_method": "forward-header"
+    },
+    {
+      "projection": "core/apu/AudioRenderer.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/apu_fixed/AudioRenderer.cpp",
+        "bytes": 13107,
+        "sha256": "cd24ed1738abe4be3370116c0fe3a1411e7fccad40faf9573b416bc4f9a8fe4a"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/AudioRenderer.cpp",
+        "bytes": 13107,
+        "sha256": "cd24ed1738abe4be3370116c0fe3a1411e7fccad40faf9573b416bc4f9a8fe4a"
+      },
+      "kind": "c6-specific-fixed-apu",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "core/apu/AudioRenderer.h",
+      "source": {
+        "path": "coprocessor/c6_audio/apu_fixed/AudioRenderer.h",
+        "bytes": 11131,
+        "sha256": "ead1b2d384db3420c54e8a0d38534e55234106615a0ecff64ad0cc7f895d1dc3"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/AudioRenderer.h",
+        "bytes": 11131,
+        "sha256": "ead1b2d384db3420c54e8a0d38534e55234106615a0ecff64ad0cc7f895d1dc3"
+      },
+      "kind": "c6-specific-fixed-apu",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "core/apu/FixedFilter.cpp",
+      "source": {
+        "path": "coprocessor/c6_audio/apu_fixed/FixedFilter.cpp",
+        "bytes": 3031,
+        "sha256": "e4e570aa29f66ab6cc1d5b0f91817ba9d1277961460b9b1e4a81bef81c13845c"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/FixedFilter.cpp",
+        "bytes": 3031,
+        "sha256": "e4e570aa29f66ab6cc1d5b0f91817ba9d1277961460b9b1e4a81bef81c13845c"
+      },
+      "kind": "c6-specific-fixed-apu",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "core/apu/FixedFilter.h",
+      "source": {
+        "path": "coprocessor/c6_audio/apu_fixed/FixedFilter.h",
+        "bytes": 2830,
+        "sha256": "4f97aa3a28aef328c34cd2246e6190ee1e67d5c5a6e890765acfd27f8cb88bf1"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/FixedFilter.h",
+        "bytes": 2830,
+        "sha256": "4f97aa3a28aef328c34cd2246e6190ee1e67d5c5a6e890765acfd27f8cb88bf1"
+      },
+      "kind": "c6-specific-fixed-apu",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "core/apu/HybridRank4Tables.inl",
+      "source": {
+        "path": "app/nes/core/apu/HybridRank4Tables.inl",
+        "bytes": 14560,
+        "sha256": "5a7f1639a18cff5c2664798c6892eeb674c12d9dca5b340607859b0e652e0948"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/HybridRank4Tables.inl",
+        "bytes": 14560,
+        "sha256": "5a7f1639a18cff5c2664798c6892eeb674c12d9dca5b340607859b0e652e0948"
+      },
+      "kind": "shared-core",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "core/apu/ImpulseDeposit.inl",
+      "source": {
+        "path": "app/nes/core/apu/ImpulseDeposit.inl",
+        "bytes": 1973,
+        "sha256": "319dd9e0b4f19ef8157748b9daa44fabe400c5861f41f6f309099c3cefe04921"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/ImpulseDeposit.inl",
+        "bytes": 1973,
+        "sha256": "319dd9e0b4f19ef8157748b9daa44fabe400c5861f41f6f309099c3cefe04921"
+      },
+      "kind": "shared-core",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "core/apu/RendererDeadline.inl",
+      "source": {
+        "path": "app/nes/core/apu/RendererDeadline.inl",
+        "bytes": 9413,
+        "sha256": "efc01f553f07f556cf8b19d6e9b1c9a110a07429dcef15c05db8c05e03fdbb6d"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/RendererDeadline.inl",
+        "bytes": 9413,
+        "sha256": "efc01f553f07f556cf8b19d6e9b1c9a110a07429dcef15c05db8c05e03fdbb6d"
+      },
+      "kind": "shared-core",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "core/apu/TimingApu.cpp",
+      "source": {
+        "path": "app/nes/core/apu/TimingApu.cpp",
+        "bytes": 15386,
+        "sha256": "9d1fa1a9bec1286ff95c540c978cbe17daf4eca81720a431e1407be0d7296653"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/TimingApu.cpp",
+        "bytes": 15386,
+        "sha256": "9d1fa1a9bec1286ff95c540c978cbe17daf4eca81720a431e1407be0d7296653"
+      },
+      "kind": "shared-core",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "core/apu/TimingApu.h",
+      "source": {
+        "path": "app/nes/core/apu/TimingApu.h",
+        "bytes": 15337,
+        "sha256": "324a5d17307cf6962d876d72d2df5c0c42bdf403be8b7efb4e526708ae327a7b"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/TimingApu.h",
+        "bytes": 15337,
+        "sha256": "324a5d17307cf6962d876d72d2df5c0c42bdf403be8b7efb4e526708ae327a7b"
+      },
+      "kind": "shared-core",
+      "projection_method": "forward-header"
+    },
+    {
+      "projection": "ppu/c6/ResolvedColourCodec.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/ppu/c6/ResolvedColourCodec.h",
+        "bytes": 1244,
+        "sha256": "1ab29317653c11e74ab1b54d0eddb96723befb9e6d41342024657464fb132d28"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/ppu/c6/ResolvedColourCodec.h",
+        "bytes": 1244,
+        "sha256": "1ab29317653c11e74ab1b54d0eddb96723befb9e6d41342024657464fb132d28"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "ppu/c6/ResolvedColourRun.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/ppu/c6/ResolvedColourRun.h",
+        "bytes": 2956,
+        "sha256": "7c3d8bd172324c5730288cf91e437d1f6a16234e1c7021351be7358a818f22e3"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/ppu/c6/ResolvedColourRun.h",
+        "bytes": 2956,
+        "sha256": "7c3d8bd172324c5730288cf91e437d1f6a16234e1c7021351be7358a818f22e3"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "ppu/c6/ResolvedColourTypes.h",
+      "source": {
+        "path": "coprocessor/c6_audio/src/ppu/c6/ResolvedColourTypes.h",
+        "bytes": 333,
+        "sha256": "06007e560a5e2f1ed7f1d6719975101e291bed4abc4ad4f15ee0edead4293adb"
+      },
+      "historical": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/ppu/c6/ResolvedColourTypes.h",
+        "bytes": 333,
+        "sha256": "06007e560a5e2f1ed7f1d6719975101e291bed4abc4ad4f15ee0edead4293adb"
+      },
+      "kind": "c6-specific",
+      "projection_method": "copy-bytes"
+    },
+    {
+      "projection": "sdio_slave_api.h",
+      "source": {
+        "path": "coprocessor/c6_audio/project/main/sdio_slave_api.h",
+        "bytes": 302,
+        "sha256": "27012774fc65e8bac5c068e5face176acce3a7cbc445c92280859bda01393bc2"
+      },
+      "upstream": {
+        "path": "managed_components/espressif__esp_hosted/slave/main/sdio_slave_api.h",
+        "bytes": 302,
+        "sha256": "27012774fc65e8bac5c068e5face176acce3a7cbc445c92280859bda01393bc2"
+      },
+      "kind": "preserved-upstream-header",
+      "projection_method": "forward-header"
+    }
+  ],
+  "excluded": [
+    {
+      "original": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/BatchBuilder.h",
+        "bytes": 2914,
+        "sha256": "07931f18ec60781a7959f044ed05e8ef000acfba4ec64c14c2b6f938e5672049"
+      },
+      "reason": "Not in active41 source set or C6-only include closure; P4/unused native/old service artifact"
+    },
+    {
+      "original": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/core/apu/README.md",
+        "bytes": 5038,
+        "sha256": "9d786276382ad8053adb7e193bc0b081a89f2c66a694834dcd6b7119bc20af4c"
+      },
+      "reason": "Not in active41 source set or C6-only include closure; P4/unused native/old service artifact"
+    },
+    {
+      "original": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/FrameService.cpp",
+        "bytes": 9901,
+        "sha256": "4a75820d40c70a3a57ea3d352c24ec59b1ef1a06d89891b774b5df44fcda3120"
+      },
+      "reason": "Not in active41 source set or C6-only include closure; P4/unused native/old service artifact"
+    },
+    {
+      "original": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/HostExtension.inc",
+        "bytes": 2336,
+        "sha256": "ebd7b8a7bde36c9512cdb3b735426a006dd28746581390ab3a2b3f884b58fd9a"
+      },
+      "reason": "Not in active41 source set or C6-only include closure; P4/unused native/old service artifact"
+    },
+    {
+      "original": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/NativeQuality.cpp",
+        "bytes": 5908,
+        "sha256": "742a7380bbf76c9e1e1427151a4835f0cbd17497e56d7516df821be8a7b419ee"
+      },
+      "reason": "Not in active41 source set or C6-only include closure; P4/unused native/old service artifact"
+    },
+    {
+      "original": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/p4_sdio_drv.c",
+        "bytes": 58103,
+        "sha256": "ba6fce31da4a125d736abdbc60f22a76a5d7ab5f12a7441a49cdfd1c89c93040"
+      },
+      "reason": "Not in active41 source set or C6-only include closure; P4/unused native/old service artifact"
+    },
+    {
+      "original": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/P4RawRx.cpp",
+        "bytes": 909,
+        "sha256": "c73907b7c272ddfd823539e61f93a6bce10add65f550ad180915716952a57be5"
+      },
+      "reason": "Not in active41 source set or C6-only include closure; P4/unused native/old service artifact"
+    },
+    {
+      "original": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/RawChannel.cpp",
+        "bytes": 2892,
+        "sha256": "fe0d7cf102a139baba5b062fe1e959557be0813b5482a75da79441b32f2a39c7"
+      },
+      "reason": "Not in active41 source set or C6-only include closure; P4/unused native/old service artifact"
+    },
+    {
+      "original": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/RawChannel.h",
+        "bytes": 2863,
+        "sha256": "e40d24ed908a8c706db012380bc5709837f65806d9b26317f6a9331444e45029"
+      },
+      "reason": "Not in active41 source set or C6-only include closure; P4/unused native/old service artifact"
+    },
+    {
+      "original": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/SyntheticFrame.h",
+        "bytes": 921,
+        "sha256": "5450514baf2d20cecdb9989254c2f289386adb02acdc80b9c8f7629ce5e745b8"
+      },
+      "reason": "Not in active41 source set or C6-only include closure; P4/unused native/old service artifact"
+    },
+    {
+      "original": {
+        "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/sources/FullAudioControl.cpp",
+        "bytes": 6071,
+        "sha256": "1fcc47216886e637862aa0bd7665ab1479a0e292f6b94caaece91c74328f9067"
+      },
+      "reason": "Old standalone implementation not in active41; header still required for shared DTO declarations"
+    }
+  ],
+  "source_74": {
+    "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/before.json",
+    "bytes": 55099,
+    "sha256": "dfd6b3b61341f4a596fb6a8844e8291d4362c49d7ea8cfaa1ab664ede38500d5"
+  },
+  "source_74_role": "Historical ae1c provenance only, not active source pins",
+  "compile_source_revisions": [
+    {
+      "member": "C6Endpoint.cpp.obj",
+      "previous": {
+        "path": "coprocessor/c6_audio/src/C6Endpoint.cpp",
+        "bytes": 5060,
+        "sha256": "960f178bcf79bdbb1bb7fd20a2577f2a59ca1ac8bcefceaa704a47ed3dd05fab"
+      },
+      "current": {
+        "path": "coprocessor/c6_audio/src/C6Endpoint.cpp",
+        "bytes": 5339,
+        "sha256": "b8fd418ea22ca06d2e952711a6b28f7f112bffbdbcdc14c8d5cd9e060eb45404"
+      },
+      "reason": "Explicit UNBIND source change; ordered argv/flags/projection path/archive order unchanged"
+    },
+    {
+      "member": "BatchFrameService.cpp.obj",
+      "previous": {
+        "path": "coprocessor/c6_audio/src/BatchFrameService.cpp",
+        "bytes": 18793,
+        "sha256": "cfd98d63559d48148714b46c6f9ea8b9ee153a647f505768f8eacda6cedf2f76"
+      },
+      "current": {
+        "path": "coprocessor/c6_audio/src/BatchFrameService.cpp",
+        "bytes": 19891,
+        "sha256": "718644385094f3ff0a625720eb8fea80e124382fa43d9928bc76155d8ad42266"
+      },
+      "reason": "Explicit UNBIND source change; ordered argv/flags/projection path/archive order unchanged"
+    },
+    {
+      "member": "BatchAudioControl.cpp.obj",
+      "previous": {
+        "path": "coprocessor/c6_audio/src/BatchAudioControl.cpp",
+        "bytes": 8012,
+        "sha256": "556bd852b48cbb4bdff4ebc5ff786e7efb83a5e6f77e5b9f7de7a9192be0f798"
+      },
+      "current": {
+        "path": "coprocessor/c6_audio/src/BatchAudioControl.cpp",
+        "bytes": 8867,
+        "sha256": "0d45efcaf658db0a78d7318c372fce56f8f318ac070a9acfac9a5be6d5b2e16e"
+      },
+      "reason": "Explicit UNBIND source change; ordered argv/flags/projection path/archive order unchanged"
+    }
+  ],
+  "revision_evidence": {
+    "Control_source02": {
+      "path": "build/experiments/promotion-20261117/c6-unbind-merge01/source02.json",
+      "bytes": 4710,
+      "sha256": "91689f770a39508fc17d98137f3dce40dce2a907f5a90f0db2bb393bf64d7fc3"
+    },
+    "Raw_root_source01": {
+      "path": "build/experiments/promotion-20261117/c6-raw-unbind01/root-source01.json",
+      "bytes": 1704,
+      "sha256": "0f3d2fef78a1f9c543e010a77e48474e7d959593d5e5a3700922d53df2e738fe"
+    },
+    "historical_source_map": {
+      "path": "coprocessor/c6_audio/recipe/source-map.json",
+      "bytes": 43127,
+      "sha256": "f97783424821261ca59a8cddc5fc2efcb82b1411f09a6e7638ee964746525b56"
+    },
+    "evidence_role": "Historical reviewed change manifests; build does not read experiment paths",
+    "Wire_capability_successor": {
+      "path": "build/experiments/promotion-20261117/c6-warm-adapter01/shared-wire-capability01.json",
+      "bytes": 713,
+      "sha256": "742a8f0447bd94ee8b602a538ba16981aa4048b2ee9e6bb6e29e25380ce033f7"
+    },
+    "Raw_source04_3ff": {
+      "path": "build/experiments/promotion-20261117/c6-raw-unbind01/source04.json",
+      "bytes": 2777,
+      "sha256": "56dc91544bfaaa82274cc97437f8c9129523635aa7c4d54633f1a6de654e362d"
+    },
+    "Raw_native04_3ff": {
+      "path": "build/experiments/promotion-20261117/c6-raw-unbind01/native04/result.json",
+      "bytes": 27767,
+      "sha256": "37722406771cf3a335b652041f077b766b8c1cadb21826419ac7956ffbf8ad02"
+    }
+  }
+}

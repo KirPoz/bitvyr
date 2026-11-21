@@ -1,0 +1,52 @@
+{
+  "upstream": "espressif/esp-hosted-mcu",
+  "version": "2.13.1",
+  "commit": "0e8d0e3f0c2723deaf15441200cb4d8c53fea230",
+  "license": "Apache-2.0",
+  "manifest": {
+    "path": "managed_components/espressif__esp_hosted/idf_component.yml",
+    "bytes": 352,
+    "sha256": "5b1b06c03f1d4d635dd5767bf2f82103fe99afa0434b5a38b9e95e6aba0b1066"
+  },
+  "upstream_driver": {
+    "path": "managed_components/espressif__esp_hosted/host/drivers/transport/sdio/sdio_drv.c",
+    "bytes": 58073,
+    "sha256": "eaa06fd0735811c8ab653c591b554a62a4aab3b9c0fd0a1b592e65866f2d76a4"
+  },
+  "reviewed_private_driver": {
+    "path": "build/experiments/resume-20261115/lcd-private-sdk01/source/deps/p4_sdio_drv.c",
+    "bytes": 58696,
+    "sha256": "a1766fa2db70f38df146562432335b67552f35140d5f0d7ee29d92e094a32d1c"
+  },
+  "canonical_driver": {
+    "path": "app/nes/audio/c6/hosted/p4_sdio_drv.c",
+    "bytes": 58793,
+    "sha256": "a18a0ae8ec4ba7e7ecb5ea56e6553108558057868a125708bc12f0c130a8a071"
+  },
+  "patch": {
+    "path": "app/nes/audio/c6/hosted/sdio_drv.patch",
+    "bytes": 8256,
+    "sha256": "cbf3af02f4a7d6b4f9390fabaf0b20ecf2eb778d51afbb2d6f0d8222869fd0ee"
+  },
+  "license_file": {
+    "path": "app/nes/audio/c6/hosted/LICENSE",
+    "bytes": 11358,
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  "attach_contract": "Root wiring must verify upstream version/commit/SHA and replace exactly one Hosted sdio_drv.c; link --wrap=serial_ll_rx_handler. Do not also compile the stock driver or modify managed/global SDK.",
+  "limits": "Raw SERIAL1 request1400/reply1792/header64; Hosted header12; RX block2048; cold streaming20 blocks (40960 per stream, two when double-buffered); two TX1536 envelopes; lower OTHERS priority, HCI/SERIAL0 unchanged.",
+  "runtime_claim": false,
+  "SDK": false,
+  "COM": false,
+  "release_modification_notice": {
+    "year": 2026,
+    "notice_only": true,
+    "executable_tokens_unchanged": true,
+    "line_count_unchanged": true,
+    "previous_canonical_driver": {
+      "path": "app/nes/audio/c6/hosted/p4_sdio_drv.c",
+      "bytes": 58696,
+      "sha256": "a1766fa2db70f38df146562432335b67552f35140d5f0d7ee29d92e094a32d1c"
+    }
+  }
+}

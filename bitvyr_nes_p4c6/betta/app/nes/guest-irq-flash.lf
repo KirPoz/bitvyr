@@ -1,0 +1,7 @@
+# Guest IRQ/NMI/BRK entry исполняется обычной задачей с доступным cache, не ESP ISR.
+# Один общий источник размещения сохраняет одинаковый SRAM-бюджет в A/B.
+[mapping:nes_guest_irq_flash]
+archive: libnes_core.a
+entries:
+    unity_0_cxx:_ZN3nes4core7Cpu65029interruptEbb (default)
+    Cpu6502:_ZN3nes4core7Cpu65029interruptEbb (default)

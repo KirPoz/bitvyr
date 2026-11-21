@@ -1,0 +1,5 @@
+# Только новый экспериментальный endpoint; базовые PPU/CPU kernels не меняются.
+[mapping:nes_event_kernel_endpoint_flash]
+archive: libnes_core.a
+entries:
+    unity_0_cxx:_ZN3nes4core9TimingPpu26tryMmc5VisiblePhaseSegmentEj (default)

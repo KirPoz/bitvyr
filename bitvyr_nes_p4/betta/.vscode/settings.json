@@ -1,0 +1,16 @@
+{
+  "idf.extensionActivationMode": "always",
+  "idf.customExtraVars": {
+    "ESP_IDF_VERSION": "6.1",
+    "IDF_CCACHE_ENABLE": "1"
+  },
+  "idf.buildPath": "build",
+  "idf.monitorBaudRate": "115200",
+  "idf.flashBaudRate": "921600",
+  "idf.flashType": "UART",
+  "idf.openOcdConfigs": [
+    "board/esp32p4-builtin.cfg"
+  ],
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+  "C_Cpp.default.cppStandard": "c++17"
+}
