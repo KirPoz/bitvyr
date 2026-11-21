@@ -9,6 +9,10 @@
 #include <cstdio>
 #include <new>
 
+#ifndef NES_EXPERIMENTAL_C6_PCM_THREE_TICKETS
+#define NES_EXPERIMENTAL_C6_PCM_THREE_TICKETS 0
+#endif
+// Только NesApp.cpp включает MainOwner. Определение действует внутри этой единицы трансляции.
 namespace nes::app::c6_async {
 /**
  * @brief PRIVATE boot-long Main control в HP; wire8192/дополнительный PCM4096 живут отдельно в PSRAM.
@@ -31,15 +35,17 @@ public:
         void*memory=heap_caps_aligned_alloc(64,sizeof(MainOwner),MALLOC_CAP_INTERNAL|MALLOC_CAP_DMA|MALLOC_CAP_8BIT);
         if(!memory)return nullptr;
         if(!validControl(memory)){heap_caps_free(memory);return nullptr;}
-        void*data=heap_caps_aligned_alloc(64,sizeof(Payload),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
+        const auto bytes=payloadBytes();
+        void*data=heap_caps_aligned_alloc(64,bytes,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
         if(!data){heap_caps_free(memory);return nullptr;}
-        if(!validPayload(data)){heap_caps_free(data);heap_caps_free(memory);return nullptr;}
+        if(!validPayload(data,bytes)){heap_caps_free(data);heap_caps_free(memory);return nullptr;}
         auto*channel=::nes::c6audio::p4::initializeMainChannel();
         if(!channel){heap_caps_free(data);heap_caps_free(memory);return nullptr;}
         auto*payload=::new(data)Payload;
+        if constexpr(NES_EXPERIMENTAL_C6_PCM_THREE_TICKETS)::new(static_cast<std::uint8_t*>(data)+sizeof(Payload))ExtraPcm;
         auto*owner=::new(memory)MainOwner(*channel,binding,published,pcm0,*payload,backend,qualification);
-        std::printf("NES_C6_AUDIO_ALLOC control=%p control_bytes=%u control_hp_dma=1 payload=%p payload_bytes=%u payload_psram=1 wire_bytes=8192 pcm_bytes=4096 channel_bytes=%u no_rpc=1\n",
-            memory,unsigned(sizeof(MainOwner)),data,unsigned(sizeof(Payload)),unsigned(sizeof(::nes::c6raw::Channel)));
+        std::printf("NES_C6_AUDIO_ALLOC control=%p control_bytes=%u control_hp_dma=1 payload=%p payload_bytes=%u payload_psram=1 wire_bytes=8192 pcm_bytes=%u channel_bytes=%u no_rpc=1\n",
+            memory,unsigned(sizeof(MainOwner)),data,unsigned(bytes),unsigned(4096U+extraPcmBytes()),unsigned(sizeof(::nes::c6raw::Channel)));
         return owner;
     }
     /** @brief Запрещает копирование владельца и дублирование borrowed источников. */
@@ -66,7 +72,7 @@ public:
             publication::ReplyView reply{};const auto result=publication::RawAsyncAdapter::poll(&adapter_,reply);
             if(result==publication::TransportState::Pending)return true;
             if(result!=publication::TransportState::Complete||!adapter_.qualified()||
-               !session_.begin(binding_,payload_->wire.data(),payload_->wire.size(),pcm0_,payload_->pcm.data(),payload_->pcm.size()))return fail();
+               !session_.begin(binding_,payload_->wire.data(),payload_->wire.size(),pcm0_,payload_->pcm.data(),payload_->pcm.size(),thirdPcm()))return fail();
             mode_=Mode::Cold;return true;
         }
         if(!session_.pollOne())return fail();
@@ -121,6 +127,18 @@ private:
         std::array<std::int16_t,core::Apu::sampleCapacity>pcm{};
     };
     static_assert(sizeof(Payload)==12288,"C6 payload holds one wire window and the second PCM buffer");
+    using ExtraPcm=std::array<std::int16_t,core::Apu::sampleCapacity>;
+    static_assert(sizeof(ExtraPcm)==4096,"Third PCM is a separate 4096-byte tail object");
+    /** @brief Размер третьего блока в PSRAM. Ноль сохраняет конфигурацию из двух блоков для тестов. */
+    static constexpr std::size_t extraPcmBytes()noexcept{return NES_EXPERIMENTAL_C6_PCM_THREE_TICKETS?sizeof(ExtraPcm):0U;}
+    static constexpr std::size_t payloadBytes()noexcept{return sizeof(Payload)+extraPcmBytes();}
+    /** @brief Возвращает массив PCM, созданный при выделении памяти за основным буфером. */
+    std::int16_t*thirdPcm()noexcept{
+        if constexpr(NES_EXPERIMENTAL_C6_PCM_THREE_TICKETS){
+            auto*tail=std::launder(reinterpret_cast<ExtraPcm*>(reinterpret_cast<std::uint8_t*>(payload_)+sizeof(Payload)));
+            return tail->data();
+        }else return nullptr;
+    }
     /** @brief Проверяет alignment и оба конца целого control extent: именно HP DRAM, internal, DMA и byte accessible. */
     static bool validControl(void*memory)noexcept{
         const auto*last=static_cast<std::uint8_t*>(memory)+sizeof(MainOwner)-1;
@@ -129,8 +147,9 @@ private:
             esp_ptr_byte_accessible(memory)&&esp_ptr_byte_accessible(last);
     }
     /** @brief Проверяет оба конца отдельного PSRAM payload; аппаратный TX envelope остаётся внутри прежнего Channel. */
-    static bool validPayload(void*memory)noexcept{
-        const auto*last=static_cast<std::uint8_t*>(memory)+sizeof(Payload)-1;
+    static bool validPayload(void*memory,std::size_t bytes)noexcept{
+        if(!memory||bytes!=payloadBytes())return false;
+        const auto*last=static_cast<std::uint8_t*>(memory)+bytes-1;
         return reinterpret_cast<std::uintptr_t>(memory)%64U==0&&esp_ptr_external_ram(memory)&&esp_ptr_external_ram(last)&&
             esp_ptr_byte_accessible(memory)&&esp_ptr_byte_accessible(last);
     }

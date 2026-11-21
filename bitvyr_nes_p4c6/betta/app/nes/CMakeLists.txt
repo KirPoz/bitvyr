@@ -66,3 +66,6 @@ target_compile_definitions(${COMPONENT_LIB} PRIVATE NES_EXPERIMENTAL_BATCH_FETCH
 
 # Main обслуживает C6 между порциями цветной обработки.
 target_compile_definitions(${COMPONENT_LIB} PRIVATE NES_EXPERIMENTAL_FRAME_COLOUR_PUMP=1)
+
+# Третий блок PCM в PSRAM сохраняет остаток при частичной записи I2S.
+target_compile_definitions(${COMPONENT_LIB} PRIVATE NES_EXPERIMENTAL_C6_PCM_THREE_TICKETS=1)

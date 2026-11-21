@@ -1,13 +1,14 @@
 # Main session и Worker publication
 
 AudioPublished — единственный release/acquire handoff; BatchMainSession и
-MainOwner — Main-only, PcmQueue сохраняет два PCM ticket с точными zero/partial
-acceptance offsets. RemoteLoan принадлежит Worker и сохраняет once stage/ACK/
+MainOwner принадлежит Main. PcmQueue хранит три блока PCM и смещение
+записи каждого блока после частичного приёма I2S. RemoteLoan принадлежит Worker и сохраняет once stage/ACK/
 finalize без local DSP. Он зависит от прежнего Coupled ThinBridge API; перенос
 header не подключает и не изменяет этот API. Main не читает live primary.
 
-Два caller PCM spans живут до actual drain; wire/дополнительный PCM выделяются
-cold в PSRAM, control/Channel проверяются HP на обоих концах. Нет новых задач,
+Три области PCM живут до полного опустошения очереди. Третий блок занимает
+4 КиБ PSRAM и выделяется при запуске вместе с буфером транспорта. Заголовки и
+канал проверяются на доступность из HP SRAM при создании. Нет новых задач,
 hot allocation или неограниченных очередей. Смена владельца требует joined N и
 sourceReleased того же N; reply/TXdone/finished/timeout не заменяют completion.
 Boot-long owner/session переиспользуется только после проверенного UNBIND

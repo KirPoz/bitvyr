@@ -1,5 +1,6 @@
 /** @file Проверка независимого PCM stream guard на захваченных временных ключах. */
 #include "../../app/nes/audio/PcmStreamGuard.h"
+#include "../../app/nes/audio/c6/runtime/PcmQueue.h"
 #include <array>
 #include <cstdio>
 #include <cstdlib>
@@ -121,11 +122,64 @@ void corpus(const char* path) {
     require(input.eof() && frames, "complete captured stream");
     std::printf("PCM_GUARD_CORPUS frames=%zu\n", frames);
 }
+/** @brief Проверяет порядок и окна выдачи PCM при заполнении трёх блоков. */
+void threePcmTickets() {
+    using Queue = nes::app::c6_async::PcmQueue;
+    using Key = nes::c6audio::async::PublishedKey;
+    constexpr unsigned samples = 4;
+    std::array<std::array<std::int16_t, samples>, 3> buffers{};
+    Queue queue;
+    require(!queue.initialize(buffers[0].data(), buffers[1].data(), samples, buffers[0].data()),
+            "reject overlapping blocks");
+    require(queue.initialize(buffers[0].data(), buffers[1].data(), samples, buffers[2].data()),
+            "initialize three blocks");
+    const auto ticket = [](std::uint64_t frame) -> Key {
+        constexpr std::uint64_t cycles = 29781;
+        return {11, 12, 13, 14, frame,
+                {15, frame, frame + 1, frame * cycles, (frame + 1) * cycles, nes::core::Region::Ntsc, 0}, 1};
+    };
+
+    std::int16_t* destination = nullptr;
+    for (unsigned frame = 0; frame < buffers.size(); ++frame) {
+        require(queue.reserve(ticket(frame), destination) && destination == buffers[frame].data(),
+                "reserve the next distinct block");
+        destination[1] = static_cast<std::int16_t>(frame + 10);
+        require(queue.ready(ticket(frame), samples), "publish completed PCM");
+    }
+    require(queue.peakOccupied() == 3 && queue.canDispatch(2) && !queue.canDispatch(3),
+            "bound dispatch at two guest frames");
+    require(!queue.reserve(ticket(3), destination), "reserve cannot reuse an occupied block");
+
+    Queue::Output output{};
+    require(!queue.beginOutput(0, false, output), "reject playback before next dispatch");
+    require(queue.beginOutput(2, false, output) && output.key.inputFrame == 0 && output.samples == samples,
+            "play the oldest block after two dispatches");
+    require(queue.outputAccepted(ticket(0), 1) && queue.occupied() == 3,
+            "partial I2S write retains ownership");
+    require(!queue.beginOutput(1, false, output), "reject a backwards dispatch watermark");
+    require(queue.beginOutput(2, false, output) && output.offset == 1 && *output.data == 10,
+            "resume at exactly the first unwritten sample");
+    require(!queue.outputAccepted(ticket(1), 3), "a later reply cannot release the oldest block");
+    require(queue.outputAccepted(ticket(0), 3) && queue.canDispatch(3), "release only after all samples");
+    require(queue.reserve(ticket(3), destination) && destination == buffers[0].data(),
+            "reuse the released block");
+    require(queue.ready(ticket(3), 0), "publish a block without samples");
+
+    for (unsigned frame = 1; frame <= 3; ++frame) {
+        require(queue.beginOutput(3, true, output) && output.key.inputFrame == frame,
+                "drain remaining blocks in order");
+        require(queue.outputAccepted(output.key, output.samples), "release the drained block");
+    }
+    require(queue.maxOutputLag() == 2 && queue.emptyForRebind() && queue.rebindEmpty(),
+            "release all owners and reset for the next ROM");
+}
+
 } // namespace
 
 /** @brief Выполняет baseline/negative и необязательные реальные captured streams. */
 int main(int argc, char** argv) {
     directed();
+    threePcmTickets();
     if (argc == 2 && !std::strcmp(argv[1], "--negative")) {
         Guard guard; require(guard.bind(binding()), "negative bind");
         require(guard.observe(key(0, 0, 27511), pcm[0].data(), 738), "deliberate bad sample count");

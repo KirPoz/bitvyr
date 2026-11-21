@@ -95,9 +95,10 @@ bool NesApp::configureC6AudioBackend()noexcept{
     w.c6PcmStream=newStream;w.c6DispatchedInput=0;
     // Frame ROM/transport epochs и C6 binding.romEpoch — разные проверенные домены.
     if(w.framePipeline&&!w.frameC6Audio.configure(frameSource,binding))return false;
-    std::printf("NES_C6_AUDIO_BACKEND ready=1 warm_unbind=1 rebound=%u mapper=%u audio_caps=%u delay_guest_frames=1 local_worker_dsp=0 wire_bytes=8192 extra_pcm_bytes=4096 source_arenas=2 backend_batch=%u qualified=%u stream_guard=1\n",
-        unsigned(rebound),unsigned(current_.mapper),unsigned(h.capabilities),
+    std::printf("NES_C6_AUDIO_BACKEND ready=1 warm_unbind=1 rebound=%u mapper=%u audio_caps=%u delay_guest_frames=1 local_worker_dsp=0 wire_bytes=8192 extra_pcm_bytes=%u source_arenas=2 backend_batch=%u qualified=%u stream_guard=1\n",
+        unsigned(rebound),unsigned(current_.mapper),unsigned(h.capabilities),4096U*(w.c6Audio->session().pcmTicketCapacity()-1U),
         unsigned(backend==c6audio::async::BatchClient::Backend::Batch),unsigned(0));
+    if(w.c6Audio->session().pcmTicketCapacity()==3U)std::printf("NES_C6_PCM_QUEUE schema=1 tickets=3 minimum_delay_frames=1 maximum_delay_frames=2 pressure_only=1 no_drop=1 owner=main source_arenas=2 dsp=unchanged default=3\n");
     std::printf("NES_COUPLED_REPORT_DIAG schema=1 ready=1 report_no_drain=%u endpoints=1 next_frame_finish_unchanged=1 final_drain_required=1 watchdog_unchanged=1\n",unsigned(1));
     return true;
 }
@@ -168,7 +169,10 @@ void NesApp::reportC6AudioWindow(std::uint64_t n,std::uint64_t stages,std::uint6
             static_cast<unsigned long long>(w.c6PumpCost.i2sCalls),
             static_cast<unsigned long long>(w.c6PumpCost.i2sSamples),
             static_cast<unsigned long long>(w.c6PumpCost.sinkSamples),
-            static_cast<unsigned long long>(esp_rom_get_cpu_ticks_per_us())*1000000ULL);}
+            static_cast<unsigned long long>(esp_rom_get_cpu_ticks_per_us())*1000000ULL);
+        const auto&s=w.c6Audio->session();
+        if(s.pcmTicketCapacity()==3U)std::printf("NES_C6_PCM_PRESSURE schema=1 generation=%llu frames=%llu tickets=3 occupied=%u peak_occupied=%u max_output_lag=%u minimum_delay_frames=1 maximum_delay_frames=2 maxima_since=bind actual_dispatch=existing no_drop=1\n",
+            static_cast<unsigned long long>(sessionGeneration_),static_cast<unsigned long long>(frames_),unsigned(s.occupiedPcm()),s.peakOccupiedPcm(),s.maximumOutputLag());}
 }
 
 /**

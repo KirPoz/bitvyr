@@ -8,7 +8,7 @@ namespace nes::app::c6_async {
 namespace publication=::nes::c6audio::async;
 namespace service=::nes::c6audio::service;
 /**
- * @brief PRIVATE cooperative Main-владелец одного encoded wire и двух PCM ticket.
+ * @brief PRIVATE cooperative Main-владелец одного encoded wire и двух либо трёх PCM ticket.
  * @details Worker не обращается к этому объекту. Между pollOne App обслуживает
  * прежний c.pump. Ни Machine, ни token, ни borrowed primary state здесь не читаются.
  * Начальный C6 HELLO/identity является обязанностью внешнего Raw adapter.
@@ -32,12 +32,13 @@ public:
      * @details INIT/BIND один раз, второй ROM требует нового протокола; повтор не выполняется.
      */
     bool begin(const ::nes::c6audio::service::Binding&binding,std::uint8_t*wire,std::size_t wireBytes,
-               std::int16_t*first,std::int16_t*second,std::size_t capacity)noexcept{
+               std::int16_t*first,std::int16_t*second,std::size_t capacity,std::int16_t*third=nullptr)noexcept{
         if(mode_!=Mode::Empty||wireBytes!=8192||!wire||!capacity||capacity>core::Apu::sampleCapacity||
            !separateStorage(wire,wireBytes)||!separateStorage(first,capacity*sizeof(*first))||
            !separateStorage(second,capacity*sizeof(*second))||
            !apart(wire,wireBytes,first,capacity*sizeof(*first))||!apart(wire,wireBytes,second,capacity*sizeof(*second))||
-           !pcm_.initialize(first,second,capacity))return false;
+           (third&&(!separateStorage(third,capacity*sizeof(*third))||!apart(wire,wireBytes,third,capacity*sizeof(*third))))||
+           !pcm_.initialize(first,second,capacity,third))return false;
         binding_=binding;wire_=wire;wireBytes_=wireBytes;
         if(!client_.beginCold(binding_))return fail();
         mode_=Mode::Init;return true;
@@ -68,7 +69,7 @@ public:
         }
         // После DATAComplete старого N BatchClient больше не читает wire. N+1 может быть
         // encoded здесь; beginFrame ждёт bound и явно подтверждает held Result_N своим SUBMIT либо CONSUMED.
-        if(!queued_&&(!active_||client_.inputReleased())&&!acquired_&&pcm_.occupied()<2){
+        if(!queued_&&(!active_||client_.inputReleased())&&!acquired_&&pcm_.occupied()<pcm_.ticketCapacity()){
             publication::PublishedKey key{};
             if(published_.peekPublishedKey(key)){
                 if(!expectedPublication(key)||(mode_==Mode::Draining&&key.inputFrame>finalKey_.inputFrame))return fail();
@@ -173,7 +174,11 @@ public:
     const publication::JoinedFrame&lastJoined()const noexcept{return joined_;}
     /** @brief Числовая занятость двух PCM ticket; не разрешает освобождение по одному этому счётчику. */
     std::size_t occupiedPcm()const noexcept{return pcm_.occupied();}
-    /** @brief Максимум один guest frame PCM lead; caller продолжает poll/I2S между отказами. */
+    /** @brief Только cold policy и Main maxima; они не заменяют real join/drain. */
+    unsigned pcmTicketCapacity()const noexcept{return pcm_.ticketCapacity();}
+    unsigned peakOccupiedPcm()const noexcept{return pcm_.peakOccupied();}
+    unsigned maximumOutputLag()const noexcept{return pcm_.maxOutputLag();}
+    /** @brief Cold policy допускает lag1 либо lag1..2; caller продолжает poll/I2S между отказами. */
     bool canDispatch(std::uint64_t input)const noexcept{return mode_==Mode::Running&&pcm_.canDispatch(input);}
     /** @brief Защёлкивает timeout и сохраняет все заимствования; никакого автоматического abort/reset. */
     bool noteTimeout()noexcept{client_.noteTimeout();return fail();}
