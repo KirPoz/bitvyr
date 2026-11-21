@@ -156,6 +156,22 @@ void Machine::refreshPpuDeferBudget() const noexcept {
                 budget=std::max(budget,visible);
             if(budget<visible&&cartridge_.ppuIrqQuietVisibleAny())budget=visible;
         }
+        if(cartridge_.mapper_==4U&&outputOwner_&&
+           region_==Region::Ntsc&&!thin_&&!videoObserver_&&!timingPpu_.capture_&&
+           timingPpu_.canDeferDots(0)&&(timingPpu_.control_&0x30U)==0x20U&&
+           cartridge_.irqEnabled_&&!cartridge_.irqPending_){
+            const unsigned rises=cartridge_.irqCounter_&&!cartridge_.irqReload_?
+                unsigned(cartridge_.irqCounter_):unsigned(cartridge_.irqLatch_)+1U;
+            if(rises>=6U){
+                // Один подъём зарезервирован для незавершённой входной фазы.
+                // У восьми sprite-слотов не более четырёх подъёмов с низким интервалом >=8.
+                const unsigned rows=(rises-2U)/4U;
+                // На 240:0 гашение может дать фронт A12 вне области спрайтов.
+                const unsigned visibleDots=(240U-unsigned(timingPpu_.scanline()))*341U-timingPpu_.dot();
+                const unsigned candidate=std::min(visibleDots,341U*rows+257U-timingPpu_.dot());
+                budget=std::max(budget,candidate);
+            }
+        }
         ppuDeferBudget_=static_cast<std::uint16_t>(budget);
         return;
     }
