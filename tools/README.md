@@ -25,6 +25,9 @@ python -B tools/analyze_playthrough.py bitvyr_nes_p4/betta/build/validation/my-p
 ## Автоматический прогон
 
 Обе редакции используют [26 закреплённых маршрутов](qualification-movies.json).
+Для P4+C6 есть дополнительная сцена Castlevania III в BLOCK 1-02. Выберите
+`--movies tools/c6-later-cviii-scene.json --crcs 7cf70cde` при запуске из
+корня репозитория. Проверяются три окна по 120 кадров. [Маршрут](c6-later-cviii-scene.json)
 В банке есть CRC, регион, последовательность кнопок и измеряемый интервал.
 Сначала посмотрите план без открытия COM:
 

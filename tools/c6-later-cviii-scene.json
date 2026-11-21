@@ -1,0 +1,739 @@
+{
+  "schema": 1,
+  "settings": {
+    "region": "forced_NTSC",
+    "volume": 28,
+    "muted": false
+  },
+  "queue_capacity": 16,
+  "games": [
+    {
+      "crc32": "7cf70cde",
+      "title": "Castlevania III - Dracula's Curse (USA)",
+      "mapper": 5,
+      "region": "NTSC",
+      "rom_pal": false,
+      "baseline_report": 2880,
+      "roi_reports": [
+        3000,
+        3120,
+        3240
+      ],
+      "roi_input0": [
+        2880,
+        3239
+      ],
+      "end_frame": 3360,
+      "edges": [
+        {
+          "frame": 0,
+          "mask": 0
+        },
+        {
+          "frame": 64,
+          "mask": 8
+        },
+        {
+          "frame": 70,
+          "mask": 0
+        },
+        {
+          "frame": 111,
+          "mask": 8
+        },
+        {
+          "frame": 118,
+          "mask": 0
+        },
+        {
+          "frame": 158,
+          "mask": 8
+        },
+        {
+          "frame": 163,
+          "mask": 0
+        },
+        {
+          "frame": 171,
+          "mask": 1
+        },
+        {
+          "frame": 176,
+          "mask": 0
+        },
+        {
+          "frame": 200,
+          "mask": 8
+        },
+        {
+          "frame": 206,
+          "mask": 0
+        },
+        {
+          "frame": 221,
+          "mask": 4
+        },
+        {
+          "frame": 226,
+          "mask": 0
+        },
+        {
+          "frame": 292,
+          "mask": 4
+        },
+        {
+          "frame": 299,
+          "mask": 0
+        },
+        {
+          "frame": 357,
+          "mask": 4
+        },
+        {
+          "frame": 364,
+          "mask": 0
+        },
+        {
+          "frame": 378,
+          "mask": 8
+        },
+        {
+          "frame": 383,
+          "mask": 0
+        },
+        {
+          "frame": 544,
+          "mask": 8
+        },
+        {
+          "frame": 553,
+          "mask": 0
+        },
+        {
+          "frame": 594,
+          "mask": 128
+        },
+        {
+          "frame": 622,
+          "mask": 129
+        },
+        {
+          "frame": 625,
+          "mask": 128
+        },
+        {
+          "frame": 642,
+          "mask": 130
+        },
+        {
+          "frame": 647,
+          "mask": 128
+        },
+        {
+          "frame": 704,
+          "mask": 129
+        },
+        {
+          "frame": 716,
+          "mask": 128
+        },
+        {
+          "frame": 738,
+          "mask": 0
+        },
+        {
+          "frame": 743,
+          "mask": 64
+        },
+        {
+          "frame": 757,
+          "mask": 2
+        },
+        {
+          "frame": 762,
+          "mask": 0
+        },
+        {
+          "frame": 785,
+          "mask": 64
+        },
+        {
+          "frame": 796,
+          "mask": 0
+        },
+        {
+          "frame": 807,
+          "mask": 128
+        },
+        {
+          "frame": 833,
+          "mask": 0
+        },
+        {
+          "frame": 840,
+          "mask": 128
+        },
+        {
+          "frame": 856,
+          "mask": 130
+        },
+        {
+          "frame": 861,
+          "mask": 128
+        },
+        {
+          "frame": 1038,
+          "mask": 130
+        },
+        {
+          "frame": 1042,
+          "mask": 128
+        },
+        {
+          "frame": 1354,
+          "mask": 130
+        },
+        {
+          "frame": 1359,
+          "mask": 128
+        },
+        {
+          "frame": 1400,
+          "mask": 0
+        },
+        {
+          "frame": 1403,
+          "mask": 2
+        },
+        {
+          "frame": 1408,
+          "mask": 0
+        },
+        {
+          "frame": 1415,
+          "mask": 128
+        },
+        {
+          "frame": 1433,
+          "mask": 129
+        },
+        {
+          "frame": 1440,
+          "mask": 128
+        },
+        {
+          "frame": 1459,
+          "mask": 129
+        },
+        {
+          "frame": 1467,
+          "mask": 128
+        },
+        {
+          "frame": 1545,
+          "mask": 0
+        },
+        {
+          "frame": 1690,
+          "mask": 128
+        },
+        {
+          "frame": 1729,
+          "mask": 0
+        },
+        {
+          "frame": 1736,
+          "mask": 128
+        },
+        {
+          "frame": 1787,
+          "mask": 129
+        },
+        {
+          "frame": 1790,
+          "mask": 128
+        },
+        {
+          "frame": 1828,
+          "mask": 130
+        },
+        {
+          "frame": 1832,
+          "mask": 128
+        },
+        {
+          "frame": 1853,
+          "mask": 0
+        },
+        {
+          "frame": 1901,
+          "mask": 128
+        },
+        {
+          "frame": 1926,
+          "mask": 0
+        },
+        {
+          "frame": 1942,
+          "mask": 128
+        },
+        {
+          "frame": 1961,
+          "mask": 129
+        },
+        {
+          "frame": 1964,
+          "mask": 128
+        },
+        {
+          "frame": 1985,
+          "mask": 130
+        },
+        {
+          "frame": 1989,
+          "mask": 128
+        },
+        {
+          "frame": 2027,
+          "mask": 130
+        },
+        {
+          "frame": 2032,
+          "mask": 128
+        },
+        {
+          "frame": 2085,
+          "mask": 0
+        },
+        {
+          "frame": 2106,
+          "mask": 64
+        },
+        {
+          "frame": 2112,
+          "mask": 0
+        },
+        {
+          "frame": 2119,
+          "mask": 16
+        },
+        {
+          "frame": 2343,
+          "mask": 0
+        },
+        {
+          "frame": 2349,
+          "mask": 128
+        },
+        {
+          "frame": 2361,
+          "mask": 130
+        },
+        {
+          "frame": 2362,
+          "mask": 2
+        },
+        {
+          "frame": 2366,
+          "mask": 0
+        },
+        {
+          "frame": 2382,
+          "mask": 128
+        },
+        {
+          "frame": 2440,
+          "mask": 0
+        },
+        {
+          "frame": 2455,
+          "mask": 16
+        },
+        {
+          "frame": 2650,
+          "mask": 0
+        },
+        {
+          "frame": 2658,
+          "mask": 64
+        },
+        {
+          "frame": 2672,
+          "mask": 0
+        },
+        {
+          "frame": 2681,
+          "mask": 64
+        },
+        {
+          "frame": 2692,
+          "mask": 0
+        },
+        {
+          "frame": 2700,
+          "mask": 16
+        },
+        {
+          "frame": 2865,
+          "mask": 0
+        },
+        {
+          "frame": 2870,
+          "mask": 128
+        },
+        {
+          "frame": 2896,
+          "mask": 0
+        },
+        {
+          "frame": 2916,
+          "mask": 2
+        },
+        {
+          "frame": 2920,
+          "mask": 0
+        },
+        {
+          "frame": 2933,
+          "mask": 16
+        },
+        {
+          "frame": 2948,
+          "mask": 144
+        },
+        {
+          "frame": 2988,
+          "mask": 145
+        },
+        {
+          "frame": 3029,
+          "mask": 144
+        },
+        {
+          "frame": 3035,
+          "mask": 16
+        },
+        {
+          "frame": 3047,
+          "mask": 80
+        },
+        {
+          "frame": 3054,
+          "mask": 16
+        },
+        {
+          "frame": 3055,
+          "mask": 17
+        },
+        {
+          "frame": 3057,
+          "mask": 81
+        },
+        {
+          "frame": 3080,
+          "mask": 80
+        },
+        {
+          "frame": 3104,
+          "mask": 16
+        },
+        {
+          "frame": 3112,
+          "mask": 17
+        },
+        {
+          "frame": 3117,
+          "mask": 81
+        },
+        {
+          "frame": 3147,
+          "mask": 16
+        },
+        {
+          "frame": 3153,
+          "mask": 144
+        },
+        {
+          "frame": 3167,
+          "mask": 16
+        },
+        {
+          "frame": 3177,
+          "mask": 80
+        },
+        {
+          "frame": 3179,
+          "mask": 81
+        },
+        {
+          "frame": 3207,
+          "mask": 80
+        },
+        {
+          "frame": 3257,
+          "mask": 81
+        },
+        {
+          "frame": 3314,
+          "mask": 17
+        },
+        {
+          "frame": 3316,
+          "mask": 16
+        },
+        {
+          "frame": 3320,
+          "mask": 144
+        },
+        {
+          "frame": 3331,
+          "mask": 16
+        }
+      ],
+      "queue_plan": {
+        "mode": "rolling",
+        "queue_capacity": 16,
+        "initial": [
+          "0:0",
+          "64:8",
+          "70:0",
+          "111:8",
+          "118:0",
+          "158:8",
+          "163:0",
+          "171:1",
+          "176:0",
+          "200:8",
+          "206:0",
+          "221:4",
+          "226:0",
+          "292:4"
+        ],
+        "deferred": [
+          "299:0",
+          "357:4",
+          "364:0",
+          "378:8",
+          "383:0",
+          "544:8",
+          "553:0",
+          "594:128",
+          "622:129",
+          "625:128",
+          "642:130",
+          "647:128",
+          "704:129",
+          "716:128",
+          "738:0",
+          "743:64",
+          "757:2",
+          "762:0",
+          "785:64",
+          "796:0",
+          "807:128",
+          "833:0",
+          "840:128",
+          "856:130",
+          "861:128",
+          "1038:130",
+          "1042:128",
+          "1354:130",
+          "1359:128",
+          "1400:0",
+          "1403:2",
+          "1408:0",
+          "1415:128",
+          "1433:129",
+          "1440:128",
+          "1459:129",
+          "1467:128",
+          "1545:0",
+          "1690:128",
+          "1729:0",
+          "1736:128",
+          "1787:129",
+          "1790:128",
+          "1828:130",
+          "1832:128",
+          "1853:0",
+          "1901:128",
+          "1926:0",
+          "1942:128",
+          "1961:129",
+          "1964:128",
+          "1985:130",
+          "1989:128",
+          "2027:130",
+          "2032:128",
+          "2085:0",
+          "2106:64",
+          "2112:0",
+          "2119:16",
+          "2343:0",
+          "2349:128",
+          "2361:130",
+          "2362:2",
+          "2366:0",
+          "2382:128",
+          "2440:0",
+          "2455:16",
+          "2650:0",
+          "2658:64",
+          "2672:0",
+          "2681:64",
+          "2692:0",
+          "2700:16",
+          "2865:0",
+          "2870:128",
+          "2896:0",
+          "2916:2",
+          "2920:0",
+          "2933:16",
+          "2948:144",
+          "2988:145",
+          "3029:144",
+          "3035:16",
+          "3047:80",
+          "3054:16",
+          "3055:17",
+          "3057:81",
+          "3080:80",
+          "3104:16",
+          "3112:17",
+          "3117:81",
+          "3147:16",
+          "3153:144",
+          "3167:16",
+          "3177:80",
+          "3179:81",
+          "3207:80",
+          "3257:81",
+          "3314:17",
+          "3316:16",
+          "3320:144",
+          "3331:16"
+        ]
+      },
+      "rom_identity": {
+        "crc32": "7cf70cde",
+        "sha256": "085ec6395681c7ebfda19c2986069c21a3d27738cc61ada76249de70a07ed7d3",
+        "bytes": 393232,
+        "mapper": 5,
+        "submapper": 0,
+        "format": "NES2"
+      },
+      "input_provenance": {
+        "kind": "RECORDED_HUMAN_CANDIDATE",
+        "source_guid": "856ae9497a10b790ce1711e1576198fd4931962860d68941b1f7c850aa3d5bf5",
+        "session_id": "playthrough-20261118-213959:05",
+        "variant_id": "7cf70cde-v01",
+        "source_generation": 18,
+        "source_input_prefix_sha256": "f4fd75c3bcb7933bb7abb24f2247440f93b9ccd4e802b2e9ad0db390b84b97e4",
+        "last_completed_frame": 3360,
+        "chosen_prefix_end_exclusive": 3360,
+        "excluded_after_prefix_events": 0,
+        "source_frame0": {
+          "line": 5095,
+          "byte_offset": 1382369,
+          "byte_end": 1382512
+        },
+        "source_last_completed": {
+          "line": 5374,
+          "byte_offset": 1469447,
+          "byte_end": 1469927
+        },
+        "source_input_counts": {
+          "xbox_raw": 85,
+          "xbox_effective": 85,
+          "serial": 0,
+          "touch": 0,
+          "touch_poll_not_ok": 0
+        },
+        "source_observed_gaps": [
+          {
+            "reason": "backend_MODE_or_rebind",
+            "line": 5382
+          }
+        ],
+        "all_chosen_prefix_edges_preserved": true,
+        "exact_human_replay_proof": false,
+        "physical_BLE_HCI_load_reproduced": false,
+        "inherited_limitations": [
+          "Sparse changed-input UART trace is a candidate, not proof that every edge was logged.",
+          "No passive final CPU/RAM/RGB oracle was captured; exact hardware replay is unverified.",
+          "applied is the pre-Core union; feed it directly to the same Core/region without remapping.",
+          "accepted frame N consumed input N-1; events at frame >= last_completed_frame are uncommitted.",
+          "Logged direction buttons suggest input activity; they do not prove movement or gameplay.",
+          "UART replay of applied masks does not reproduce physical Xbox BLE/HCI packet workload.",
+          "Short unmarked pauses and missing press/release pairs cannot be excluded by changed logging."
+        ],
+        "after_chosen_prefix": {
+          "held_mask": 16,
+          "source": "collector retains last movie mask until cleanup; not asserted original human input beyond prefix",
+          "measured_ROI": false,
+          "end_observer_may_advance_beyond_prefix": true
+        }
+      },
+      "qualification_scope": {
+        "measured_guest_frames": 360,
+        "windows": 3,
+        "equal_ROI_not_equal_reset_prefix": true,
+        "region": "NTSC",
+        "scene_verified": false,
+        "full_game_coverage": false,
+        "hardware_endpoint_verification_required": true,
+        "prior_FPS_transferred": false,
+        "recorded_activity_is_not_movement_proof": true
+      },
+      "scene_scope": {
+        "label": "HUMAN_INPUT_CANDIDATE_SCENE_UNVERIFIED",
+        "source_roi": [
+          1440,
+          3359
+        ],
+        "original_roi_overlap_frames": 360,
+        "new_or_repositioned_roi": true,
+        "explicit_ROI_override": true,
+        "native_preview_status": "PASS_CURRENT_M2_THREE_RESET_CUTS",
+        "hardware_RGB_or_physical_LCD_proof": false,
+        "native_visual_review": "THREE_CUTS_VISUALLY_REVIEWED_MOVING_1_02_PLATFORM_STAIRS",
+        "native_sampled_completed_frames": [
+          2881,
+          3060,
+          3240
+        ],
+        "native_observation": "BLOCK1-02; spatial screen scrolling, platforms/stairs and player movement; timer473/470/467. No title/menu/level transition in these three cuts. Dense combat/maximum-load not established."
+      },
+      "scene_notes": [
+        "Private successor uses existing recorded human7cf70cde-v01, not an extension of the official16-edge fixed movie.",
+        "Three exact native reset cuts show moving BLOCK1-02 platform/stair traversal; no claim of dense combat or game worst load.",
+        "Recorded completed prefix reaches3360. Only source gap is later MODE/rebind, and uncommitted3371/3385 inputs are excluded.",
+        "Official catalogue remains unchanged. This new input/ROI requires independent actual device endpoint and timing acceptance; old FPS must not transfer."
+      ]
+    }
+  ],
+  "route_preparation": {
+    "schema": "c6_equal_window_routes_v1",
+    "input_source": "human",
+    "window_frames": 120,
+    "requested_windows": 3,
+    "measured_guest_frames_per_game": 360,
+    "requested_CRCs": [
+      "7cf70cde"
+    ],
+    "prepared_count": 1,
+    "requested_count": 1,
+    "complete_requested_route_coverage": true,
+    "scene_qualified_count": 0,
+    "coverage_definition": "prepared/requested ROM routes, not exact input-log or scene completeness",
+    "exact_human_input_completeness_proof": false,
+    "native_or_hardware_FPS_claim": false,
+    "ROM_payload_in_bank": false,
+    "limits": [
+      "ROI length is equal; reset/menu prefix lengths remain different.",
+      "Changed ROI requires new same-cut native/hardware scene checks; no prior FPS transfer.",
+      "Human changed-edge UART is a replay candidate, not exact input or BLE workload proof.",
+      "Short/missing/ambiguous coverage is HOLD, never padded or silently replaced."
+    ]
+  }
+}
