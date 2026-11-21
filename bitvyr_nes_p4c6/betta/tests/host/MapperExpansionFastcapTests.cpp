@@ -97,6 +97,59 @@ struct MachineEventKernelTestAccess {
 #endif
  }
 #if !FASTCAP_SCALAR
+ /** @brief Сверяет STATUS с диагональной оценкой OAM внутри видимой строки. */
+ static void deferredSpriteStatus(Machine& m) {
+    auto& p = m.timingPpu_;
+    CHECK(m.outputFrameExecutable());
+    const auto setCut = [&](std::uint8_t nextY) {
+        p.scanline_ = 42;
+        p.dot_ = 197;
+        p.control_ = 0;
+        p.mask_ = 0x18;
+        p.renderingEnabled_ = p.renderingNext_ = true;
+        p.renderDelay_ = p.nmiDelay_ = 0;
+        p.status_ = 0;
+        p.openBus_ = 0x07;
+        p.writeToggle_ = true;
+        p.spriteCacheValid_ = true;
+        p.spriteZeroRow_ = false;
+        p.spriteZeroMask_.fill(0);
+        p.evaluationNextDot_ = 197;
+        p.evaluationDone_ = false;
+        p.secondaryPosition_ = 32;
+        p.evaluateN_ = 8;
+        p.evaluateM_ = 0;
+        p.evaluateLatch_ = 0xff;
+        p.overflowFetches_ = 0;
+        p.oam_[32] = nextY;
+    };
+
+    std::uint8_t value = 0;
+    setCut(42); // Девятый спрайт появляется на чётной точке 198.
+    CHECK(p.tryReadDeferredStatus(2, value) && value == 0x27);
+    CHECK(p.dot_ == 197 && p.evaluationNextDot_ == 199 && p.overflowFetches_ == 3);
+    CHECK(!p.writeToggle_ && p.openBus_ == value && (p.status_ & 0x20));
+
+    setCut(0xff); // Та же заполненная secondary OAM, но очередной байт вне строки.
+    CHECK(p.tryReadDeferredStatus(2, value) && value == 0x07);
+    CHECK(p.dot_ == 197 && p.evaluationNextDot_ == 199 && p.evaluateN_ == 9 && p.evaluateM_ == 1);
+    CHECK(!p.writeToggle_ && (p.status_ & 0x20) == 0);
+
+    setCut(42);
+    p.spriteZeroRow_ = true;
+    p.spriteZeroMask_[196 / 8] = 1U << (196 % 8);
+    value = 0xff;
+    CHECK(!p.tryReadDeferredStatus(2, value) && value == 0xff);
+    CHECK(p.evaluationNextDot_ == 197 && p.writeToggle_);
+
+    setCut(42);
+    p.renderingEnabled_ = p.renderingNext_ = false;
+    CHECK(!p.tryReadDeferredStatus(2, value) && p.evaluationNextDot_ == 197);
+
+    setCut(42);
+    p.dot_ = 340;
+    CHECK(!p.tryReadDeferredStatus(1, value) && p.evaluationNextDot_ == 197);
+ }
  /** @brief Проверяет фактическую Plain bulk-ветку через отличающийся опубликованный SpriteTile. */
  static void spriteSlot(Machine&m,VideoPacket&packet){
   auto&p=m.timingPpu_;p.packet_=&packet;p.capture_=nullptr;p.trackBusCycles_=p.trackBusAddresses_=false;
@@ -169,6 +222,19 @@ void directed(const std::vector<std::uint8_t>&r){
  auto retained=std::make_unique<Machine>();CHECK(retained->load(r.data(),r.size(),Region::Ntsc)==LoadResult::Ok);
  Access::retained(*retained);
 }
+/** @brief Создаёт тестовый NROM и выполняет чтение STATUS под владельцем Frame. */
+void deferredSpriteStatus() {
+    std::vector<std::uint8_t> rom(16 + 32768 + 8192, 0);
+    std::memcpy(rom.data(), "NES\x1a", 4);
+    rom[4] = 2;
+    rom[5] = 1;
+    auto frame = std::make_unique<Frame>();
+    frame->init(rom);
+    const OutputFrameTicket ticket{frame->lease, 0, 0, frame->machine.cpuCycles(), 0};
+    CHECK(frame->machine.beginOutputFrame(ticket));
+    Access::deferredSpriteStatus(frame->machine);
+}
+
 /** @brief Проверяет опрос VBlank через LDA/BPL с независимым скалярным PPU.
  * @param cross Выбирает пересечение PRG-страницы с дополнительным шинным чтением.
  */
@@ -256,6 +322,7 @@ int main(int argc,char**argv) {
 #if !FASTCAP_SCALAR
     statusPoll(false);
     statusPoll(true);
+    deferredSpriteStatus();
 #endif
     if(canonical)CHECK(std::fclose(canonical)==0);
     std::printf("FASTCAP checks=%u scalar=%u\n",checks,FASTCAP_SCALAR);

@@ -484,13 +484,19 @@ private:
      * @return Вычисленное значение или состояние типа std::uint8_t согласно описанному контракту.
      */
     std::uint8_t readStatus() noexcept;
+    /** @brief Итог единственной проверки отложенного STATUS-чтения. */
+    enum class StatusReadKind : std::uint8_t { Blocked, Stable, Eval };
+    /** @brief Локальный результат запроса; evalUntil используется только при Eval. */
+    struct StatusReadClassification {
+        StatusReadKind kind;
+        unsigned evalUntil;
+    };
     /**
-     * @brief Проверяет либо обслуживает чтение STATUS без полного доведения лишь при доказанной стабильности.
-     * @details Биты overflow/Sprite0, задержки, NMI, writeToggle и открытая шина требуют исходного точного помощника; ложный предикат оставляет обычный MMIO-путь.
-     * @param dots Число уже прошедших точек PPU.
-     * @return Результат описанной проверки либо успешность перехода состояния; false обрабатывается вызывающим путём.
+     * @brief Проверяет общие границы STATUS и необходимость отдельной OAM-оценки.
+     * @details Метод не меняет PPU и не разрешает mutable-ветвь сам по себе.
+     * @param dots Уже прошедшие, но ещё не доведённые точки PPU.
      */
-    bool canReadDeferredStatus(unsigned dots) const noexcept;
+    StatusReadClassification classifyDeferredStatus(unsigned dots) const noexcept;
     /**
      * @brief Проверяет право основного владельца не формировать ненаблюдаемые видеоданные.
      * @details Не расширяет поддерживаемые mapper и не относится к копиям, чужим PPU, временным захватам либо активному потребителю пакета.

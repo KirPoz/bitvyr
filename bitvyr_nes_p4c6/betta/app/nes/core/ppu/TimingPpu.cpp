@@ -199,69 +199,72 @@ std::uint8_t TimingPpu::readStatus() noexcept {
     return openBus_;
 }
 /**
- * @brief Проверяет либо обслуживает чтение STATUS без полного доведения лишь при доказанной стабильности.
- * @details Биты overflow/Sprite0, задержки, NMI, writeToggle и открытая шина требуют исходного точного помощника; ложный предикат оставляет обычный MMIO-путь.
- * @param dots Число уже прошедших точек PPU.
- * @return Результат описанной проверки либо успешность перехода состояния; false обрабатывается вызывающим путём.
- * @param value Выходной байт фактического чтения; допустим только после успешного результата метода.
+ * @brief Классифицирует STATUS по единой границе строки, Sprite0 и OAM.
+ * @details Eval означает только необходимость оценки; право менять основной PPU проверяет вызывающий read-путь.
  */
-bool TimingPpu::canReadDeferredStatus(unsigned dots) const noexcept {
-    if(static_cast<unsigned>(scanline_)>=240||dot_<1||dot_>340||
-       dots>=341U-dot_||(renderDelay_|nmiDelay_)||(status_&0x80U))return false;
-    // В каждом нематериализованном пикселе должен отсутствовать возможный Sprite0-hit.
-    if(!(status_&0x40U)&&dots&&dot_<=255&&renderingEnabled_&&(mask_&0x18U)==0x18U){
-        if(!spriteCacheValid_)return false;
-        if(spriteZeroRow_){
-            unsigned first=dot_-1U;
-            if((mask_&6U)!=6U)first=std::max(first,8U);
-            const unsigned last=std::min(dot_+dots-2U,254U);
-            for(unsigned x=first;x<=last;x=(x&~7U)+8U){
-                const unsigned hi=std::min(last,(x&~7U)+7U)&7U;
-                const unsigned mask=(0xFFU<<(x&7U))&(0xFFU>>(7U-hi));
-                if(spriteZeroMask_[x>>3]&mask)return false;
+TimingPpu::StatusReadClassification TimingPpu::classifyDeferredStatus(unsigned dots) const noexcept {
+    constexpr StatusReadClassification blocked{StatusReadKind::Blocked, 0U};
+    constexpr StatusReadClassification stable{StatusReadKind::Stable, 0U};
+    if (static_cast<unsigned>(scanline_) >= 240U || dot_ < 1U || dot_ > 340U ||
+        dots >= 341U - dot_ || (renderDelay_ | nmiDelay_) || (status_ & 0x80U)) {
+        return blocked;
+    }
+    // Во всём нематериализованном интервале не должно быть возможного Sprite0-hit.
+    if (!(status_ & 0x40U) && dots && dot_ <= 255U && renderingEnabled_ && (mask_ & 0x18U) == 0x18U) {
+        if (!spriteCacheValid_) return blocked;
+        if (spriteZeroRow_) {
+            unsigned first = dot_ - 1U;
+            if ((mask_ & 6U) != 6U) first = std::max(first, 8U);
+            const unsigned last = std::min(dot_ + dots - 2U, 254U);
+            for (unsigned x = first; x <= last; x = (x & ~7U) + 8U) {
+                const unsigned hi = std::min(last, (x & ~7U) + 7U) & 7U;
+                const unsigned mask = (0xFFU << (x & 7U)) & (0xFFU >> (7U - hi));
+                if (spriteZeroMask_[x >> 3U] & mask) return blocked;
             }
         }
     }
-    if(status_&0x20U)return true;
-    const unsigned until=std::min(256U,dot_+dots-1U);
-    const unsigned next=evaluationNextDot_;
-    if(next>until)return true;
-    if(!next)return false; // Ни одна допустимая эпоха evaluator не начинается с нуля.
-    // В горизонте нет dot0/reset. Next1 — единственный вход
-    // reset: его устаревшим Done/position доверять нельзя.
-    if(next>1&&evaluationDone_)return true;
-    const unsigned position=next==1?0U:secondaryPosition_;
-    const unsigned firstEven=next<=64?66U:next+(next&1U);
-    const unsigned count=until<firstEven?0U:1U+(until-firstEven)/2U;
-    if(!count)return true;
-    // Заполнение последнего secondary-байта не устанавливает overflow; только следующий
-    // чётный evaluation-шаг может войти в ветвь overflow-сравнения.
-    return position<=32U&&32U-position>=count;
+    if (status_ & 0x20U) return stable;
+    const unsigned until = std::min(256U, dot_ + dots - 1U);
+    const unsigned next = evaluationNextDot_;
+    if (next > until) return stable;
+    if (!next) return blocked;
+    // Next1 заново очищает secondary OAM: прежним Done/position до reset доверять нельзя.
+    if (next > 1U && evaluationDone_) return stable;
+    const unsigned position = next == 1U ? 0U : secondaryPosition_;
+    const unsigned firstEven = next <= 64U ? 66U : next + (next & 1U);
+    const unsigned count = until < firstEven ? 0U : 1U + (until - firstEven) / 2U;
+    // Последний заполняющий secondary байт ещё не устанавливает overflow.
+    if (!count || (position <= 32U && 32U - position >= count)) return stable;
+    return {StatusReadKind::Eval, until};
 }
+
 /**
- * @brief Проверяет дополнительные условия идемпотентного свёрнутого STATUS-опроса.
- * @details Стабильных верхних битов недостаточно: учитываются toggle, NMI и открытая шина.
- * @param dots Число уже прошедших точек PPU.
- * @return Результат описанной проверки либо успешность перехода состояния; false обрабатывается вызывающим путём.
+ * @brief Разрешает сворачивание только при неизменном STATUS и прежних защёлках.
+ * @details Eval не исполняется внутри const-поиска горизонта повторов.
  */
 bool TimingPpu::canRepeatStatusPoll(unsigned dots) const noexcept {
-    // Настоящее чтение уже установило защёлки. Повтор STATUS до
-    // того же same-row горизонта не меняет возвращаемые данные и регистры.
-    return canReadDeferredStatus(dots) && !(status_ & 0x40U) &&
+    return classifyDeferredStatus(dots).kind == StatusReadKind::Stable && !(status_ & 0x40U) &&
         !writeToggle_ && !nmiLine_ && !nmiPending_ &&
         (openBus_ & 0xE0U) == (status_ & 0xE0U);
 }
+
 /**
- * @brief Проверяет либо обслуживает чтение STATUS без полного доведения лишь при доказанной стабильности.
- * @details Биты overflow/Sprite0, задержки, NMI, writeToggle и открытая шина требуют исходного точного помощника; ложный предикат оставляет обычный MMIO-путь.
- * @param dots Число уже прошедших точек PPU.
- * @return Результат описанной проверки либо успешность перехода состояния; false обрабатывается вызывающим путём.
+ * @brief Читает STATUS после одной общей проверки, не закрывая допустимый растровый долг.
+ * @details Отдельная OAM-оценка остаётся ограниченной прошлым временем той же строки.
  */
 bool TimingPpu::tryReadDeferredStatus(unsigned dots, std::uint8_t& value) noexcept {
-    // STATUS bits5/6 липкие внутри видимой строки. При уже установленном overflow
-    // и отсутствии возможного Sprite0-hit нематериализованные точки не меняют
-    // возвращаемые high-биты. Остановиться до dot0, устанавливающей новую sprite-строку.
-    if (!canReadDeferredStatus(dots)) return false;
+    const auto access = classifyDeferredStatus(dots);
+    if (access.kind == StatusReadKind::Blocked) return false;
+    if (access.kind == StatusReadKind::Eval) {
+        // Dot1/reset, forced blank и чужой/наблюдаемый PPU сохраняют исходный полный путь.
+        if (this != &bus_.timingPpu_ || !bus_.outputOwner_ || !bus_.outputFrameExecutable() ||
+            !bus_.pureStatusPollContract() || !renderingEnabled_ || dot_ < 2U || !dots) {
+            return false;
+        }
+        synchronizeSpriteEvaluation(access.evalUntil);
+        // Оценка меняет только OAM/status5 и ставит next после evalUntil.
+        // Строка, delays и Sprite0-кэш прежние: второй scan/классификация не нужны.
+    }
     value = readStatus();
     return true;
 }
