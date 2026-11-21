@@ -344,6 +344,67 @@ struct MachineEventKernelTestAccess {
      */
     static void flushOrdinaryDebt(Machine& m){m.flushPpuSlow();}
     /**
+     * @brief Проверяет межстрочный допуск MMC3 и исключительную границу 240:0.
+     * @param m Остановленная машина с настоящими mapper4 и Output writer.
+     * @param nearBlank true проверяет последний видимый ряд, false — допуск двух строк.
+     * @details Задаёт локальный срез PPU без продвижения CPU/APU. Все последующие
+     * выборки, строб A12 и утверждение IRQ выполняют обычные методы ядра.
+     */
+    static void verifyOrdinaryCrosslineHorizon(Machine& m,bool nearBlank){
+        CHECK(m.outputFrameExecutable()&&m.cartridge_.mapper()==4U);
+        constexpr unsigned dotsPerLine=341U,startDot=7U;
+        const unsigned scanline=nearBlank?239U:237U;
+        const unsigned irqDistance=nearBlank?6U:10U;
+        auto& p=m.timingPpu_;
+        auto& cart=m.cartridge_;
+        p.reset();
+        p.bind(m.videoPacket_);
+        p.setBusTracking(true,true);
+        p.scanline_=static_cast<std::int16_t>(scanline);
+        p.control_=0x20U; // Фон из таблицы 0, спрайты 8×16.
+        p.mask_=0x18U;
+        p.renderingEnabled_=p.renderingNext_=true;
+        for(unsigned slot=0;slot<8U;++slot){
+            p.dmaWrite(static_cast<std::uint8_t>(scanline));
+            p.dmaWrite(static_cast<std::uint8_t>((slot&1U)^1U)); // Таблицы 1, 0, 1, 0…
+            p.dmaWrite(0U);
+            p.dmaWrite(static_cast<std::uint8_t>(slot*8U));
+        }
+        p.cpuWrite(3U,0U);
+        scalar(m,startDot);
+
+        // Настоящий квалифицированный фронт при выключенном IRQ загружает latch.
+        cart.cpuWrite(0xe000U,0U,m.cpuCycles());
+        cart.cpuWrite(0xc000U,static_cast<std::uint8_t>(irqDistance),m.cpuCycles());
+        cart.cpuWrite(0xc001U,0U,m.cpuCycles());
+        cart.ppuAddress(0x2000U);
+        for(unsigned dot=0;dot<8U;++dot)cart.ppuCycle();
+        cart.ppuAddress(0x1000U);
+        cart.cpuWrite(0xe001U,0U,m.cpuCycles());
+        cart.ppuAddress(0x2000U);
+        for(unsigned dot=0;dot<8U;++dot)cart.ppuCycle();
+
+        // Входная фаза 6 даёт один подъём $2FF8→$3000. На строке 239 четыре
+        // спрайтовых фронта оставляют ещё один до IRQ. Прирост fine Y делает
+        // A12 высоким на первой точке гашения при выставлении v.
+        p.cpuWrite(6U,0x2fU);
+        p.cpuWrite(6U,0xf8U);
+        CHECK(p.dot_==startDot&&p.busAddress_==0x2ff8U);
+        CHECK(!cart.irqLine()&&cart.ppuIrqQuietDotsAny()==8U*(irqDistance-2U));
+        m.refreshPpuDeferBudget();
+        const unsigned endLine=nearBlank?240U:239U;
+        const unsigned endDot=nearBlank?0U:257U;
+        const unsigned expectedDots=(endLine-scanline)*dotsPerLine+endDot-startDot;
+        CHECK(m.ppuDeferBudget_==expectedDots);
+        m.pendingPpuDots_=static_cast<std::uint16_t>(expectedDots);
+        m.flushPpuSlow();
+        CHECK(p.scanline_==static_cast<int>(endLine)&&p.dot_==endDot&&!cart.irqLine()&&!m.videoHasFault());
+        if(nearBlank){
+            scalar(m,1U);
+            CHECK(p.scanline_==240&&p.dot_==1U&&cart.irqLine());
+        }
+    }
+    /**
      * @brief Снимает конечный долг, бюджет и чистые IRQ-прогнозы без padding.
      * @param m Остановленная машина; mapper getters не тактируют A12 и не снимают IRQ.
      * @return Владеющий список чисел для сравнения до и после будущего scalar-хвоста.
@@ -1215,6 +1276,17 @@ unsigned ordinaryDebtJoins(){
     }
     CHECK(cases==350U);return cases;
 }
+/**
+ * @brief Принимает безопасный межстрочный долг и оставляет первый такт гашения скалярному пути.
+ */
+void ordinaryCrosslineHorizon(){
+    auto rom=romImage();rom[6]=0x40U;
+    for(bool nearBlank:{false,true}){
+        auto fixture=std::make_unique<Fixture>(rom);
+        Access::verifyOrdinaryCrosslineHorizon(fixture->machine,nearBlank);
+        fixture->stop();
+    }
+}
 } // namespace
 
 /**
@@ -1232,6 +1304,7 @@ int main(int argc,char** argv){
         else if(std::strcmp(argv[i],"--raster-interval")==0){CHECK(i+1<argc);interval=std::atoi(argv[++i]);CHECK(interval==0||interval==1);}
         else {CHECK(!canonical);canonical=std::fopen(argv[i],"wb");CHECK(canonical);}
     }
+    ordinaryCrosslineHorizon();
     const unsigned ordinaryDebtCases=ordinaryDebtJoins();
     const auto tailRom=rasterRomImage();tailGroups(tailRom,tail);tailSlots(tailRom,tail);tailRejects(tailRom);tailPacketGuards(tailRom,tail);
     const auto rom=romImage();phases(rom,phase);positiveEdges(rom,phase);rejects(rom,phase,interval);
@@ -1251,6 +1324,7 @@ int main(int argc,char** argv){
         }
     }
     if(canonical)CHECK(std::fclose(canonical)==0);
+    std::puts("MMC3_CROSSLINE_HORIZON_PASS cases=2");
     std::printf("ORDINARY_DEBT_JOIN_PASS cases=%u\n",ordinaryDebtCases);
     std::printf("MMC5_TAIL_SLOT_PASS slots=%u accepted=%u groups=%u rejects=%u future=%u\n",tailSlotCases,tailSlotAccepted,tailGroupCases,tailPureRejects,tailFutureCases);
     std::printf("EVENT_KERNEL_PASS checks=%u phase_attempts=%u phase_accepted=%u retained_observed=%u\n",checks,phaseAttempts,phaseAccepted,retainedObserved);
