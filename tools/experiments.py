@@ -8,13 +8,40 @@ import os
 import sys
 
 
-def read(path):
-    """Читает автономный UTF-8 JSON и проверяет уникальность идентификаторов опыта."""
-    data = json.loads(path.read_text(encoding='utf-8'))
+def read_json(path):
+    """Загружает UTF-8 JSON с сохранением чисел и внутренних ссылок."""
+    return json.loads(path.read_text(encoding='utf-8'))
+
+
+def read_part(path, relative):
+    """Читает часть журнала, размещённую рядом с его главным файлом."""
+    base = path.resolve().parent
+    target = (base / relative).resolve()
+    if Path(relative).is_absolute() or not target.is_relative_to(base):
+        raise ValueError('Часть журнала должна находиться рядом с главным файлом')
+    return read_json(target)
+
+
+def assemble(path, current):
+    """Подставляет неизменяемую историю и индексы, затем проверяет уникальность ID."""
+    data = current
+    if 'parts' in current:
+        parts = current['parts']
+        data = {key: value for key, value in current.items() if key != 'parts'}
+        evidence = read_part(path, parts['evidence'])
+        if data.keys() & evidence.keys():
+            raise ValueError('Поля текущего журнала перекрывают поля хранилища доказательств')
+        data.update(evidence)
+        data['chronology'] = read_part(path, parts['chronology']) + current['chronology']
     ids = [event['id'] for event in data['chronology']]
     if len(ids) != len(set(ids)):
         raise ValueError('В журнале повторяются id')
     return data
+
+
+def read(path):
+    """Загружает полный журнал из одного файла или из набора связанных частей."""
+    return assemble(path, read_json(path))
 
 
 def expand(value, pool, stack=()):
@@ -77,17 +104,18 @@ def append(path, event_path):
     temporary = path.with_name(path.name + '.tmp')
     try:
         os.close(descriptor)
-        data = read(path)
-        existing = next((item for item in data['chronology'] if item['id'] == event['id']), None)
+        current = read_json(path)
+        history = assemble(path, current)['chronology']
+        existing = next((item for item in history if item['id'] == event['id']), None)
         if existing is not None:
             if existing != event:
                 raise ValueError('id уже содержит другой результат; добавьте новый опыт')
             return {'status': 'UNCHANGED', 'id': event['id']}
         previous_sha = hashlib.sha256(path.read_bytes()).hexdigest()
-        data['chronology'].append(event)
-        data['updated_at_utc'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        current['chronology'].append(event)
+        current['updated_at_utc'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
         with temporary.open('w', encoding='utf-8', newline='\n') as stream:
-            json.dump(data, stream, ensure_ascii=False, separators=(',', ':'))
+            json.dump(current, stream, ensure_ascii=False, separators=(',', ':'))
             stream.write('\n')
             stream.flush()
             os.fsync(stream.fileno())

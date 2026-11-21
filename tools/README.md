@@ -103,7 +103,7 @@ python -B tools/qualify_c6_device.py --movies tools/c6-battle-scenes.json --expe
 
 ## Журнал и тесты
 
-[experiments.json](../experiments.json) хранит хронологию, условия и измерения.
+[experiments.json](../experiments.json) хранит текущие записи. [Хронология](../experiments/history.json) и [доказательства](../experiments/evidence.json) содержат накопленную историю. Команды ниже работают со всеми частями журнала.
 Каждая запись имеет дату, идентификатор, условия проверки, результат и решение.
 Перенесённый из `build` отчёт открывается по его исходному SHA256.
 

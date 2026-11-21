@@ -125,4 +125,30 @@ class ExperimentsTests(unittest.TestCase):
         self.assert_clean()
 
 
+    def test_split_journal_keeps_history_readable_and_writes_only_current(self):
+        """Внешние части доступны по ID и SHA, а запись и проверка конфликтов охватывают обе эпохи."""
+        base = self.target.parent
+        history = base / 'old.json'
+        evidence = base / 'evidence.json'
+        old = dict(self.event, id='older')
+        history.write_text(json.dumps([old]), encoding='utf-8')
+        evidence.write_text(json.dumps(dict(essential_payloads={'digest': {'frames': 120}},
+                                            shared_essential_subtrees={})), encoding='utf-8')
+        self.target.write_text(json.dumps(dict(chronology=[],
+                                               parts={'chronology': history.name, 'evidence': evidence.name})),
+                               encoding='utf-8')
+        readonly = tuple(path.read_bytes() for path in (history, evidence))
+        journal.append(self.target, self.event_path)
+        self.assertEqual(journal.read(self.target)['chronology'], [old, self.event])
+        self.assertEqual(journal.lookup_payload(journal.read(self.target), 'digest'), {'frames': 120})
+        self.write_event(old)
+        self.assertEqual(journal.append(self.target, self.event_path)['status'], 'UNCHANGED')
+        self.write_event(dict(old, status='HOLD'))
+        with self.assertRaises(ValueError):
+            journal.append(self.target, self.event_path)
+        self.assertEqual(journal.read_json(self.target)['chronology'], [self.event])
+        self.assertEqual(tuple(path.read_bytes() for path in (history, evidence)), readonly)
+        self.assert_clean()
+
+
 if __name__=='__main__':unittest.main(verbosity=2)
