@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from analyze_playthrough import analyze_text, parse_line, write_outputs, main
+from analyze_playthrough import analyze_text, write_outputs, main
 
 
 def start(crc="7cf70cde", name="Castlevania III Dracula's Curse", index=3, mapper=5, region="NTSC"):

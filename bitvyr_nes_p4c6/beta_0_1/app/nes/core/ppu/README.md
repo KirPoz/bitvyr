@@ -29,6 +29,13 @@ false, а materializer пуст. Совместимые методы, поля �
 Неиспользуемое host-trace API удалено. [c6 codec](c6/README.md) сохраняется:
 его исходник действительно входит в отдельный закреплённый worker recipe.
 
+В полном PPU `tickInline` исполняет одну точку с шинными переходами.
+`tickDotsInline` расходует уже выданный бюджет точек и группирует их между
+границами событий. `fetchRenderMmc5` берёт данные тайлов из подготовленного
+плана MMC5, `renderFetchedTiles` сдвигает полученные плоскости. `tile8` и
+`writeTile8` компонуют восемь пикселей с учётом масок, приоритета спрайтов и
+попадания sprite 0.
+
 Проверки: PPU/MMIO/OAM/Sprite0/IRQ/NMI fixtures, полные CPU/RAM/index/RGB/PCM
 Frame comparisons и raw VideoPacket, когда заявляется byte-exact поток.
 Другая допустимая группировка событий не называется byte-exact. Native не

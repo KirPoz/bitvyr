@@ -137,6 +137,7 @@ def catalog(link):
     while True:
         at=len(link.packets)
         link.send([f"catalog {offset} 64"], "catalog")
+        # Завершает чтение страницы после заголовка каталога и ожидаемого числа записей ROM.
         def done():
             rows=link.packets[at:]
             meta=[r["fields"] for r in rows if r["raw_type"]=="NES_CATALOG"]

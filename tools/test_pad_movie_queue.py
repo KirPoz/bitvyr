@@ -1,6 +1,9 @@
-"""FakeUART rolling queue: exact300+/600+ edges, no COM/SDK or invented scheduling."""
-import importlib.util,io,json,pathlib,sys,unittest
-from unittest.mock import patch
+"""Модель UART проверяет порядок длинных маршрутов ввода и подтверждение каждой команды."""
+import importlib.util
+import io
+import json
+import pathlib
+import unittest
 from pad_movie_queue import RollingPadQueue,rolling_queue_for
 
 def movie(count=80,initial=14,spacing=9):
@@ -49,7 +52,9 @@ def process(queue,uart,packets=None):
         if p["raw_type"]in("NES_PAD_SCHEDULE","NES_PAD_APPLY"):queue.refill(uart.send)
     queue.finish_batch()
 
+# Проверки порядка выдачи, подтверждения и применения событий при ограниченной очереди.
 class RollingGuards(unittest.TestCase):
+    # Плотный поток из 601 события сохраняет порядок и укладывается в 16 зарезервированных мест.
     def test_dense_601_edges_exact_no_drop_and_16_reservation_bound(self):
         q=RollingPadQueue(movie(601,spacing=1));u=QueueUART();q.start(u.send)
         self.assertEqual(len(u.writes),14)
@@ -63,6 +68,7 @@ class RollingGuards(unittest.TestCase):
         self.assertEqual(u.writes,[f"padat {e['frame']} {e['mask']}"for e in q.movie["edges"]])
         self.assertEqual(proof["reserved"],0)
 
+    # До подтверждения применения зарезервированные места остаются занятыми.
     def test_unACKed_reservations_do_not_create_credit(self):
         q=RollingPadQueue(movie(40,initial=16));u=QueueUART();q.start(u.send)
         q.refill(u.send);self.assertEqual(len(u.writes),16)
@@ -71,6 +77,7 @@ class RollingGuards(unittest.TestCase):
         self.assertEqual(q.snapshot()["reserved"],16)
         self.assertEqual(q.snapshot()["ACKs"],1)
 
+    # Повторный или преждевременный ACK и неверная глубина очереди прерывают воспроизведение.
     def test_duplicate_out_of_order_ACK_and_depth_fail_closed(self):
         for change in("duplicate","out_of_order","depth"):
             q=RollingPadQueue(movie());u=QueueUART();q.start(u.send);ack=u.rx[0]
@@ -84,6 +91,7 @@ class RollingGuards(unittest.TestCase):
             with self.assertRaises(ValueError):q.refill(u.send)
             self.assertEqual(len(u.writes),before)
 
+    # Применение сверяется с ACK, кадром и порядком выдачи каждого события.
     def test_apply_requires_ack_order_exact_frame_and_no_duplicate(self):
         for change in("unacked","late","wrongmask","duplicate","out_of_order"):
             q=RollingPadQueue(movie());u=QueueUART();q.start(u.send)
@@ -97,6 +105,7 @@ class RollingGuards(unittest.TestCase):
             else:p=valid
             with self.subTest(change=change),self.assertRaises(ValueError):q.on_packet(p)
 
+    # Смена поколения и пропуск подтверждения применения делают последовательность недостоверной.
     def test_generation_change_and_missing_apply_progress_rejected(self):
         q=RollingPadQueue(movie());u=QueueUART();q.start(u.send)
         q.observe_batch([packet("NES_INPUT",frame=0,generation=9,action="none")])
@@ -106,6 +115,7 @@ class RollingGuards(unittest.TestCase):
         q.observe_batch([packet("NES_INPUT",frame=60,generation=9,action="none")])
         with self.assertRaises(ValueError):q.finish_batch()
 
+    # После получения нового номера кадра просроченное событие уже нельзя подавать.
     def test_received_tail_progress_prevents_refill_late_unsent_edge(self):
         q=RollingPadQueue(movie(40,initial=1,spacing=1));u=QueueUART();q.start(u.send)
         batch=[u.rx[0],packet("NES_INPUT",frame=100,generation=9,action="none")]
@@ -113,6 +123,7 @@ class RollingGuards(unittest.TestCase):
         with self.assertRaises(ValueError):q.refill(u.send)
         self.assertEqual(len(u.writes),1)
 
+    # При короткой записи место сохраняется, поскольку часть команды могла дойти до платы.
     def test_short_write_keeps_uncertain_reservation_and_no_retry(self):
         q=RollingPadQueue(movie());u=QueueUART();u.short=True
         with self.assertRaises(ValueError):q.start(u.send)
@@ -122,6 +133,7 @@ class RollingGuards(unittest.TestCase):
             with self.assertRaises(ValueError):action()
         self.assertEqual(len(u.writes),1)
 
+    # Проверяет явный выбор режима, совпадение плана с вводом и исходное состояние кнопок.
     def test_optin_plan_exactness_and_nonzero_frame0_guard(self):
         self.assertIsNone(rolling_queue_for(dict(queue_plan={})))
         bad=movie();bad["queue_plan"]["deferred"]=bad["queue_plan"]["deferred"][:-1]
@@ -227,6 +239,7 @@ class CollectorRollingIntegration(unittest.TestCase):
         obj=module.Link.__new__(module.Link);obj.port=CollectorUART(route,c6,fault);obj.log=io.BytesIO();obj.pending=b""
         obj.rows=[];obj.packets=[];obj.commands=[];obj.faults=[];obj.consumed=0;obj.expected_volume=60
         return obj
+    # Сборщик подаёт полный поток и откладывает служебные запросы до конца измеряемого участка.
     def test_c6_collector_full_stream_and_no_status_tasks_in_ROI(self):
         for name,c6 in[("qualify_c6_device.py",True)]:
             with self.subTest(collector=name):
@@ -242,6 +255,7 @@ class CollectorRollingIntegration(unittest.TestCase):
                 for command,frame in link.port.writes:
                     if route["baseline_report"]<=frame<route["roi_reports"][-1]:
                         self.assertTrue(command.startswith("padat "),command)
+    # Имитирует короткую запись и потерю ACK или APPLY и проверяет остановку сеанса.
     def test_short_write_and_dropped_ACK_APPLY_hold_without_retry(self):
         for fault in["short","drop_ack","drop_apply"]:
             with self.subTest(fault=fault):
@@ -279,6 +293,7 @@ class CollectorRollingIntegration(unittest.TestCase):
                     self.assertLessEqual(result["rolling_queue"]["peak_reserved"],16)
                     self.assertEqual(len([s for s,f in link.port.writes if s.startswith("padat ")]),len(expected))
 
+    # Ненулевая начальная маска выявляется до записи первой команды в порт.
     def test_frame0_nonzero_refused_before_any_UART_write(self):
         for name,c6 in[("qualify_c6_device.py",True)]:
             module=collector(name);route=movie(40);route["edges"][0]=dict(frame=0,mask=1);route["queue_plan"]["initial"][0]="0:1";link=self.link(module,route,c6)

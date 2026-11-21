@@ -1,8 +1,6 @@
 """Offline observer/input/endpoint guards; без SDK, COM и повторения Core physics."""
 import copy
 import json
-import pathlib
-import sys
 import unittest
 import qualify_p4_device as q
 from test_pad_movie_queue import QueueUART, process
@@ -44,6 +42,7 @@ def scene():
 
 class ObserverGuards(unittest.TestCase):
     """Ломает границы/идентичность отдельно от корректности самого emulator Core."""
+    # Проверяет наличие микросекундного таймера платы в источнике FPS.
     def test_device_us_is_required_no_logger_ms_fallback(self):
         f=report(120,2000000)
         wire='I (2000) nes_app: NES_OUTPUT_FRAME_PIPELINE_TIMES '+' '.join(f'{k}={v}' for k,v in f.items())
@@ -52,12 +51,14 @@ class ObserverGuards(unittest.TestCase):
             q.perf_row(wire.replace('device_us=2000000 ',''))
         self.assertIsNone(q.perf_row('I (2000) NES_PERF frames=120'))
 
+    # Проверяет тип времени, версию схемы, регион и полноту окна.
     def test_device_us_bool_and_schema_rejected(self):
         for key,value in [('device_us',True),('schema',1),('samples',119),('slots',1),('region','PAL')]:
             f=report(120,2000000);f[key]=value
             with self.subTest(key=key),self.assertRaises(ValueError):
                 q.perf_row('NES_OUTPUT_FRAME_PIPELINE_TIMES '+' '.join(f'{k}={v}' for k,v in f.items()))
 
+    # Сверяет среднее по времени, крайние окна и соответствие счётчиков HART границам сцены.
     def test_weighted_fps_minmax_exact120_and_hart_out_of_rx_order(self):
         rs=[report(120,2000000),report(240,4000000),report(360,6400000)]
         out=q.statistics(rs,[hart(360),hart(240)],movie())
@@ -66,6 +67,7 @@ class ObserverGuards(unittest.TestCase):
         self.assertEqual(out['windows'][0]['HART']['CPI'],2)
         self.assertFalse(out['logger_ms_fallback'])
 
+    # Повторы, пропуски и обратный ход счётчиков делают выборку недостоверной.
     def test_report_duplicate_gap_regression_and_counter_loss_reject(self):
         for mode in ('duplicate','gap','clock','counter','generation'):
             rs=[report(120,2000000),report(240,4000000),report(360,6000000)]
@@ -76,16 +78,19 @@ class ObserverGuards(unittest.TestCase):
             else:rs[1]['generation']+=1
             with self.subTest(mode=mode),self.assertRaises(ValueError):q.statistics(rs,[hart(240),hart(360)],movie())
 
+    # Отбрасывает счётчики ядра другого поколения или неполного интервала.
     def test_hart_wrong_scope_sequence_or_invalid_cannot_qualify(self):
         for key,value in [('first_sequence',121),('generation',8),('invalid',1),('overflow',1),('valid',119),('cycles',0),('task_exclusive',1)]:
             h=hart(240);h[key]=value
             with self.subTest(key=key),self.assertRaises(ValueError):q.validate_hart(h,report(240,4_000_000))
 
+    # Каждой измеряемой границе должен соответствовать ровно один отчёт HART.
     def test_hart_missing_duplicate_reject(self):
         rs=[report(120,2_000_000),report(240,4_000_000),report(360,6_000_000)]
         for hs in ([hart(240)],[hart(240),hart(240),hart(360)]):
             with self.assertRaises(ValueError):q.statistics(rs,hs,movie())
 
+    # Сохраняет фактический конечный кадр и отдельно фиксирует доступность хеша RAM.
     def test_scene_actual_cut_sparse_ram_na_is_explicit_not_match(self):
         s,p,a=scene();v=q.validate_scene(s,p,a,movie(),{'index':3},7,360,28)
         self.assertEqual(v['actual_cut'],362);self.assertFalse(v['RAM_available']);self.assertIsNone(v['RAM_value_match'])
@@ -95,6 +100,7 @@ class ObserverGuards(unittest.TestCase):
         p['started_frames']-=1;p['completed_frames']-=1;p['lcd_submitted_frames']-=1;s['submitted_frames']-=1
         self.assertEqual(q.validate_scene(s,p,a,movie(),{'index':3},7,360,28)['actual_cut'],362)
 
+    # Сверяет ввод, такты CPU, изображение и состояние подачи на конечной границе.
     def test_scene_input_cycles_rgb_identity_presentation_guard(self):
         for key,value in [('input_mask',1),('cpu_state_cycles',10800001),('rgb_hash','0000000000000000'),('generation',8),('image_available',False),('frames',359)]:
             s,p,a=scene();s[key]=value
@@ -102,6 +108,7 @@ class ObserverGuards(unittest.TestCase):
         s,p,a=scene();p['pending']=True
         with self.assertRaises(ValueError):q.validate_scene(s,p,a,movie(),{'index':3},7,360,28)
 
+    # Проверяет активность локального звука, его громкость и наличие достоверного хеша RAM.
     def test_scene_local_audio_active_volume_and_ram_null_guards(self):
         for key,value in [('active',False),('volume',60),('generation',8)]:
             s,p,a=scene();a[key]=value
@@ -123,6 +130,7 @@ class ObserverGuards(unittest.TestCase):
             with self.assertRaises(ValueError):
                 q.admission(bad, elf)
 
+    # Ожидаемая громкость сопоставляется с показанием устройства без записи настроек.
     def test_volume_28_is_readonly_and_no_implicit_default(self):
         f=dict(volume=28,hardware_volume=28,muted=False,dirty=False,screen='library')
         q.base.quiet(f,expected_volume=28)
@@ -131,6 +139,7 @@ class ObserverGuards(unittest.TestCase):
         f['dirty']=True
         with self.assertRaises(ValueError):q.base.quiet(f,expected_volume=28)
 
+    # Проверяет полное совпадение событий банка и расписания очереди.
     def test_complete_shared_bank_edges_and_queue_plans_preserved(self):
         path=q.ROOT/'tools/qualification-movies.json';data=json.loads(path.read_text(encoding='utf8'))
         games=q.check_bank(data,path)
@@ -138,6 +147,7 @@ class ObserverGuards(unittest.TestCase):
         self.assertEqual({g['crc32']:len(g['edges']) for g in games if len(g['edges'])>100},
                          {'bbf010e3':468,'9e13caa2':347,'a1e48d00':347})
 
+    # Длинные маршруты с 347 и 468 событиями проходят через ограниченную очередь целиком.
     def test_actual347_468_full_rolling_input_no_truncation(self):
         games=json.loads((q.ROOT/'tools/qualification-movies.json').read_text(encoding='utf8'))['games']
         for g in games:
@@ -153,6 +163,7 @@ class ObserverGuards(unittest.TestCase):
             self.assertEqual(uart.writes,[f"padat {e['frame']} {e['mask']}" for e in g['edges']])
             self.assertLessEqual(queue.snapshot()['peak_reserved'],16)
 
+    # Место освобождается после применения команды, просроченное применение останавливает прогон.
     def test_rolling_ack_does_not_free_and_late_apply_holds(self):
         games=json.loads((q.ROOT/'tools/qualification-movies.json').read_text(encoding='utf8'))['games']
         g=next(g for g in games if g['crc32']=='9e13caa2')
@@ -163,6 +174,7 @@ class ObserverGuards(unittest.TestCase):
         with self.assertRaises(ValueError):queue.on_packet(dict(raw_type='NES_PAD_APPLY',fields=dict(frame=frame+1,scheduled=frame,mask=mask)))
         with self.assertRaises(ValueError):queue.refill(uart.send)
 
+    # Проверяет сохранение JSON null и строкового CRC, состоящего только из цифр.
     def test_actual_parser_keeps_json_null_and_numeric_crc_string(self):
         p=q.packet('I (12) NES_OUTPUT_FRAME_PIPELINE_STATUS {"ram_hash":null,"frames":362}')
         self.assertIsNone(p['fields']['ram_hash'])

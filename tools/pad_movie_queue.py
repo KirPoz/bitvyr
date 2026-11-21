@@ -7,17 +7,16 @@ NES_INPUT/PERF/status generation и подтверждённым запуско�
 """
 from collections import deque
 
+from playthrough_log import is_unsigned_counter
+
 def _require(value,reason):
     """Fail-closed guard, работающий также при python -O."""
     if not value:
         raise ValueError(reason)
 
-def _uint(value):
-    """Не принимает bool/float вместо unsigned guest counter."""
-    return type(value) is int and value >= 0
-
 class RollingPadQueue:
     """Single-owner FIFO до16 sent/unACKed/ACKed reservations; полный movie не режется."""
+    # Сверяет пары «кадр, маска» с планом подачи и инициализирует очередь из 16 мест.
     def __init__(self,movie):
         self.movie=movie
         plan=movie.get("queue_plan",{})
@@ -27,14 +26,15 @@ class RollingPadQueue:
         _require(isinstance(edges,list),"Missing full rolling edges")
         self.edges=[]
         for edge in edges:
-            _require(isinstance(edge,dict) and _uint(edge.get("frame")) and _uint(edge.get("mask")) and edge["mask"]<=255,"Invalid rolling edge")
+            _require(isinstance(edge,dict) and is_unsigned_counter(edge.get("frame")) and is_unsigned_counter(edge.get("mask")) and edge["mask"]<=255,"Invalid rolling edge")
             item=(edge["frame"],edge["mask"])
             _require(not self.edges or self.edges[-1][0]<item[0],"Rolling frames must be strictly increasing")
-            _require(item!=(0,item[1]) or item[1]==0,"Nonzero frame0 cannot be guaranteed by UART rolling replay")
+            _require(edge["frame"] != 0 or edge["mask"] == 0,"Nonzero frame0 cannot be guaranteed by UART rolling replay")
             self.edges.append(item)
         initial=plan.get("initial",[])
         deferred=plan.get("deferred",[])
         _require(isinstance(initial,list) and isinstance(deferred,list),"Rolling initial/deferred must be lists")
+        # Разбирает сохранённые десятичные пары в исходном порядке для сверки с полным вводом.
         def decode(items):
             result=[]
             for item in items:
@@ -72,6 +72,7 @@ class RollingPadQueue:
         if self.failed_reason is not None:
             raise ValueError("Rolling queue held after failure: "+self.failed_reason)
 
+    # При нарушении условия сохраняет причину остановки и блокирует последующую подачу.
     def _check(self,value,reason):
         if not value:
             self._fail(reason)
@@ -113,7 +114,7 @@ class RollingPadQueue:
                 continue
             generation=f.get("generation")
             if generation is not None:
-                self._check(_uint(generation) and generation>0,"Rolling invalid generation")
+                self._check(is_unsigned_counter(generation) and generation>0,"Rolling invalid generation")
                 if self.generation is None:
                     self.generation=generation
                 self._check(generation==self.generation,"Rolling generation changed")
@@ -124,10 +125,10 @@ class RollingPadQueue:
                 progress=f.get("frame")
             elif tag.endswith("_TIMES") or tag=="NES_COUPLED_BENCH" or tag.endswith("_STATUS") and f.get("playing") is True:
                 frames=f.get("frames")
-                if _uint(frames) and frames>0:
+                if is_unsigned_counter(frames) and frames>0:
                     progress=frames-1
             if progress is not None:
-                self._check(_uint(progress),"Rolling invalid progress")
+                self._check(is_unsigned_counter(progress),"Rolling invalid progress")
                 self.latest_consumed_input=max(self.latest_consumed_input,progress)
 
     def on_packet(self,packet):

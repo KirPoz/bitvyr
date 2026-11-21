@@ -8,6 +8,8 @@ from collections import Counter
 import json
 import math
 
+from playthrough_log import is_unsigned_counter
+
 WINDOW_FRAMES = 120
 FPS_RANGE = (59.5, 60.5)
 
@@ -36,11 +38,6 @@ MAIN_PHASES = ("outer_join_us", "cli_menu_us", "pace_us", "input_current_us",
 def _number(value):
     """Принимает finite numeric без bool; идентификаторы/таймеры проверяются отдельно."""
     return type(value) in (int,float) and math.isfinite(value)
-
-
-def _integer(value):
-    """Проверяет unsigned firmware counter без приведения float/bool."""
-    return type(value) is int and value >= 0
 
 
 def _record(record):
@@ -123,7 +120,7 @@ def _main_phases_valid(row, window):
         return False
     fields = (*MAIN_PHASES, "loop_wall_us", "loop_wall_max_us",
               "loop_wall_max_accepted_frame", "predispatch_audio_max_us")
-    if not all(_integer(row.get(key)) for key in fields):
+    if not all(is_unsigned_counter(row.get(key)) for key in fields):
         return False
     return (0 <= row["loop_wall_us"] - sum(row[key] for key in MAIN_PHASES) <= len(MAIN_PHASES)
             and row["loop_wall_max_us"] >= row["loop_wall_us"]
@@ -144,7 +141,7 @@ def _coupled_hart_valid(row, window):
         return False
     fields = ("cycles", "retired", "guest_frame_cycles", "cycle_min", "cycle_max",
               "retired_min", "retired_max")
-    if not all(_integer(row.get(key)) and row[key] > 0 for key in fields):
+    if not all(is_unsigned_counter(row.get(key)) and row[key] > 0 for key in fields):
         return False
     return row["cycle_min"] <= row["cycle_max"] and row["retired_min"] <= row["retired_max"]
 
@@ -202,7 +199,7 @@ def _aggregate(windows):
     if largest and "slow_loop_join_us" in largest:
         stage_us = {name[len("slow_loop_"):-len("_us")]: value
                     for name, value in largest.items()
-                    if name.startswith("slow_loop_") and name.endswith("_us") and _integer(value)}
+                    if name.startswith("slow_loop_") and name.endswith("_us") and is_unsigned_counter(value)}
         elapsed = largest["loop_wall_max_us"]
         if sum(stage_us.values()) <= elapsed:
             result["slowest_main_loop"] = dict(
@@ -260,7 +257,7 @@ def _roi_fps_range(windows, span):
                   accepted_outside=[], submitted_outside=[], publication_anomalies=[],
                   status="incomplete")
     if (not isinstance(span, (list, tuple)) or len(span) != 2
-            or not all(_integer(value) for value in span)
+            or not all(is_unsigned_counter(value) for value in span)
             or span[1] < span[0] or span[0] % WINDOW_FRAMES
             or (span[1] + 1) % WINDOW_FRAMES):
         return result
@@ -299,7 +296,7 @@ def _audio(rows):
     for row in rows:
         if row["raw_type"] not in ("NES_AUDIO","NES_FRAME_AUDIO_STATUS"):
             continue
-        values={key:next((row[k] for k in names if _integer(row.get(k))),None) for key,names in aliases.items()}
+        values={key:next((row[k] for k in names if is_unsigned_counter(row.get(k))),None) for key,names in aliases.items()}
         observations.append(dict(values,line=row.get("line"),max_gap_us=row.get("max_write_gap_us",row.get("max_gap_us")),max_wait_us=row.get("max_write_wait_us",row.get("max_wait_us"))))
     if not observations:
         return dict(status="missing_unknown",snapshots=0,gap_max_us=None)
@@ -343,7 +340,7 @@ def statistics(reports,movie):
         if old is None:
             continue
         n=row.get("samples",WINDOW_FRAMES)
-        if not (_integer(n) and n==WINDOW_FRAMES and _integer(row.get("frames")) and _integer(old.get("frames"))):
+        if not (is_unsigned_counter(n) and n==WINDOW_FRAMES and is_unsigned_counter(row.get("frames")) and is_unsigned_counter(old.get("frames"))):
             discontinuities.append(dict(line=row.get("line"),reason="missing frames/samples or non120 interval"))
             continue
         if _scope(old)!=_scope(row):
@@ -367,14 +364,14 @@ def statistics(reports,movie):
             window.update(elapsed_us=n*1e6/fps,accepted_fps=fps,quality="firmware_120frame_average_rounded",submitted_delta=None,produced_delta=None)
         else:
             begin,end=old.get("device_us"),row.get("device_us")
-            if not (_integer(begin) and _integer(end) and 0<end-begin<=10000000):
+            if not (is_unsigned_counter(begin) and is_unsigned_counter(end) and 0<end-begin<=10000000):
                 discontinuities.append(dict(line=row.get("line"),reason="device_us missing/nonmonotone/gap>10s"))
                 continue
             elapsed=end-begin
             window.update(device_start_us=begin,device_end_us=end,elapsed_us=elapsed,accepted_fps=n*1e6/elapsed,quality="device_us_120frame_publication_boundaries")
             for label in ("submitted","produced"):
                 a,b=old.get(label+"_frames"),row.get(label+"_frames")
-                amount=b-a if _integer(a) and _integer(b) and b>=a else None
+                amount=b-a if is_unsigned_counter(a) and is_unsigned_counter(b) and b>=a else None
                 if amount is None or amount>n+2:
                     counter_anomalies.append(label+" counter missing/reset/implausible")
                     amount=None
@@ -386,7 +383,7 @@ def statistics(reports,movie):
                 counter_anomalies.append("explicit accepted_frames differs from frames")
         window["nearby_input_edges"]=[dict(edge,guest_frames_from_edge_to_window_start=window["input_first"]-edge["frame"],
             guest_frames_from_edge_to_window_end=window["input_last"]-edge["frame"])
-            for edge in movie.get("edges",[]) if isinstance(edge,dict) and _integer(edge.get("frame")) and window["input_first"]-120<=edge["frame"]<=window["input_last"]+120]
+            for edge in movie.get("edges",[]) if isinstance(edge,dict) and is_unsigned_counter(edge.get("frame")) and window["input_first"]-120<=edge["frame"]<=window["input_last"]+120]
         if window["quality"]=="device_us_120frame_publication_boundaries":
             window["frame_budget"] = _frame_budget(window)
             window["excess_us_per_guest_frame"] = window["frame_budget"]["period_excess_us"]
@@ -429,7 +426,7 @@ def statistics(reports,movie):
                     or row.get("schema")!=1 or row.get("task_exclusive")!=0
                     or row.get("overflow")!=0 or row.get("invalid")!=0
                     or row.get("valid")!=target["samples"] or row.get("samples")!=target["samples"]
-                    or not all(_integer(row.get(name)) and row[name]>0
+                    or not all(is_unsigned_counter(row.get(name)) and row[name]>0
                                for name in ("cycles","retired","cycle_max"))):
                 continue
             if "hart" in target:

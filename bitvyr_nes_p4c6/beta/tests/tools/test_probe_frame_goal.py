@@ -1,4 +1,4 @@
-"""Frame-bounded probe must not accept stale or partial UART status."""
+"""Проверяет, что достижение целевого кадра подтверждается полной актуальной записью UART."""
 import importlib.util
 from pathlib import Path
 import unittest

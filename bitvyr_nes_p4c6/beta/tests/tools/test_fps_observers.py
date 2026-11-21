@@ -1,4 +1,4 @@
-"""Audit the actual wall-time interval, including queued/stale-command failures."""
+"""Проверяет фактическое окно FPS, включая задержанную подачу и устаревшие команды."""
 import hashlib
 import importlib.util
 import json

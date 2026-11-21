@@ -929,11 +929,6 @@ FrameVideoPipeline::Error FrameVideoPipeline::error()const noexcept{return Error
  */
 bool FrameVideoPipeline::hasReady()const noexcept{return state_->readyIndex>=0;}
 
-/**
- * @brief Проверяет атомарное владение producer-заданием.
- * @details false само по себе не заменяет настоящий done-семафор App.
- */
-bool FrameVideoPipeline::borrowedByWorker()const noexcept{return state_->control->workerBorrowed.load(std::memory_order_acquire)!=0;}
 
 
 

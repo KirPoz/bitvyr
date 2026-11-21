@@ -7,6 +7,15 @@ PAIR=re.compile(r'(\w+)=([^\s]+)')
 TEXT_KEYS={'crc','crc32','ids','pcm_hash','rgb_hash','ram_hash','read_hash','source_addr'}
 
 
+def is_unsigned_counter(value):
+    """Принимает целое неотрицательное значение счётчика прошивки или кадра ввода.
+
+    JSON также допускает логический тип. Уровни True и False недопустимы
+    в номере кадра, счётчике событий и отметке времени.
+    """
+    return type(value) is int and value >= 0
+
+
 def parse_line(line):
     """Возвращает исходный tag/fields/device_ms; имя ROM сохраняет пробелы.
 

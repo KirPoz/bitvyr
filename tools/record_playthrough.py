@@ -6,7 +6,6 @@ import hashlib
 import json
 import os
 import re
-import sys
 import time
 
 from playthrough_log import parse_line

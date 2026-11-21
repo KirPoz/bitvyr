@@ -1,3 +1,5 @@
+"""Проверяет валидность трассы ввода, последовательность событий и маски контроллера."""
+
 import importlib.util
 from pathlib import Path
 import tempfile

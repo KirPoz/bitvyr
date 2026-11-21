@@ -5,6 +5,8 @@ import hashlib
 import importlib.util
 import json
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -103,12 +105,34 @@ class ExperimentsTests(unittest.TestCase):
         self.assertEqual(journal.lookup_payload(data,'payload'),{'count':7})
         with self.assertRaises(KeyError):journal.lookup_payload(data,'missing')
 
+    def test_historical_artifact_links_to_existing_event(self):
+        """Исходный SHA встроенной записи возвращает её индекс и существующее событие."""
+        item = {'kind': 'event_record', 'already_inline_managed_event_id': self.event['id']}
+        data = dict(chronology=[self.event], essential_payloads={}, shared_essential_subtrees={},
+                    artifact_index={'original': item})
+        self.assertEqual(journal.lookup_payload(data, 'original'),
+                         {'source_sha256': 'original', 'artifact_index_entry': item, 'event': self.event})
+        data['chronology'].clear()
+        with self.assertRaises(ValueError):
+            journal.lookup_payload(data, 'original')
+
+    def test_historical_trace_summary_resolves_by_original_sha(self):
+        """Оба индекса сводок отвечают без сохранённых байтов трассы."""
+        data = dict(chronology=[], essential_payloads={}, shared_essential_subtrees={},
+                    artifact_index={'trace': {'trace_summary': {'rows': 120}},
+                                    'compiler': {'compiler_trace_summary': {'files': 4}}})
+        for digest, item in data['artifact_index'].items():
+            with self.subTest(digest=digest):
+                self.assertEqual(journal.lookup_payload(data, digest),
+                                 {'source_sha256': digest, 'artifact_index_entry': item})
+
     def test_cleanup_payload_is_self_contained_and_hash_checked(self):
         """Числа/null/UTF8 читаются после удаления build; повреждённая проекция не принимается."""
         payload={'status':'PASS','mean':54.88094341561308,'RAM':None,'note':'Только software snapshot'}
         digest=hashlib.sha256(json.dumps(payload,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode('utf-8')).hexdigest()
         archive={'artifacts':{'source_sha':{'historical_paths':['missing/build/summary.json'],'payload_sha256':digest}},'payloads':{digest:payload}}
-        data=dict(chronology=[{'result':{'durable_build_evidence':archive}}],essential_payloads={},shared_essential_subtrees={})
+        data=dict(chronology=[{'result':{'durable_build_evidence':archive}}],essential_payloads={},shared_essential_subtrees={},
+                  artifact_index={'source_sha': {'trace_summary': {'rows': 120}}})
         self.assertEqual(journal.lookup_payload(data,'source_sha'),payload)
         archive['payloads'][digest]=dict(payload,mean=1)
         with self.assertRaises(ValueError):journal.lookup_payload(data,'source_sha')
@@ -149,6 +173,88 @@ class ExperimentsTests(unittest.TestCase):
         self.assertEqual(journal.read_json(self.target)['chronology'], [self.event])
         self.assertEqual(tuple(path.read_bytes() for path in (history, evidence)), readonly)
         self.assert_clean()
+
+
+    def test_export_cli_preserves_history_and_sha_lookups(self):
+        """Единый файл сохраняет порядок, оба вида доказательств и чтение без исходных частей."""
+        base = self.target.parent
+        history = base / 'old.json'
+        evidence = base / 'evidence.json'
+        older = dict(self.event, id='older', date='2026-11-18')
+        shared = {'frames': 120, 'note': 'Русский текст'}
+        history.write_text(json.dumps([older]), encoding='utf-8')
+        evidence.write_text(json.dumps({
+            'essential_payloads': {'digest': {'$shared': 'leaf'}},
+            'shared_essential_subtrees': {'leaf': shared},
+            'artifact_index': {'original': {'essential_payload_sha256': 'digest'}},
+        }), encoding='utf-8')
+        self.target.write_text(json.dumps({
+            'chronology': [self.event],
+            'parts': {'chronology': history.name, 'evidence': evidence.name},
+        }), encoding='utf-8')
+        output = base / 'bundle' / 'full.json'
+        inputs = {path: path.read_bytes() for path in (self.target, history, evidence)}
+
+        def run_cli(*args):
+            return json.loads(subprocess.check_output([sys.executable, '-B', str(HERE / 'experiments.py'),
+                                                        '--file', str(args[0]), *args[1:]], encoding='utf-8'))
+
+        receipt = run_cli(self.target, '--export', str(output))
+        self.assertEqual(receipt, {'status': 'EXPORTED', 'path': str(output),
+                                   'events': 2, 'bytes': output.stat().st_size})
+        self.assertEqual({path: path.read_bytes() for path in inputs}, inputs)
+        self.assertEqual(journal.read(output), journal.read(self.target))
+        for path in inputs:
+            path.unlink()
+        standalone = journal.read(output)
+        self.assertNotIn('parts', standalone)
+        self.assertEqual(standalone['chronology'], [older, self.event])
+        self.assertEqual(run_cli(output, '--id', older['id']), older)
+        self.assertEqual(run_cli(output, '--sha', 'original'), shared)
+
+    def test_export_rejects_sources_and_hardlink_alias(self):
+        """Пути журнала и его частей защищены, даже если указано второе имя того же файла."""
+        base = self.target.parent
+        history = base / 'old.json'
+        evidence = base / 'evidence.json'
+        history.write_text('[]', encoding='utf-8')
+        evidence.write_text('{}', encoding='utf-8')
+        self.target.write_text(json.dumps({
+            'chronology': [],
+            'parts': {'chronology': history.name, 'evidence': evidence.name},
+        }), encoding='utf-8')
+        alias = base / 'alias.json'
+        os.link(evidence, alias)
+        inputs = {path: path.read_bytes() for path in (self.target, history, evidence, alias)}
+        for output in inputs:
+            with self.subTest(output=output):
+                with self.assertRaises(ValueError):
+                    journal.export(self.target, output)
+        self.assertEqual({path: path.read_bytes() for path in inputs}, inputs)
+
+    def test_export_failure_preserves_existing_output(self):
+        """Ошибка записи или замены сохраняет предыдущий полный экспорт и удаляет временный файл."""
+        output = self.target.parent / 'full.json'
+        output.write_bytes(b'{"old":true}\n')
+        previous = output.read_bytes()
+        files = set(output.parent.iterdir())
+
+        def partial_dump(data, stream, **options):
+            stream.write('{"incomplete":')
+            raise OSError('fixture write failure')
+
+        with mock.patch.object(journal.json, 'dump', side_effect=partial_dump):
+            with self.assertRaises(OSError):
+                journal.export(self.target, output)
+        self.assertEqual(output.read_bytes(), previous)
+        self.assertEqual(set(output.parent.iterdir()), files)
+        with mock.patch.object(journal.os, 'replace', side_effect=OSError('fixture replace failure')):
+            with self.assertRaises(OSError):
+                journal.export(self.target, output)
+        self.assertEqual(output.read_bytes(), previous)
+        self.assertEqual(set(output.parent.iterdir()), files)
+        self.assertEqual(journal.export(self.target, output)['status'], 'EXPORTED')
+        self.assertEqual(journal.read(output), journal.read(self.target))
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

@@ -197,6 +197,7 @@ class Fixtures(unittest.TestCase):
 
     def test_coupled_hart_uses_board_timestamp_and_keeps_waits(self):
         """Такты Coupled требуют полного среза по часам платы и отдельной области."""
+        # Формирует тестовый отчёт Coupled с согласованными границами окна и показаниями таймеров.
         def coupled(frames, stamp):
             return dict(frame(frames, stamp), raw_type="NES_COUPLED_BENCH", mapper=5)
         rows = [coupled(120, 2_000_000), coupled(240, 4_160_000)]

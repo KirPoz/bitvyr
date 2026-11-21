@@ -17,6 +17,8 @@ Frame fixture исполняет настоящий pipeline с собствен
 и SDK mocks. Полный stream golden хранится в проверяющем коде и не требует
 старого build. Negative завершается явным stderr/exit73 и ограничен timeout.
 Allocation/OOM/stale metadata проверяются test seams, выключенными на SDK.
+`frame/sdk_mock` предоставляет память, таймер и журнал для host Frame.
+`settings/fake` подменяет интерфейс NVS для проверки сохранения и чтения настроек.
 
 Python-проверки инструментов запускаются отдельно от CTest. Команды ниже
 используют разные процессы: одноимённые root и edition-модули имеют разные

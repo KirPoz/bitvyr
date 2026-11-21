@@ -13,6 +13,7 @@ bool powerOfTwoSize(std::size_t bytes, std::size_t low, std::size_t high) noexce
 }
 }
 
+/** @brief Проверяет размеры PRG, CHR и RAM, привязывает память картриджа и устанавливает начальное состояние. */
 bool Mmc5::attach(const std::uint8_t* prg, std::size_t prgBytes,
                   const std::uint8_t* chr, std::size_t chrBytes,
                   std::uint8_t* ram, std::size_t ramBytes, bool splitSlMode) noexcept {
@@ -27,6 +28,7 @@ bool Mmc5::attach(const std::uint8_t* prg, std::size_t prgBytes,
     return true;
 }
 
+/** @brief Сбрасывает план выборок, указатели на память и признаки активного кадра перед сменой ROM. */
 void Mmc5::detach() noexcept {
     invalidateRasterPlan();
     prg_ = chr_ = nullptr; ram_ = nullptr;
@@ -35,6 +37,7 @@ void Mmc5::detach() noexcept {
     irqEnabled_ = false;
 }
 
+/** @brief Устанавливает начальные значения регистров и очищает ExRAM при включении картриджа. */
 void Mmc5::powerOn() noexcept {
     invalidateRasterPlan();
     // Неопределённые power-on регистры получают воспроизводимый ноль; это не
@@ -51,6 +54,7 @@ void Mmc5::powerOn() noexcept {
     rebuildNormalChrCache(0); rebuildNormalChrCache(1);
 }
 
+/** @brief Восстанавливает регистры режима и защиты RAM по сигналу Reset, сохраняя работу детектора строк. */
 void Mmc5::resetSignal() noexcept {
     invalidateRasterPlan();
     // Reset-detected поля конфигурации независимы от scanline pending/counter.
@@ -59,6 +63,7 @@ void Mmc5::resetSignal() noexcept {
     irqEnabled_ = false;
 }
 
+/** @brief Декодирует восьмикилобайтный банк PRG и его тип для окна CPU начиная с $6000. */
 bool Mmc5::decodePrg(std::uint16_t address, unsigned& bank, bool& rom) const noexcept {
     if (address < 0x6000) return false;
     if (address < 0x8000) { bank = prgBanks_[0] & 15U; rom = false; return true; }
@@ -77,6 +82,7 @@ bool Mmc5::decodePrg(std::uint16_t address, unsigned& bank, bool& rom) const noe
     return true;
 }
 
+/** @brief Преобразует номер банка и смещение внутри 8 КиБ с учётом физических линий адреса SRAM. */
 std::size_t Mmc5::ramOffset(unsigned bank, unsigned within) const noexcept {
     if (!ram_ || !ramBytes_) return InvalidChrOffset;
     // Коммерческие 8/32 KiB платы имеют один SRAM: CE1 (bank bit2) не подключён.
@@ -99,6 +105,7 @@ const std::uint8_t* Mmc5::cpu6000Page() const noexcept {
     return offset==InvalidChrOffset?nullptr:ram_+offset;
 }
 
+/** @brief Возвращает начало выбранной страницы $8000–$FFFF или nullptr для отсутствующего банка. */
 const std::uint8_t* Mmc5::prgPage(unsigned page) const noexcept {
     if (page >= 4) return nullptr;
     unsigned bank = 0; bool rom = false;
@@ -108,6 +115,7 @@ const std::uint8_t* Mmc5::prgPage(unsigned page) const noexcept {
     return offset == InvalidChrOffset ? nullptr : ram_ + offset;
 }
 
+/** @brief Возвращает байт SRAM по адресу CPU только при открытой защите записи. */
 std::uint8_t* Mmc5::writablePrg(std::uint16_t address) noexcept {
     if (protect1_ != 2 || protect2_ != 1) return nullptr;
     unsigned bank = 0; bool rom = false;
@@ -116,6 +124,7 @@ std::uint8_t* Mmc5::writablePrg(std::uint16_t address) noexcept {
     return offset == InvalidChrOffset ? nullptr : ram_ + offset;
 }
 
+/** @brief Читает отображение PRG и регистры MMC5 без изменения IRQ или детектора кадра. */
 std::uint8_t Mmc5::cpuPeek(std::uint16_t address, std::uint8_t openBus) const noexcept {
     if (address == 0x5204)
         return static_cast<std::uint8_t>((openBus & 0x3eU) | (irqPending_ ? 0x80U : 0U) | (inFrame_ ? 0x40U : 0U));
@@ -131,6 +140,7 @@ std::uint8_t Mmc5::cpuPeek(std::uint16_t address, std::uint8_t openBus) const no
     return offset == InvalidChrOffset ? openBus : ram_[offset];
 }
 
+/** @brief Читает значение, подтверждает IRQ при чтении $5204 и учитывает сигнал чтения CPU. */
 std::uint8_t Mmc5::cpuRead(std::uint16_t address, std::uint8_t openBus) noexcept {
     const auto result = cpuPeek(address, openBus);
     if (address == 0x5204) irqPending_ = false;
@@ -138,10 +148,12 @@ std::uint8_t Mmc5::cpuRead(std::uint16_t address, std::uint8_t openBus) noexcept
     return result;
 }
 
+/** @brief Завершает кадр при чтении вектора NMI или чтении $2002 с установленным признаком vblank. */
 void Mmc5::cpuReadStrobe(std::uint16_t address, std::uint8_t value) noexcept {
     if (address == 0xfffa || address == 0xfffb || (address == 0x2002 && (value & 0x80U))) endFrame();
 }
 
+/** @brief Декодирует запись в регистры, ExRAM или SRAM и сбрасывает план выборок после изменения отображения. */
 void Mmc5::cpuWrite(std::uint16_t address, std::uint8_t value) noexcept {
     if (address == 0x2000) { invalidateRasterPlan(); ppuControl_ = value; return; }
     if (address == 0x2001) {
@@ -204,12 +216,14 @@ void Mmc5::cpuWrite(std::uint16_t address, std::uint8_t value) noexcept {
     }
 }
 
+/** @brief Сбрасывает признак кадра, ожидающий IRQ и состояние детектора чтений и вертикального сплита. */
 void Mmc5::endFrame() noexcept {
     inFrame_ = irqPending_ = false; scanline_ = 0;
     lastPpuAddress_ = 0xffff; nameRepeat_ = 0; splitY_ = splitScroll_;
     tileExtended_ = tileSplit_ = false;
 }
 
+/** @brief Продвигает отсчёт тактов M2 без чтения PPU и закрывает кадр на границе простоя. */
 void Mmc5::clockCpu(unsigned cycles) noexcept {
     if (!cycles) return;
     // Флаг означает хотя бы один /RD между предыдущим и этим M2. Поэтому первый
@@ -224,6 +238,7 @@ void Mmc5::clockCpu(unsigned cycles) noexcept {
     }
 }
 
+/** @brief Обрабатывает найденную границу строки, обновляет счётчик кадрового детектора и сравнение IRQ. */
 void Mmc5::detectScanline() noexcept {
     if (!inFrame_) {
         inFrame_ = true; scanline_ = 0; irqPending_ = false; splitY_ = splitScroll_;
@@ -236,6 +251,7 @@ void Mmc5::detectScanline() noexcept {
     }
 }
 
+/** @brief Учитывает реальный сигнал чтения PPU для детектора строк; доступ к палитре остаётся внутри PPU. */
 void Mmc5::ppuReadStrobe(std::uint16_t address) noexcept {
     address &= 0x3fffU;
     if (address >= 0x3f00) return; // Palette read не создаёт cartridge /RD.
@@ -249,6 +265,7 @@ void Mmc5::ppuReadStrobe(std::uint16_t address) noexcept {
     lastPpuAddress_ = address;
 }
 
+/** @brief Читает CIRAM, ExRAM или константу заполнения согласно отображению таблиц имён. */
 std::uint8_t Mmc5::nametablePeek(std::uint16_t address, const std::uint8_t* ciram) const noexcept {
     const unsigned offset = address & 1023U;
     const unsigned source = (ntMap_ >> (((address >> 10) & 3U) * 2U)) & 3U;
@@ -257,6 +274,7 @@ std::uint8_t Mmc5::nametablePeek(std::uint16_t address, const std::uint8_t* cira
     return offset < 0x3c0 ? fillTile_ : fillAttribute_;
 }
 
+/** @brief Фиксирует расширенный атрибут и выбор вертикального сплита при чтении имени тайла фона. */
 void Mmc5::beginBackground(std::uint16_t address, unsigned tileX) noexcept {
     tileExtended_ = (ppuMask_ & 0x18U) != 0 && exMode_ == 1;
     tileAttribute_ = exRam_[address & 1023U];
@@ -294,6 +312,7 @@ void Mmc5::rebuildNormalChrCache(unsigned set) noexcept {
         normalChrBases_[set][slot] = (std::uint32_t(bank) * 1024U) & mask;
     }
 }
+/** @brief Вычисляет физический адрес CHR с учётом типа выборки PPU, расширенных атрибутов и сплита. */
 std::size_t Mmc5::chrOffset(std::uint16_t address, Fetch kind) const noexcept {
     if (!chr_ || !chrBytes_ || address >= 0x2000) return InvalidChrOffset;
     std::size_t physical;
@@ -340,6 +359,7 @@ inline Mmc5::PpuRead Mmc5::readPpuData(std::uint16_t address, Fetch kind,
     return {nametablePeek(address, ciram), InvalidChrOffset};
 }
 
+/** @brief Учитывает сигнал чтения и возвращает данные текущей фазы выборки PPU по отображению MMC5. */
 Mmc5::PpuRead Mmc5::ppuRead(std::uint16_t address, Fetch kind,
                            const std::uint8_t* ciram, unsigned tileX) noexcept {
     address &= 0x3fffU;
@@ -527,6 +547,7 @@ unsigned Mmc5::ppuWriteTarget(std::uint16_t address,bool ciram) const noexcept {
     if(source<2U)return ciram?source*1024U+(address&1023U):~0U;
     return source==2U&&exMode_<2U?2048U+(address&1023U):~0U;
 }
+/** @brief Записывает байт в выбранную страницу CIRAM или ExRAM для адреса таблицы имён. */
 void Mmc5::ppuWrite(std::uint16_t address, std::uint8_t value, std::uint8_t* ciram) noexcept {
     address &= 0x3fffU;
     if (address < 0x2000 || address >= 0x3f00) return;

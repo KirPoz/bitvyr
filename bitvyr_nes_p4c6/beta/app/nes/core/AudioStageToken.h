@@ -35,8 +35,6 @@ public:
     bool valid() const noexcept { return self_ == this && phase_ == AudioStagePhase::Staged; }
     /** @brief True после единственного post-ACK finalize; не заменяет actual Worker completion. */
     bool completed() const noexcept { return self_ == this && phase_ == AudioStagePhase::Completed; }
-    /** @brief True после явного joined abandon без retirement; пакет нельзя публиковать как успешный кадр. */
-    bool abandoned() const noexcept { return self_ == this && phase_ == AudioStagePhase::Abandoned; }
     /**
      * @brief Очищает только завершённую/abandoned квитанцию на подтверждённой Main joined-границе.
      * @return false для staged/чужого self; не снимает Core borrow вместо abandon.

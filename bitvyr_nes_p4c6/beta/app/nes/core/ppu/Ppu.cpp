@@ -861,6 +861,7 @@ void Ppu::rebuildBackgroundPairs() const noexcept {
 #if defined(__GNUC__) || defined(__clang__)
 [[gnu::always_inline]]
 #endif
+/** @brief Компонует восемь пикселей из фона и спрайтов с учётом маски, приоритета и попадания sprite 0. */
 inline unsigned Ppu::writeTile8(std::uint32_t background, std::uint8_t* output,
     const std::uint8_t* sprites, unsigned start, unsigned mask, PpuRgbOutput* rgb,
     PpuBackgroundWriter* writer) const noexcept {
@@ -1083,6 +1084,7 @@ void Ppu::visibleUnclockedGroup(unsigned dots) noexcept {
     visibleDotPhase<2>();
 }
 
+/** @brief Исполняет одну точку PPU, сохраняя порядок вызовов шины и переходов raster. */
 [[gnu::always_inline]] inline void Ppu::tickInline() noexcept {
     if (trackBusCycles_) bus_.ppuCycle();
     // Большинство активных точек не начинает/заканчивает кадр, не копирует scroll, не выбирает
@@ -1596,6 +1598,7 @@ void Ppu::fetchLegacyTileSpan(unsigned tiles) noexcept {
 #elif defined(_MSC_VER)
 __declspec(noinline)
 #endif
+/** @brief Сдвигает данные уже выбранных тайлов и передаёт их в выходной буфер без повторного чтения картриджа. */
 void Ppu::renderFetchedTiles(const std::uint32_t* fetched, unsigned tiles) noexcept {
     // Две упакованные 16-битные пары плоскостей требуют лишь одного shift/mask после
     // первого произвольного входного сдвига. В пиксельном цикле нет вызовов mapper.
@@ -1734,6 +1737,7 @@ inline void Ppu::tile8() noexcept {
     dot_ = static_cast<std::uint16_t>(dot_ + 8);
 }
 
+/** @brief Продвигает PPU на заданное число точек, выбирая пакетный путь только в допустимом интервале. */
 [[gnu::always_inline]] inline void Ppu::tickDotsInline(unsigned dots) noexcept {
     // Только стационарный C0: уже разрешённые восемь точек не содержат CPU/MMIO,
     // пикселей или внешнего address/clock observer. Остальные домены прежние.

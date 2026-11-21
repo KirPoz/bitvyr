@@ -62,8 +62,6 @@ public:
      * но не исполнять его до actual ACK-sourceDone; P4 не подменяет это таймером.
      */
     bool reprofileWarm(const raw::Key&nextHello) noexcept;
-    /** @brief Unknown completion не позволяет release/retry, даже если lateRX позже появился. */
-    bool poisoned()const noexcept{return poisoned_;}
     /** @brief Возвращает собственный числовой снимок после read-only HELLO. */
     const RawHello&hello()const noexcept{return hello_;}
 private:

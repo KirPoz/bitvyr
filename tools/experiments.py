@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import sys
+import tempfile
 
 
 def read_json(path):
@@ -13,13 +14,13 @@ def read_json(path):
     return json.loads(path.read_text(encoding='utf-8'))
 
 
-def read_part(path, relative):
-    """Читает часть журнала, размещённую рядом с его главным файлом."""
+def part_path(path, relative):
+    """Проверяет, что часть журнала размещена рядом с главным файлом."""
     base = path.resolve().parent
     target = (base / relative).resolve()
     if Path(relative).is_absolute() or not target.is_relative_to(base):
         raise ValueError('Часть журнала должна находиться рядом с главным файлом')
-    return read_json(target)
+    return target
 
 
 def assemble(path, current):
@@ -28,11 +29,12 @@ def assemble(path, current):
     if 'parts' in current:
         parts = current['parts']
         data = {key: value for key, value in current.items() if key != 'parts'}
-        evidence = read_part(path, parts['evidence'])
+        evidence = read_json(part_path(path, parts['evidence']))
         if data.keys() & evidence.keys():
             raise ValueError('Поля текущего журнала перекрывают поля хранилища доказательств')
         data.update(evidence)
-        data['chronology'] = read_part(path, parts['chronology']) + current['chronology']
+        history = read_json(part_path(path, parts['chronology']))
+        data['chronology'] = history + current['chronology']
     ids = [event['id'] for event in data['chronology']]
     if len(ids) != len(set(ids)):
         raise ValueError('В журнале повторяются id')
@@ -42,6 +44,33 @@ def assemble(path, current):
 def read(path):
     """Загружает полный журнал из одного файла или из набора связанных частей."""
     return assemble(path, read_json(path))
+
+
+def export(path, output):
+    """Записывает полную копию журнала, сохраняя порядок событий и внутренние ссылки."""
+    current = read_json(path)
+    sources = [path.resolve()]
+    if 'parts' in current:
+        sources.extend(part_path(path, current['parts'][key]) for key in ('chronology', 'evidence'))
+    target = output.resolve()
+    if target in sources or (target.exists() and any(target.samefile(source) for source in sources)):
+        raise ValueError('Файл экспорта совпадает с исходным журналом или его частью')
+
+    data = assemble(path, current)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, name = tempfile.mkstemp(prefix='.bitvyr-export-', suffix='.tmp', dir=target.parent)
+    temporary = Path(name)
+    try:
+        with os.fdopen(descriptor, 'w', encoding='utf-8', newline='\n') as stream:
+            json.dump(data, stream, ensure_ascii=False, separators=(',', ':'), allow_nan=False)
+            stream.write('\n')
+            stream.flush()
+            os.fsync(stream.fileno())
+        size = temporary.stat().st_size
+        os.replace(temporary, target)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return {'status': 'EXPORTED', 'path': str(output), 'events': len(data['chronology']), 'bytes': size}
 
 
 def expand(value, pool, stack=()):
@@ -62,19 +91,23 @@ def expand(value, pool, stack=()):
 def lookup_payload(data, digest):
     """Читает сохранённый payload по essential либо исходному artifact SHA без открытия старого build.
 
-    Старые essential SHA сохраняют приоритет и прежнее разворачивание $shared.
-    Новые cleanup-события содержат собственные payloads и provenance исходных
-    файлов; хэш проекции проверяется до выдачи результата. Отсутствующий build
-    не подменяется повторным чтением или молчаливой реконструкцией.
+    Приоритет сохраняется за полными проекциями, для новых записей проверяется
+    их хэш. Если исторический индекс хранит только сводку или ссылку на событие,
+    результат содержит сохранённую запись индекса и связанное событие.
     """
     pool = data['essential_payloads']
     if digest in pool:
         return expand(pool[digest], data['shared_essential_subtrees'])
+    indexed = None
     for name in ('artifact_index', 'text_result_index'):
         item = data.get(name, {}).get(digest)
-        if item is not None:
+        if item is None:
+            continue
+        if 'essential_payload_sha256' in item:
             key = item['essential_payload_sha256']
             return expand(pool[key], data['shared_essential_subtrees'])
+        if indexed is None:
+            indexed = item
     for event in reversed(data['chronology']):
         result = event.get('result')
         archive = result.get('durable_build_evidence') if isinstance(result, dict) else None
@@ -90,7 +123,16 @@ def lookup_payload(data, digest):
         if actual != key:
             raise ValueError('Не совпал хэш сохранённой проекции artifact')
         return payload
-    raise KeyError(digest)
+    if indexed is None:
+        raise KeyError(digest)
+    projection = {'source_sha256': digest, 'artifact_index_entry': indexed}
+    event_id = indexed.get('already_inline_managed_event_id')
+    if event_id is not None:
+        event = next((row for row in data['chronology'] if row.get('id') == event_id), None)
+        if event is None:
+            raise ValueError(f'В журнале отсутствует связанное событие {event_id}')
+        projection['event'] = event
+    return projection
 
 def append(path, event_path):
     """Атомарно добавляет один опыт под эксклюзивным lock; конфликт id не перезаписывает историю."""
@@ -129,18 +171,21 @@ def append(path, event_path):
 
 
 def main():
-    """Показывает список/опыт/измерения либо добавляет подготовленный JSON без обращения к старым builds."""
+    """Читает, экспортирует и дополняет журнал без обращения к старым сборкам."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--file', type=Path, default=Path(__file__).resolve().parents[1] / 'experiments.json')
     select = parser.add_mutually_exclusive_group()
     select.add_argument('--id')
     select.add_argument('--sha')
     select.add_argument('--event', type=Path)
+    select.add_argument('--export', type=Path, metavar='FILE', help='Сохранить полный журнал одним JSON')
     parser.add_argument('--date')
     parser.add_argument('--limit', type=int, default=20)
     args = parser.parse_args()
     if args.event:
         result = append(args.file, args.event)
+    elif args.export:
+        result = export(args.file, args.export)
     else:
         data = read(args.file)
         if args.sha:

@@ -12,8 +12,9 @@ import json
 import math
 from pathlib import Path
 
+from playthrough_log import is_unsigned_counter, parse_line as _parse_packet
+
 PERF = {"NES_OUTPUT_FRAME_PIPELINE_TIMES", "NES_COUPLED_BENCH"}
-from playthrough_log import parse_line as _parse_packet
 
 LIMITS = [
     "Only observed 120-frame window minima/maxima; no true per-frame FPS or p5/p95 frame times.",
@@ -32,11 +33,6 @@ LIMITS = [
 ]
 
 
-def _uint(value):
-    """Проверяет счётчик без принятия bool/float за целое число."""
-    return type(value) is int and value >= 0
-
-
 def parse_line(line, line_number):
     """Добавляет номер строки к общему parser; повреждение JSON не скрывает raw gap."""
     try:
@@ -53,9 +49,9 @@ def parse_line(line, line_number):
 def _clock(row):
     """Выбирает только фактически напечатанный device_us либо logger-ms."""
     fields = row["fields"]
-    if _uint(fields.get("device_us")):
+    if is_unsigned_counter(fields.get("device_us")):
         return "device_us", fields["device_us"]
-    if _uint(row.get("device_ms")):
+    if is_unsigned_counter(row.get("device_ms")):
         return "logger_ms", row["device_ms"] * 1000
     return None, None
 
@@ -198,7 +194,7 @@ def analyze_text(text, profile="auto", max_gap_seconds=10, marks=None):
             current["telemetry"].append(row)
             continue
         generation = fields.get("generation")
-        if _uint(generation):
+        if is_unsigned_counter(generation):
             if current["generation"] is not None and current["generation"] != generation:
                 cut("generation_change", row)
             current["generation"] = generation
@@ -218,7 +214,7 @@ def analyze_text(text, profile="auto", max_gap_seconds=10, marks=None):
             elif old is None and value is not None:
                 current["identity"][key] = value
         accepted = fields.get("accepted_frames", fields.get("frames"))
-        if not _uint(accepted):
+        if not is_unsigned_counter(accepted):
             gap("missing_accepted_counter", row)
             continue
         row["accepted"] = accepted
@@ -271,7 +267,7 @@ def analyze_text(text, profile="auto", max_gap_seconds=10, marks=None):
                          "observed_stage": {"field": observed[0], "mean_us": observed[1], "causal_proof": False}}
                     for label in ("produced", "submitted"):
                         a, b = before.get(label + "_frames"), fields.get(label + "_frames")
-                        value = b - a if _uint(a) and _uint(b) and b >= a else None
+                        value = b - a if is_unsigned_counter(a) and is_unsigned_counter(b) and b >= a else None
                         w[label + "_delta"] = value
                         w[label + "_fps"] = value * 1e6 / elapsed if value is not None else None
                         if value is None:
@@ -288,7 +284,7 @@ def analyze_text(text, profile="auto", max_gap_seconds=10, marks=None):
         session.setdefault("end_line", len(text.splitlines()))
         for window in session["windows"]:
             window["input_changes"] = [p for p in session["input_changes"] if
-                _uint(p.get("frame")) and window["input_first"] <= p["frame"] <= window["input_last"] and
+                is_unsigned_counter(p.get("frame")) and window["input_first"] <= p["frame"] <= window["input_last"] and
                 (session["generation"] is None or p.get("generation", session["generation"]) == session["generation"])]
             window["activity"] = {"logged_changes": len(window["input_changes"]),
                                   "nonzero_applied_points": sum(bool(p.get("applied")) for p in window["input_changes"]),
@@ -302,7 +298,7 @@ def analyze_text(text, profile="auto", max_gap_seconds=10, marks=None):
             if loop:
                 window["loop_metrics"] = loop
                 # Сравниваем mean loop wall, не max и не выдуманную длительность кадра.
-                if _uint(loop.get("loop_wall_us")):
+                if is_unsigned_counter(loop.get("loop_wall_us")):
                     loop_elapsed = loop["loop_wall_us"] * 120
                     discrepancy = window["elapsed_us"] - loop_elapsed
                     window["checkpoint_minus_matched_loop_us"] = discrepancy
@@ -316,7 +312,7 @@ def analyze_text(text, profile="auto", max_gap_seconds=10, marks=None):
         session["all_observed_windows"] = _summary(session["windows"])
         session["trusted_unambiguous"] = _summary([w for w in session["windows"] if not w["ambiguous_gap"]])
         session["trusted_unambiguous"]["scope"] = "no_flagged_ambiguity_only_not_verified_gameplay"
-        session["manual_marks"] = [m for m in marks if _uint(m.get("line_number")) and session["start_line"] <= m["line_number"] <= session["end_line"]]
+        session["manual_marks"] = [m for m in marks if is_unsigned_counter(m.get("line_number")) and session["start_line"] <= m["line_number"] <= session["end_line"]]
         session["summary"] = session["all_observed_windows"]
         session["summary"]["scope"] = "all_observed_120_intervals_including_ambiguous_gaps"
         session["summary"]["discontinuity_count"] = len(session["discontinuities"])
@@ -336,6 +332,7 @@ def markdown(result):
              "FPS ниже — темп программных счётчиков по часам устройства. Сцена не проверена: возможна смесь игры, меню, заставки и переходов.", "",
              "| Сессия | CRC / игра | Generation | Окон120 | Accepted средний / мин. / макс. FPS | Produced средний | Submitted средний | Разрывов |",
              "|---:|---|---:|---:|---|---:|---:|---:|"]
+    # Форматирует число для таблицы отчёта и сохраняет признак отсутствующего измерения.
     def fmt(value):
         return "не измерено" if value is None else f"{value:.3f}"
     for session in result["sessions"]:
@@ -407,7 +404,7 @@ def read_marks(path, raw):
                 raise ValueError("mark must be an object")
             mark = dict(mark, mark_ordinal=ordinal)
             offset = mark.get("byte_offset", mark.get("raw_byte_offset"))
-            if _uint(offset) and offset <= len(raw):
+            if is_unsigned_counter(offset) and offset <= len(raw):
                 mark["line_number"] = raw[:offset].count(b"\n") + 1
             marks.append(mark)
         except ValueError as exc:

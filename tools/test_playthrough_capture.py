@@ -1,7 +1,6 @@
 ﻿"""Offline-проверки пассивной записи: serial подменён и реальный порт не открывается."""
 from pathlib import Path
 import argparse
-import hashlib
 import importlib.util
 import json
 import sys
@@ -12,7 +11,6 @@ from unittest.mock import patch
 
 SPEC=importlib.util.spec_from_file_location("passive_capture_under_test",Path(__file__).with_name("record_playthrough.py"))
 recorder=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(recorder)
-from playthrough_log import parse_line
 
 
 class FakeSerial:
@@ -112,6 +110,7 @@ class CaptureGuards(unittest.TestCase):
         self.assertEqual(opened,("open","COM4",False,False))
         self.assertLess(transport.events.index(("dtr",False)),transport.events.index(opened))
         self.assertLess(transport.events.index(("rts",False)),transport.events.index(opened))
+    # Проверяет уровни DTR и RTS при открытии и закрытие записи по файлу остановки.
     def test_open_control_lines_before_open_and_stop_file_clean_closure(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder=Path(temporary)/"capture"
@@ -122,6 +121,7 @@ class CaptureGuards(unittest.TestCase):
             events=load_lines(folder/"events.jsonl")
             self.assertEqual(events[0]["kind"],"opened");self.assertEqual(events[-1]["kind"],"stopped")
             self.assertIn("ended_utc",state)
+    # Сверяет исходный поток побайтно при обрыве строки, ANSI-кодах и повреждённом UTF-8.
     def test_raw_partial_ANSI_malformed_and_non_UTF8_bytes_are_never_repaired(self):
         blocks=[b'\x1b[32mI (100) nes_app: NES_SETTINGS {"volume":1}\x1b[0m\r\nNES_SETT',
                 b'INGS {"paused":broken}\nunknown byte: \xff\nNES_INPUT generation=2 frame=0 serial=0 applied=0 action=none\npartial-tail\x00\xfe']
@@ -138,6 +138,7 @@ class CaptureGuards(unittest.TestCase):
             chunks=load_lines(folder/"chunks.jsonl")
             self.assertEqual([(r["begin"],r["end"]) for r in chunks],[(0,len(blocks[0])),(len(blocks[0]),len(raw))])
             self.assertEqual(state["firmware_identity"],"unknown_until_boot_ELF_is_observed")
+    # Ошибка прошивки остаётся в журнале вместе с последующим запуском игры.
     def test_firmware_faults_do_not_end_capture_and_later_launch_is_recorded(self):
         blocks=[b"Guru Meditation Error: test panic\r\nNES_WORKER_FAIL reason=test\n",
                 b"I (2000) nes_app: NES_GAME_START index=4 name=Castlevania III - Dracula's Curse (USA) mapper=5 region=NTSC crc=7cf70cde source=sd zip=1 size=393232\n",
@@ -149,6 +150,7 @@ class CaptureGuards(unittest.TestCase):
             self.assertEqual(state["last_frame"]["frames"],120)
             self.assertEqual((folder/"raw.log").read_bytes(),b"".join(blocks))
             self.assertEqual(sum(e["kind"]=="device_fault" for e in load_lines(folder/"events.jsonl")),2)
+    # Повторный старт ROM с тем же CRC сохраняет полное имя игры с пробелами.
     def test_repeated_sameCRC_GAME_START_preserves_names_with_spaces(self):
         title="Castlevania III - Dracula's Curse (USA)"
         line=f"I (1234) nes_app: NES_GAME_START index=4 name={title} mapper=5 region=NTSC crc=7cf70cde source=sd zip=1 size=393232\n"
@@ -160,6 +162,7 @@ class CaptureGuards(unittest.TestCase):
             self.assertEqual(state["latest_game"]["index"],4)
             starts=[e for e in load_lines(folder/"events.jsonl") if e["kind"]=="game_start"]
             self.assertEqual(len(starts),2);self.assertEqual([e["fields"]["name"] for e in starts],[title,title])
+    # Для сокращённого хеша из UART проверяется отдельная метка наблюдаемого префикса.
     def test_observed_ELF_prefix_is_not_a_full_or_expected_image_claim(self):
         prefix="028b41e0ecb66377"
         with tempfile.TemporaryDirectory() as temporary:
@@ -170,6 +173,7 @@ class CaptureGuards(unittest.TestCase):
             self.assertEqual(state["firmware_identity"],{"ELF_sha256_prefix":prefix})
             self.assertNotIn("expected_elf",state);self.assertNotIn("full_sha256_verified",state)
             self.assertEqual(len(state["firmware_identity"]["ELF_sha256_prefix"]),16)
+    # При несовпадении USB-идентификатора дескриптор порта остаётся закрытым.
     def test_USB_identity_rejected_before_any_port_open(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder=Path(temporary)/"capture";transport=Transport(folder,[b"unused"],serial_number="OTHER")
@@ -177,6 +181,7 @@ class CaptureGuards(unittest.TestCase):
                 recorder.record(arguments(folder))
             self.assertEqual(transport.instances,[])
             self.assertFalse((folder/"raw.log").exists())
+    # Ошибка чтения сохраняет уже записанные байты, итоговый статус и закрывает порт.
     def test_read_error_keeps_written_raw_and_closes_COM_with_failed_metadata(self):
         block=b"I (100) nes_app: NES_INPUT generation=2 frame=0 applied=0 action=none\n"
         with tempfile.TemporaryDirectory() as temporary:
@@ -186,12 +191,14 @@ class CaptureGuards(unittest.TestCase):
             self.assertEqual((folder/"raw.log").read_bytes(),block)
             self.assertEqual(load_lines(folder/"events.jsonl")[-1]["kind"],"failure")
             self.assertEqual(json.loads((folder/"state.json").read_text(encoding="utf-8"))["status"],"failed")
+    # Неудачное открытие освобождает дескриптор и записывает ошибку в итог сеанса.
     def test_open_error_still_closes_fake_handle_and_publishes_failure(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder=Path(temporary)/"capture";state,transport=self.run_capture(folder,[b"unused"],open_error=OSError("fake open error"))
             self.assertEqual(state["status"],"failed");self.assert_passive_closed(state,transport)
             self.assertEqual((folder/"raw.log").read_bytes(),b"")
             self.assertIn("fake open error",state["error"])
+    # При переполнении буфера незаконченной строки исходные байты остаются в RAW.
     def test_oversized_partial_drops_only_diagnostics_and_preserves_all_raw(self):
         blocks=[b"x"*32768 for _ in range(9)]+[b"\nI (5) nes_app: NES_GAME_START index=1 name=Battle City (Japan) mapper=0 region=NTSC crc=f599a07e source=sd zip=1 size=24592\n"]
         with tempfile.TemporaryDirectory() as temporary:
