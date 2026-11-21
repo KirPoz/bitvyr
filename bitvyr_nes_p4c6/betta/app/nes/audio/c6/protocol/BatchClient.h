@@ -1,13 +1,14 @@
 #pragma once
-#include "PartialClient.h"
+#include "ClientTypes.h"
 #include "BatchProtocol.h"
 #include "IdleUnbindWire.h"
 
+#include <array>
+
 namespace nes::c6audio::async {
 /**
- * @brief Один Main-владелец lossless batch либо прежнего6RPC в одинаковом layout.
- * @details Transport callbacks имеют прежний контракт PartialClient: Complete
- * только после CRC/full-key и actual request TXsourceDone. Один poll допускает
+ * @brief Клиент P4 отправляет аудиозаписи пакетом или последовательными командами C6.
+ * @details Адаптер отдаёт Complete после проверки CRC, полного ключа ответа и окончания чтения буфера передачи. Один poll допускает
  * не более одного transport poll и одного start. Нет alloc/часов/задач/повторов.
  */
 static_assert(batch::submitPrefixBytes+batch::maximumSubmitWireBytes<=raw::requestPayloadBytes);

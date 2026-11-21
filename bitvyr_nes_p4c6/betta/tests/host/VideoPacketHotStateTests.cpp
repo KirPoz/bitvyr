@@ -74,14 +74,8 @@ void lifecycleAndStream() {
     std::array<std::uint8_t, 8192> rom{}, seed{};
     for (unsigned i = 0; i < 8192; ++i) { rom[i] = static_cast<std::uint8_t>(i); seed[i] = static_cast<std::uint8_t>(i * 17); }
     CHECK(borrowed->bindHotState(nullptr));
-#if defined(NES_CORE_VIDEO_HOT_METADATA) && NES_CORE_VIDEO_HOT_METADATA
-    CHECK(borrowed->bindHotState(&external));
-    CHECK(&borrowed->header() == &external.header && external.owner == borrowed.get());
-    CHECK(borrowed->bindHotState(&external));
-#else
     CHECK(!borrowed->bindHotState(&external));
     CHECK(external.owner == nullptr);
-#endif
     writeStream(*local, rom, seed);
     writeStream(*borrowed, rom, seed);
     samePacket(*local, *borrowed);
@@ -92,9 +86,6 @@ void lifecycleAndStream() {
     samePacket(*local, *borrowed); // Detach сохраняет последний Free-заголовок и события.
     CHECK(!borrowed->release());
 
-#if defined(NES_CORE_VIDEO_HOT_METADATA) && NES_CORE_VIDEO_HOT_METADATA
-    CHECK(borrowed->bindHotState(&external));
-#endif
     CHECK(borrowed->begin(12, 73, 200000, true, rom.data(), static_cast<std::uint32_t>(rom.size())));
     CHECK(!borrowed->bindHotState(nullptr));
     CHECK(!borrowed->bindHotState(&external));
@@ -105,41 +96,15 @@ void lifecycleAndStream() {
     borrowed->abandon();
     CHECK(borrowed->state() == VideoPacket::State::Free);
     CHECK(borrowed->header().eventCount == 0 && borrowed->header().fault == VideoFault::None);
-#if defined(NES_CORE_VIDEO_HOT_METADATA) && NES_CORE_VIDEO_HOT_METADATA
-    CHECK(&borrowed->header() == &external.header); // abandon не освобождает аренду.
-    CHECK(external.owner == borrowed.get());
-    borrowed.reset();
-    CHECK(external.owner == nullptr); // Сконструированный внешний объект ещё жив.
-#endif
 }
 
-/** @brief Проверяет alias/misalignment/overflow/чужую аренду до разыменования внешнего диапазона. */
+/** @brief Проверяет отказ от внешнего хранилища и успешное использование локального состояния пакета. */
 void rejectedBindings() {
     VideoPacket::HotState external;
     auto first = std::make_unique<VideoPacket>();
     auto second = std::make_unique<VideoPacket>();
-#if defined(NES_CORE_VIDEO_HOT_METADATA) && NES_CORE_VIDEO_HOT_METADATA
-    CHECK(first->bindHotState(&external));
-    CHECK(!second->bindHotState(&external));
-    CHECK(external.owner == first.get());
-    const auto address = reinterpret_cast<std::uintptr_t>(second.get());
-    CHECK(!second->bindHotState(reinterpret_cast<VideoPacket::HotState*>(address + alignof(VideoPacket::HotState))));
-    alignas(VideoPacket::HotState) std::array<std::uint8_t, sizeof(VideoPacket::HotState) + 1> unaligned{};
-    CHECK(!second->bindHotState(reinterpret_cast<VideoPacket::HotState*>(unaligned.data() + 1)));
-    constexpr auto high = ~std::uintptr_t{0} & ~(std::uintptr_t{alignof(VideoPacket::HotState)} - 1U);
-    CHECK(!second->bindHotState(reinterpret_cast<VideoPacket::HotState*>(high)));
-    CHECK(first->bindHotState(nullptr));
-    CHECK(external.owner == nullptr);
-    external.state = VideoPacket::State::Recording;
-    CHECK(!second->bindHotState(&external));
-    external.state = VideoPacket::State::Free;
-    CHECK(second->bindHotState(&external));
-    CHECK(second->bindHotState(nullptr));
-    CHECK(external.owner == nullptr);
-#else
     CHECK(!first->bindHotState(&external));
     CHECK(second->bindHotState(nullptr));
-#endif
 }
 } // namespace
 

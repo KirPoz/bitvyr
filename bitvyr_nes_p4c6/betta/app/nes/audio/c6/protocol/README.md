@@ -1,17 +1,16 @@
-# Portable wire и batch client
+# Протокол PCM между P4 и C6
 
-Здесь единственный canonical wire contract P4/C6: RawLimits/RawWire/CRC32,
-AudioPacketWire, FrameService/FrameClient/PartialClient, BatchProtocol/BatchClient
-и RawAsyncAdapter. C++17; SDK/RTOS сюда не включаются. Core AudioPacketView
-заимствует лишь used typed records; он не является publication authority.
-ServiceReady использует прежние Core APU/renderer declarations с согласованными
-PUBLIC definitions. P4 и C6 — разные ELF, wire layout задаётся LE bytes/CRC,
-а не передачей native C++ structs.
+`AudioPacketWire` кодирует записи APU. `BatchProtocol` задаёт команды и ответы.
+`ClientTypes` описывает заимствование буферов, `BatchClient` управляет
+последовательностью команд, `RawAsyncAdapter` передаёт их через `RawChannel`.
+`FrameService` обрабатывает команды на C6. Формат полей little-endian и CRC
+одинаковы для двух прошивок, которые собираются отдельно.
 
-Владелец client/adapter — один Main. Callback API неблокирующий; один poll
-ограничивает число transport start/poll. Complete требует CRC/full-key и
-фактического TX sourceDone, а не только arrival. INIT/BIND/CONSUMED сохраняют
-прежнюю последовательность; timeout sticky poison не разрешает reuse.
-Ресурсы фиксированы caller spans/arrays, нет heap/задач/ROM copies. Проверка —
-source/token parity и bounded native codec/client oracle; target и реальный
-remote PCM проверяются отдельно. Новые product lifecycle здесь не добавлены.
+На P4 клиентом управляет Main. За один шаг клиент опрашивает транспорт и
+при необходимости отправляет следующую команду. Адаптер завершает шаг после
+проверки CRC, совпадения ключа и подтверждения окончания передачи исходного
+буфера. При неопределённом результате буфер остаётся занятым. PCM передаётся
+в заранее выделенный буфер.
+
+Нативные тесты проверяют кодирование, порядок команд и владение буферами.
+Аппаратные замеры проверяют поток PCM вместе с игровым циклом.

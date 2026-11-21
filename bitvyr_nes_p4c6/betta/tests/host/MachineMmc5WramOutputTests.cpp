@@ -112,9 +112,6 @@ std::vector<std::uint8_t> image(unsigned variant){
  */
 struct Fixture {
     Mmc5 digital;Mmc5Audio expansion;
-#if defined(NES_CORE_VIDEO_HOT_METADATA) && NES_CORE_VIDEO_HOT_METADATA
-    std::array<VideoPacket::HotState,2> hotStates{}; // Живут дольше пакетов при destructor unwind.
-#endif
     std::array<VideoPacket,2> packets;
     std::array<std::array<std::uint8_t,10240>,2> ram{};
     AudioPacket audio,retired;AudioRenderer sound;
@@ -135,12 +132,6 @@ struct Fixture {
         binding.protectedSpans[2]={&digital,sizeof(digital)};binding.protectedSpans[3]={&expansion,sizeof(expansion)};
         binding.protectedSpans[4]={rgb.data(),sizeof(rgb)};binding.protectedSpans[5]={&videoStorage,sizeof(videoStorage)};
         binding.protectedSpans[6]={&video,sizeof(video)};
-#if defined(NES_CORE_VIDEO_HOT_METADATA) && NES_CORE_VIDEO_HOT_METADATA
-        CHECK(packets[0].bindHotState(&hotStates[0]));CHECK(packets[1].bindHotState(&hotStates[1]));
-        OutputFrameLease unregistered{};
-        CHECK(!machine.configureOutputFrames(binding,unregistered));CHECK(machine.cpuCycles()==7);
-        binding.protectedSpans[7]={hotStates.data(),sizeof(hotStates)};
-#endif
         
         CHECK(machine.configureOutputFrames(binding,lease));video.setRgb565Output(rgb.data());
     }

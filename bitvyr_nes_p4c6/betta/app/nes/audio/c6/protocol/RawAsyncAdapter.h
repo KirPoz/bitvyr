@@ -1,7 +1,9 @@
 #pragma once
-#include "PartialClient.h"
+#include "ClientTypes.h"
 #include "../transport/RawChannel.h"
 #include "IdleUnbindWire.h"
+
+#include <array>
 
 namespace nes::c6audio::async {
 /** @brief Fixed current-C6 image qualification; поля не являются OTA разрешением. */
@@ -19,7 +21,7 @@ struct RawHello final {std::uint32_t freeBytes{},minimumBytes{},largestBytes{},w
 /** @brief Только Main clock в микросекундах, вызываемый при start/completion, никогда на Pending. */
 using ClockUs=std::uint64_t(*)() noexcept;
 /**
- * @brief PRIVATE callback adapter PartialClient→existing two-slot RawChannel.
+ * @brief Адаптер BatchClient для двух слотов RawChannel.
  * @details Один Main owner, одна session до checked UNBIND, максимум один запрос. RX/driver callbacks
  * работают лишь через Channel. Нет waits/alloc/log/новых tasks, нет OTA/boot/CLI.
  * Channel живёт до reboot; timeout не cancel/release. Stable reply копируется до release.
