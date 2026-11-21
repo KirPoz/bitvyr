@@ -22,6 +22,23 @@ def link(chunks=()):
 
 # Проверяет строгий допуск, input/observer boundaries и фактические ответы cleanup.
 class Guards(unittest.TestCase):
+    def test_default_catalog_uses_loaded_measured_windows(self):
+        """Обычный запуск использует боевой TMNT II и обе боевые версии Just Breed."""
+        import json
+        from contextlib import redirect_stdout
+        from unittest.mock import patch
+
+        output = io.StringIO()
+        with patch.object(c, "Link", side_effect=AssertionError("COM opened")), redirect_stdout(output):
+            self.assertEqual(c.main(["--expected-volume", "28"]), 0)
+        summary = json.loads(output.getvalue())
+        self.assertEqual(len(summary["games"]), 26)
+        self.assertEqual(summary["movies"]["sha256"], c.MEASURED_CATALOG_SHA256)
+        for crc, interval in {"c9ffbbdb": [3480, 3839], "fcf46dbb": [46440, 46799],
+                              "131b9946": [28080, 28439]}.items():
+            self.assertEqual(summary["roi_inputs"][crc], interval)
+        self.assertTrue(all(end - start + 1 == 360 for start, end in summary["roi_inputs"].values()))
+
     def test_archived_elf_is_checked_before_opening_uart(self):
         """Для сохранённого образа обязательна сверка SHA256, даже в режиме без UART."""
         import hashlib

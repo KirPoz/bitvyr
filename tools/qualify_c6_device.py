@@ -7,12 +7,15 @@ import time
 from pathlib import Path
 
 import device_session as base
+import experiments
 from c6_game_statistics import statistics
 from device_session import pin, require, values
 from pad_movie_queue import rolling_queue_for
+from prepare_c6_routes import checked_edges, queue_plan, validate_bank
 
 COMMON = Path(__file__).resolve().parent
 PROJECT = "bitvyr_nes_p4c6"
+MEASURED_CATALOG_SHA256 = "6ab7eb0e5c002b9bbe2cbdeac6d5ea2748ff03e310254b91ff30c76233316515"
 FRAME = "Non5Frame"
 MMC5_COUPLED = "M5Coupled"
 PERF_TAGS = {"NES_OUTPUT_FRAME_PIPELINE_TIMES", "NES_COUPLED_BENCH"}
@@ -414,10 +417,25 @@ def run_game(link,movie,entry):
                 scene_verified=False,physical_LCD_claim=False,per_frame_min_FPS=None)
     return result
 
+def load_measured_catalog(journal):
+    """Восстанавливает 26 измеренных сцен с полным вводом и тремя окнами."""
+    archive = experiments.read(journal)
+    data = experiments.lookup_payload(archive, MEASURED_CATALOG_SHA256)
+    require(len(data["games"]) == 26 and data["queue_capacity"] == 16, "Measured catalog scope changed")
+    bank = dict(data, games=[], route_preparation={"requested_windows": 3})
+    for game in data["games"]:
+        edges = checked_edges(game["edges"])
+        require(edges[-1]["frame"] < game["end_frame"], "Route stops before last input")
+        require(re.fullmatch(r"[0-9a-f]{64}", game["rom_sha256"]), "Measured ROM SHA-256 missing")
+        bank["games"].append(dict(game, edges=edges, queue_plan=queue_plan(edges)))
+    validate_bank(bank)
+    return bank
+
+
 def main(argv=None):
     """Проверяет параметры запуска до открытия UART."""
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--movies",type=Path,default=COMMON/"qualification-movies.json")
+    p.add_argument("--movies",type=Path,help="Explicit input bank; default: the measured 26-scene catalog")
     p.add_argument("--crcs",nargs="*");p.add_argument("--catalog-only",action="store_true")
     p.add_argument("--port",default="COM4");p.add_argument("--vid",type=lambda x:int(x,0),default=0x1a86)
     p.add_argument("--pid",type=lambda x:int(x,0),default=0x55d3);p.add_argument("--serial")
@@ -429,7 +447,13 @@ def main(argv=None):
     p.add_argument("--output",type=Path,default=COMMON.parent/"bitvyr_nes_p4c6"/"betta"/"build"/"validation"/"device-runs")
     p.add_argument("--expected-volume",type=int,required=True,choices=range(1,101))
     a=p.parse_args(argv)
-    data=json.loads(a.movies.read_text(encoding="utf-8"));routes={g["crc32"].lower():g for g in data["games"]}
+    if a.movies is None:
+        data = load_measured_catalog(COMMON.parent / "experiments.json")
+        movie_source = dict(sha256=MEASURED_CATALOG_SHA256, scope="measured_catalog_projection")
+    else:
+        data = json.loads(a.movies.read_text(encoding="utf-8"))
+        movie_source = pin(a.movies)
+    routes = {g["crc32"].lower(): g for g in data["games"]}
     wanted=[s.lower() for s in a.crcs] if a.crcs else list(routes)
     require(len(wanted)==len(set(wanted)) and all(s in routes for s in wanted),"Unknown/duplicate movie CRC")
     require(len(routes) == len(data["games"]), "Duplicate CRC in movie bank")
@@ -442,7 +466,8 @@ def main(argv=None):
         local = base.local_image(PROJECT, a.expected_elf, a.local_elf)
     if not a.execute_root:
         summary = dict(execute=False, COM_opened=False, games=wanted,
-                       expected_volume=a.expected_volume, expected_lanes=lanes)
+                       expected_volume=a.expected_volume, expected_lanes=lanes, movies=movie_source,
+                       roi_inputs={crc: routes[crc].get("roi_input0") for crc in wanted})
         if local is not None:
             summary["local_P4_image"] = local
         print(json.dumps(summary))
@@ -452,7 +477,7 @@ def main(argv=None):
     local = local or base.local_image(PROJECT, a.expected_elf)
     image_admission = validate_image_admission(a.admission.read_text(encoding="utf-8", errors="replace"), a.expected_elf)
     out=a.output.resolve()/time.strftime("c6-%Y%m%d-%H%M%S");out.mkdir(parents=True,exist_ok=False)
-    summary=dict(tool=pin(Path(__file__)),helper=pin(COMMON/"device_session.py"),rolling_queue_helper=pin(COMMON/"pad_movie_queue.py"),movies=pin(a.movies),admission=pin(a.admission),expected_P4_ELF=a.expected_elf,expected_volume=a.expected_volume,
+    summary=dict(tool=pin(Path(__file__)),helper=pin(COMMON/"device_session.py"),rolling_queue_helper=pin(COMMON/"pad_movie_queue.py"),movies=movie_source,admission=pin(a.admission),expected_P4_ELF=a.expected_elf,expected_volume=a.expected_volume,
                  C6_admission="runtime exact source-pinned HELLO; Root verifies current P4 image separately",
                  expected_C6_ELF=WARM_ELF,image_admission=image_admission,games=[],host_time_FPS=False,NVS_written=False,SD_written=False)
     summary["local_P4_image"] = local

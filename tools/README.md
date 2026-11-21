@@ -24,7 +24,11 @@ python -B tools/analyze_playthrough.py bitvyr_nes_p4/betta/build/validation/my-p
 
 ## Автоматический прогон
 
-Обе редакции используют [26 закреплённых маршрутов](qualification-movies.json).
+P4+C6 по умолчанию воспроизводит каталог из 26 измеренных сцен. Ввод и границы
+восстанавливаются из [журнала](../experiments/README.md) по SHA-256 архива.
+План до открытия COM показывает интервалы каждой сцены. P4 использует свой
+закреплённый банк. Для сравнения двух редакций укажите одинаковый банк через
+`--movies`.
 Для P4+C6 есть дополнительная сцена Castlevania III в BLOCK 1-02. Выберите
 `--movies tools/c6-later-cviii-scene.json --crcs 7cf70cde` при запуске из
 корня репозитория. Проверяются три окна по 120 кадров. [Маршрут](c6-later-cviii-scene.json)
@@ -57,6 +61,16 @@ DSP. Для сравнения редакций используйте один 
 ```powershell
 python -B tools/prepare_c6_routes.py --rom-dir ./roms/nes_rom --source catalog --windows 3 --output bitvyr_nes_p4c6/betta/build/routes-360.json
 python -B tools/qualify_c6_device.py --movies bitvyr_nes_p4c6/betta/build/routes-360.json --expected-volume 28
+```
+
+Для дополнительного боя Battletoads & Double Dragon на 18720–19079
+используйте наблюдённый ввод из варианта `53b02f3d-v01`. Три окна по
+120 кадров начинаются внутри боя. Подготовка сохраняет 1308 изменений ввода
+до 19200 и проверяет CRC локальной игры.
+
+```powershell
+python -B tools/prepare_c6_routes.py --rom-dir ./roms/nes_rom --source human --crcs 53b02f3d --variant 53b02f3d-v01 --roi-start 53b02f3d:18720 --windows 3 --output bitvyr_nes_p4c6/betta/build/bdd-later.json
+python -B tools/qualify_c6_device.py --movies bitvyr_nes_p4c6/betta/build/bdd-later.json --expected-volume 28
 ```
 
 Режим `catalog` собирает маршруты из [записи прохождения](c6-scene-recipe.json),
