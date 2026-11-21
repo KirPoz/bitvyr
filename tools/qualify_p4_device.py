@@ -14,7 +14,7 @@ from pad_movie_queue import rolling_queue_for
 ROOT = Path(__file__).resolve().parent.parent
 PROJECT = "bitvyr_nes_p4"
 BASE_PATH = Path(base.__file__)
-MOVIES_SHA = "b593c176b2d6f3a2c9a31e873ff9f387563cd9e5a0786ae5ef5982095e9d58a0"
+MOVIES_SHA = "2eb94e9e66c5fcf69bba4b863c5eca46eab3baf8000447a18fbee084f4ab9ed9"
 
 
 def digest(path):
