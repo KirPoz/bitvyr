@@ -1,4 +1,4 @@
-"""Генерирует независимые образцы для проверки ZIP/DEFLATE-декодера через zipfile и zlib."""
+"""Independent zipfile/zlib fixtures for the own C++ ZIP/DEFLATE reader."""
 from pathlib import Path
 import argparse
 import binascii

@@ -39,7 +39,6 @@ class Machine final : private CpuBus, private PpuBus, private ApuBus
     , private ApuTimingBus
 {
 public:
-    /** @brief Создаёт цифровые устройства с обычным выделением буфера legacy PPU; ROM загружается отдельно. */
     Machine() noexcept;
     // Только погашенный срез сброса. Null явно выбирает обычного владельца после
     // сброса обеих сторон; промежуточный отказ не включает fallback автоматически.
@@ -122,7 +121,6 @@ public:
     bool immutableCpuPrgTailBound() const noexcept { return cartridge_.cpuPrgTail_.resident!=nullptr; }
 
 
-    /** @brief Принимает политику размещения буфера legacy PPU; ROM и внешние пакеты передаются после создания машины. */
     explicit Machine(LegacyPixelAllocator allocator) noexcept;
     /**
      * @brief Проверяет выбранный режим или наличие нужного хранилища владельца.
@@ -1509,7 +1507,6 @@ private:
     bool beginOutputVrc7Tape(const OutputFrameTicket&)noexcept;
     /** @brief Закрывает trace после finalmetadata только при совпавшем retiredAudio cut. */
     bool sealOutputVrc7Tape(const OutputFrameTicket&)noexcept;
-    /** @brief Подтверждает, что выходной диапазон целиком помещается в разрешённую память и не перекрывает заимствованные буферы. */
     bool outputWritableResult(const void* destination,std::size_t bytes) const noexcept;
     bool videoObservableOnly_ = false;
     VideoObserver* videoObserver_ = nullptr;

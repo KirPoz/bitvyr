@@ -337,6 +337,40 @@ unsigned Machine::mmc5QuietCpuBudget(unsigned remaining,bool insideStep) noexcep
         return safe>=8U?safe:0U;
     }
 
+    if(thinSignalMode()&&cartridge_.mapper()==5U){
+        // На visible9..336 каждые три dots содержат настоящий /RD. После не
+        // более двух NT-read следует pattern /RD: fourth-NT и idle3 невозможны.
+        // Head обязан быть pattern/nameRepeat0. Младшие pattern-биты не нужны
+        // детектору, но loopy/raster, порядокM2/RD и MMIO/vector барьеры точны.
+        const auto& p=timingPpu_;const auto* digital=cartridge_.mmc5_;
+        if(!mmc5ReadQuantum_.active||!digital||!cartridge_.mmc5Audio_||
+           remaining<8U||region_!=Region::Ntsc||thinStickyFault_||thin_->fault()!=ColourFault::None||
+           (cpu_.inStep_!=insideStep)||dmaPending_||dmcStalls_||pendingCpuReads_||cpuReadBudget_||pendingPpuDots_||
+           cpu_.nmiPending_||cpu_.nmiReady_||cpu_.irqPending_||cpu_.irqLine_||
+           p.nmiPending_||p.frameReady_||p.renderDelay_||p.nmiDelay_||
+           p.scanline_<0||p.scanline_>=240||p.dot_<9U||p.dot_>=337U||
+           !p.renderingEnabled_||!p.renderingNext_||!(p.mask_&0x18U)||
+           !digital->inFrame_||digital->nameRepeat_||digital->lastPpuAddress_>=0x2000U||
+           !digital->ppuReadSinceM2_||digital->cpuIdle_>1U||
+           cartridge_.irqLine()||audioIrqLine()||!cartridge_.mmc5Audio_->purePrgReads()||
+           !audioPacket_||!expansionAudio_||audioFault()!=AudioFault::None||
+           audioPacket_->header().generation!=audioGeneration_||audioPacket_->header().sequence!=audioSequence_||
+           audioPacket_->header().region!=region_||timingApu_.cycles()!=cycles_||ppuRemainder_>4U)return 0;
+        unsigned endDot=337U;
+        // Decoder выдаёт только кредит, который visible summary может закрыть целиком.
+        // После 255 остаётся прежний строгий GQ; Y256/copy257 здесь не группируются.
+        if(p.dot_<255U)endDot=255U;
+        // Только внутренний sprite interval: copy257 и BG-prefetch321 снаружи.
+        // Иначе прежний grant255..337 скалярно поглотит весь новый sprite domain.
+        // Tighter admission оставляет реальный M2/Y256/copy257 старому scalar пути.
+        if(p.dot_>=255U&&p.dot_<258U)return 0;
+        if(p.dot_>=258U&&p.dot_<321U)endDot=321U;
+        const unsigned budget=std::min({remaining,80U,(endDot-p.dot_)/3U,timingApu_.quietCpuCycles()});
+        if(budget<8U||cycles_>~std::uint64_t{0}-budget||
+           !audioPacket_->canAppendMmc5Quiet(cycles_,budget))return 0;
+        for(const auto* page:cartridge_.prgPages_)if(!page)return 0;
+        return budget;
+    }
     // Scope — единственный владелец: ложный frame verdict не становится
     // положительным до следующего stepFrame. Динамика ниже не кэшируется.
     const bool frameQualified=mmc5ReadQuantum_.active;
@@ -395,6 +429,7 @@ void Machine::replayMmc5QuietCpuCycles(unsigned clocks) noexcept {
     };
 
     if(thinSignalMode()&&cartridge_.mapper()==5U){
+    if(thinSignalMode()&&cartridge_.mapper()==5U){
         ThinMmc5SignalPlan plan;
         // Retained credits могут закрыть original grant уже вне runQuietBlock.
         // Только полное совпадение base/count повторно использует pure endpoint;
@@ -441,6 +476,7 @@ void Machine::replayMmc5QuietCpuCycles(unsigned clocks) noexcept {
         }
         // Conservative plan rejection не имеет side effects; старый путь закрывает
         // фактически исполненный CPU prefix без повторной Audio/device mutation.
+    }
         // Доказанный CPU prefix уже завершён: никаких MMIO/DMC/IRQ наблюдателей
         // внутри grant. Cart/APU/DAC исполняются накаждомM2, PPUсрез закрывается
         // точным phase summary после них. Любой несоответствующий head — scalar.

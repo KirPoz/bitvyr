@@ -1,4 +1,4 @@
-"""Проверяет фактическое окно FPS, включая задержанную подачу и устаревшие команды."""
+"""Audit the actual wall-time interval, including queued/stale-command failures."""
 import hashlib
 import importlib.util
 import json

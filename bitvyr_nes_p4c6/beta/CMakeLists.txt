@@ -31,7 +31,7 @@ nes_p4_cpu_prepare_config()
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 # Сборка ограничена main и его полным транзитивным замыканием SDK.
 idf_build_set_property(MINIMAL_BUILD ON)
-set(PROJECT_VER "0.1-dev")
+set(PROJECT_VER "0.1-beta")
 project(bitvyr_nes_p4c6)
 nes_p4_cpu_apply()
 nes_c6_audio_attach_hosted()

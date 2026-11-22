@@ -1,4 +1,4 @@
-"""Проверяет исключение наблюдателей из окна FPS при сохранении контроля завершения кадров."""
+"""Keep state observers outside FPS windows without weakening frame completion."""
 import importlib.util
 import itertools
 import json

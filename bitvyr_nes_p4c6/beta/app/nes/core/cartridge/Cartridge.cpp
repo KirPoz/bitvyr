@@ -327,7 +327,6 @@ Cartridge::QuietWram6000 Cartridge::quietWritableWram6000() noexcept {
     return {prgRam_.data()};
 }
 
-/** @brief Возвращает байт из отображения CPU и передаёт чтение MMC5 для обработки его шинных эффектов. */
 std::uint8_t Cartridge::cpuRead(std::uint16_t address, std::uint8_t openBus) const noexcept {
     if (!prg_) return openBus;
     if (mapper_ == 5) return readMmc5Cpu(address,openBus);
@@ -465,6 +464,13 @@ void Cartridge::chrWrite(std::uint16_t address, std::uint8_t value) noexcept {
  * @param value Уже полученный либо записываемый байт; повторное шинное чтение здесь не подразумевается.
  */
 
+/** @details Чистый доступ к 6000 сохраняет RAM enable, ROM bank и открытую шину. */
+std::uint8_t Cartridge::readExpansion6000(std::uint16_t address, std::uint8_t openBus) const noexcept {
+    if (mapper_ == 69 && !(fme7Prg6000_ & 0x40U))
+        return prg_[(std::size_t(fme7Prg6000_ & 0x3fU) * 8192U + (address & 8191U)) % prgSize_];
+    const bool enabled = mapper_ == 69 ? (fme7Prg6000_ & 0x80U) != 0 : (expansionRamControl_ & 0x80U) != 0;
+    return enabled && expansionRamBytes_ ? prgRam_[address & 8191U] : openBus;
+}
 /** @details FME-7 command13 подтверждает IRQ независимо от оставленных enable bits. */
 void Cartridge::writeFme7(std::uint16_t address, std::uint8_t value) noexcept {
     switch (address & 0xe000U) {
@@ -509,7 +515,6 @@ bool Cartridge::sealVrc7Writer(Vrc7WriteTape*tape,std::uint64_t end)noexcept{
     if(!tape->seal(end)){failVrc7Trace(tape->fault());return false;}
     vrc7Writer_=nullptr;return true;
 }
-/** @brief Декодирует адрес регистра VRC7 с учётом разводки платы; отметка в тактах CPU сохраняет порядок записей FM. */
 void Cartridge::writeVrc7(std::uint16_t address,std::uint8_t value,std::uint64_t cycle)noexcept {
     const unsigned high = address & 0xf000U;
     const unsigned sub = (address & vrc7AddressMask_) != 0;
@@ -583,7 +588,6 @@ void Cartridge::clockExpansionCpu(unsigned count) noexcept {
     } else vrc7Counter_ = static_cast<std::uint8_t>(vrc7Counter_ + clocks);
 }
 
-/** @brief Обновляет банки, зеркалирование или IRQ-регистры MMC3 по чётности адреса и выбранному диапазону. */
 void Cartridge::mmc3Write(std::uint16_t address, std::uint8_t value) noexcept {
     switch (address & 0xe001) {
         case 0x8000: {

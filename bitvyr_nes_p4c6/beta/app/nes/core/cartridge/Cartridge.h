@@ -364,9 +364,15 @@ private:
     void clockExpansionCpu(unsigned count) noexcept;
     /** @brief Число CPU-тактов строго до следующего IRQ; фронт остаётся scalar boundary. */
     unsigned expansionIrqQuietCycles() const noexcept;
+    /** @brief Выбирает ROM/RAM/open bus окна 6000 mapper69/85 без чтения побочных регистров. */
+    std::uint8_t readExpansion6000(std::uint16_t address, std::uint8_t openBus) const noexcept;
 
     /** @brief Выполняет mapper5 CPU-read, включая PCM и подтверждение IRQ. */
     std::uint8_t readMmc5Cpu(std::uint16_t address,std::uint8_t openBus) const noexcept;
+    /** @brief Один real-M2 clock только audio; digital остаётся completed replay владельца. */
+    void clockMmc5AudioCpu() noexcept;
+    /** @brief Один serial replay clock только MMC5 digital; audio/PCM не тактируется повторно. */
+    void clockMmc5DigitalCpu() noexcept;
     /** @brief Чистый digital certificate phi0: без pending IRQ/scanline/idle перехода внутри H2. */
     bool canCompleteMmc5H2() const noexcept;
     /** @brief Передаёт один ограниченный M2-интервал цифровому MMC5 и его звуку. */
@@ -485,6 +491,15 @@ private:
         a12_=false;
     }
     // Только доверенный мост Machine вызывает это после проверки loaded().
+    /**
+     * @brief Разрешает опубликованную физическую ссылку на байт либо тайл.
+     * @details ROM/RAM/буквальные виды и границы проверяются до чтения; текущая банковая карта производителя не заменяет сохранённую идентичность.
+     * @param address Гостевой адрес в пространстве данного шинного контракта; не физический указатель ROM.
+     * @return Вычисленное значение или состояние типа std::uint8_t согласно описанному контракту.
+     */
+    std::uint8_t cachedChrByte(std::uint16_t address) const noexcept {
+        return chrPages_[(address >> 10) & 7U][address & 1023U];
+    }
     /**
      * @brief Вычисляет физическое смещение для текущей банковской раскладки.
      * @details Само смещение не продлевает lifetime ROM и не является правом удерживать указатель после изменения mapper.

@@ -38,8 +38,14 @@ public:
         if(phase_!=DerivedFmPhase::Ready)return false;
         out={&header_,inputs_,header_.inputCount,dmc_,header_.dmcCount,expansion_,header_.expansionCount};return out.readable();
     }
+    /** @brief Точная исходная metadata для внешнего originalJoinedTicket, не новый source key. */
+    const core::AudioPacket::Header& originalHeader()const noexcept{return original_;}
     /** @brief Показывает converter state, не владельцев Worker/C6/PPA. */
     DerivedFmPhase phase()const noexcept{return phase_;}
+    /** @brief Наблюдаемый seed до исполнения; не save-state. */
+    FmSeed beginSeed()const noexcept{return begin_;}
+    /** @brief Наблюдаемый seed после точного endCycle; фазы будут продолжены следующим слотом. */
+    FmSeed endSeed()const noexcept{return end_;}
     /**
      * @brief Очищает Main metadata ПОСЛЕ внешнего actual joined-source reclaim.
      * @pre App проверил originalJoinedTicket и exact published key, DATA+TXsourceDone+
