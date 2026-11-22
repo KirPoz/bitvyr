@@ -368,7 +368,7 @@ def main(argv=None):
     p.add_argument('--vid', type=lambda x: int(x, 0), default=0x1a86)
     p.add_argument('--pid', type=lambda x: int(x, 0), default=0x55d3)
     p.add_argument('--serial')
-    p.add_argument('--output', type=Path, default=ROOT / PROJECT / 'betta/build/validation/device-runs')
+    p.add_argument('--output', type=Path, default=base.local_project_build(PROJECT) / 'validation' / 'device-runs')
     a = p.parse_args(argv)
     data = json.loads(a.movies.read_text(encoding='utf-8'))
     games = check_bank(data, a.movies)

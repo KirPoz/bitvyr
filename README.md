@@ -2,12 +2,12 @@
 
 Портативная NES-консоль для Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3. Ядро на C++17 исполняет 6502, PPU, APU и логику картриджа. Библиотеку можно пополнять файлами `.nes` и ZIP на SD FAT32. Консоль загружает выбранную игру в PSRAM. Управлять можно с сенсорного экрана или геймпада Xbox Series по Bluetooth.
 
-**Стабильный выпуск P4+C6 Betta 0.1.** P4 исполняет игру, C6 рассчитывает звук, PPA и DMA выводят изображение. На десяти проверенных сценах, включая семь игр MMC3, скорость подачи составила **59,938–60,143 FPS** в окнах по 120 кадров. [Таблица результатов по играм](bitvyr_nes_p4c6/beta_0_1/docs/04-results.md)
+**Стабильный выпуск P4+C6 Beta 0.1.** P4 исполняет игру, C6 рассчитывает звук, PPA и DMA выводят изображение. На десяти проверенных сценах, включая семь игр MMC3, скорость подачи составила **59,938–60,143 FPS** в окнах по 120 кадров. [Таблица результатов по играм](bitvyr_nes_p4c6/beta_0_1/docs/04-results.md)
 
 | Редакция | Вычисление звука | Документация |
 |---|---|---|
-| [P4+C6 Betta 0.1](bitvyr_nes_p4c6/beta_0_1) | C6 по Hosted SDIO | [Сборка и использование](bitvyr_nes_p4c6/beta_0_1/docs/03-guide.md) · [Схема ядра](bitvyr_nes_p4c6/beta_0_1/docs/02-architecture.md) |
-| [P4](bitvyr_nes_p4/betta) | Локально на P4 | [Сборка и использование](bitvyr_nes_p4/betta/docs/03-guide.md) · [Схема ядра](bitvyr_nes_p4/betta/docs/02-architecture.md) · [Замеры](bitvyr_nes_p4/betta/docs/04-results.md) |
+| [P4+C6 Beta 0.1](bitvyr_nes_p4c6/beta_0_1) | C6 по Hosted SDIO | [Сборка и использование](bitvyr_nes_p4c6/beta_0_1/docs/03-guide.md) · [Схема ядра](bitvyr_nes_p4c6/beta_0_1/docs/02-architecture.md) |
+| [P4](bitvyr_nes_p4/beta) | Локально на P4 | [Сборка и использование](bitvyr_nes_p4/beta/docs/03-guide.md) · [Схема ядра](bitvyr_nes_p4/beta/docs/02-architecture.md) · [Замеры](bitvyr_nes_p4/beta/docs/04-results.md) |
 
 ## Запуск
 

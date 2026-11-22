@@ -12,9 +12,9 @@
 Он выделяет сеансы по запуску, CRC и поколению игры.
 
 ```powershell
-python -B tools/record_playthrough.py --execute-root --port COM4 --output bitvyr_nes_p4/betta/build/validation/my-play
-python -B tools/record_playthrough.py --stop bitvyr_nes_p4/betta/build/validation/my-play
-python -B tools/analyze_playthrough.py bitvyr_nes_p4/betta/build/validation/my-play --output bitvyr_nes_p4/betta/build/validation/my-play/report --profile p4
+python -B tools/record_playthrough.py --execute-root --port COM4 --output bitvyr_nes_p4/beta/build/validation/my-play
+python -B tools/record_playthrough.py --stop bitvyr_nes_p4/beta/build/validation/my-play
+python -B tools/analyze_playthrough.py bitvyr_nes_p4/beta/build/validation/my-play --output bitvyr_nes_p4/beta/build/validation/my-play/report --profile p4
 ```
 
 `export_playthrough_movies.py` экспортирует ввод и варианты сцен для проверки

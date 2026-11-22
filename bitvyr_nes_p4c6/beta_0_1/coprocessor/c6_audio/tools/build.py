@@ -160,7 +160,7 @@ def checked_output(path):
     """Разрешает новый выход только в build либо выделенном временном корне C6."""
     out=path.resolve()
     roots=[(ROOT/'build').resolve(),(Path(tempfile.gettempdir())/'bitvyr-c6-audio').resolve()]
-    assert any(out!=root and out.is_relative_to(root)for root in roots),'Output must be inside betta/build or TEMP/bitvyr-c6-audio.'
+    assert any(out!=root and out.is_relative_to(root)for root in roots),'Output must be inside the project build directory or TEMP/bitvyr-c6-audio.'
     return out
 
 def prepare(args):

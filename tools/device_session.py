@@ -126,8 +126,7 @@ def admit_boot(text, elf, project):
 def local_project_build(project):
     """Возвращает каталог сборки действующего проекта указанной редакции."""
     root = Path(__file__).resolve().parent.parent
-    edition = "beta" if project == "bitvyr_nes_p4c6" else "betta"
-    return root / project / edition / "build"
+    return root / project / "beta" / "build"
 
 
 def local_image(project, expected, path=None):
