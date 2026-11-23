@@ -6,6 +6,8 @@
 2. Выполните **ESP-IDF: Build Your Project**. Для чистой пересборки выберите **ESP-IDF: Full Clean Project**, затем **ESP-IDF: Build Your Project**. Цель проекта `esp32p4`, выходная папка `build`.
 3. Подключите разъём USB–UART платы. Выберите обнаруженный COM-порт и **ESP-IDF: Flash (UART) Your Project**. Для обновления только приложения на уже настроенной P4 выберите **ESP-IDF: Flash App Only (UART)**. Последовательный монитор работает на 115200 бод.
 
+При нестандартной установке SDK в Windows укажите в пользовательской настройке VS Code `idf.eimIdfJsonPath` файл `tools/eim_idf.json` своей установки. После выбора ESP-IDF 6.1 расширение покажет команды сборки для папки выпуска.
+
 Те же команды из папки выпуска в терминале ESP-IDF для Windows. Подставьте номер своего порта.
 
 ```powershell
@@ -14,6 +16,8 @@ idf.py -B build fullclean
 idf.py -B build build
 idf.py -p COM4 flash monitor
 ```
+
+При проверке воспроизводимости на стенде перед Full Clean и Build задали `$env:SOURCE_DATE_EPOCH = '1795468792'`. С теми же путями и инструментами ELF и BIN побайтно совпали с образами аппаратного прогона. В обычной сборке SDK ставит текущее время. [SHA-256 проверенной пары](04-results.md)
 
 ## Совместимый C6
 

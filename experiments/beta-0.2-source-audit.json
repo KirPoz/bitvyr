@@ -189,5 +189,189 @@
     },
     "limits": "Нативные тесты выполнены на исходной базе выпуска после удаления мёртвого кода. Дополнительные комментарии проверены сравнением лексем. Стендовый FPS и аппаратная проверка выпуска фиксируются в журнале экспериментов.",
     "edition_python_tool_tests_passed": 129
-  }
+  },
+  "other_editions_read_only": {
+    "bitvyr_nes_p4/beta": {
+      "tracked_files": 238,
+      "scanned_files": 115,
+      "rows": 1824,
+      "doxygen_ru_pass": 1821,
+      "missing": 3,
+      "pin_misses": 0,
+      "file_no_ru": [],
+      "unmatched_by_path": {
+        "app/nes/runtime/app/Telemetry.inl": [
+          "NES_LOOP_PHASE"
+        ],
+        "main/main.cpp": [
+          "app_main"
+        ],
+        "main/P4CacheHandoff.cpp": [
+          "__wrap_spi_flash_enable_high_performance_mode"
+        ]
+      }
+    },
+    "bitvyr_nes_p4c6/beta_0_1": {
+      "tracked_files": 469,
+      "scanned_files": 210,
+      "rows": 3000,
+      "doxygen_ru_pass": 2929,
+      "missing": 71,
+      "pin_misses": 20,
+      "file_no_ru": [
+        "coprocessor/c6_audio/src/ResolvedColourCodec.h",
+        "coprocessor/c6_audio/src/ResolvedColourRun.h",
+        "coprocessor/c6_audio/src/ServiceReady.cpp"
+      ],
+      "unmatched_by_path": {
+        "app/nes/audio/c6/transport/P4RawAsyncPort.cpp": [
+          "nes_hosted_raw_rx"
+        ],
+        "app/nes/audio/c6/transport/P4RawRx.cpp": [
+          "__wrap_serial_ll_rx_handler"
+        ],
+        "app/nes/core/apu/ApuExpansion.cpp": [
+          "Apu::depositWideDelta"
+        ],
+        "app/nes/core/cartridge/Cartridge.cpp": [
+          "Cartridge::cpuRead",
+          "Cartridge::writeVrc7",
+          "Cartridge::mmc3Write"
+        ],
+        "app/nes/core/cartridge/CartridgeMmc5.cpp": [
+          "Cartridge::readMmc5Cpu",
+          "Cartridge::clockMmc5Cpu",
+          "Cartridge::mmc5Irq",
+          "Cartridge::observeMmc5Read",
+          "Cartridge::observeMmc5Write",
+          "Cartridge::expansionSample"
+        ],
+        "app/nes/core/cartridge/Mmc5.cpp": [
+          "Mmc5::attach",
+          "Mmc5::detach",
+          "Mmc5::powerOn",
+          "Mmc5::resetSignal",
+          "Mmc5::decodePrg",
+          "Mmc5::ramOffset",
+          "Mmc5::prgPage",
+          "Mmc5::writablePrg",
+          "Mmc5::cpuPeek",
+          "Mmc5::cpuRead",
+          "Mmc5::cpuReadStrobe",
+          "Mmc5::cpuWrite",
+          "Mmc5::endFrame",
+          "Mmc5::clockCpu",
+          "Mmc5::detectScanline",
+          "Mmc5::ppuReadStrobe",
+          "Mmc5::nametablePeek",
+          "Mmc5::beginBackground",
+          "Mmc5::chrOffset",
+          "Mmc5::ppuRead",
+          "Mmc5::ppuWrite"
+        ],
+        "app/nes/core/cartridge/Mmc5Audio.cpp": [
+          "Mmc5Audio::sample"
+        ],
+        "app/nes/core/Machine.h": [
+          "Machine",
+          "Machine",
+          "advancePpu",
+          "outputWritableResult"
+        ],
+        "app/nes/core/ppu/c6/ResolvedColourCodec.cpp": [
+          "encodeSeed",
+          "decodeSeed",
+          "encodeRun",
+          "decodeRun"
+        ],
+        "app/nes/core/ppu/Ppu.cpp": [
+          "Ppu::writeTile8",
+          "Ppu::tickInline",
+          "Ppu::fetchRenderMmc5",
+          "Ppu::renderFetchedTiles",
+          "Ppu::tile8",
+          "Ppu::tickDotsInline"
+        ],
+        "app/nes/runtime/coupled/CoupledVideoPipeline.h": [
+          "destroyJoined"
+        ],
+        "app/nes/runtime/frame/FrameVideoPipeline.cpp": [
+          "static_cast<void>"
+        ],
+        "main/main.cpp": [
+          "nes_p4_cache_handoff_calls",
+          "nes_p4_cache_handoff_result",
+          "app_main"
+        ],
+        "main/P4CacheHandoff.cpp": [
+          "__wrap_spi_flash_enable_high_performance_mode",
+          "nes_p4_cache_handoff_calls",
+          "nes_p4_cache_handoff_result"
+        ],
+        "coprocessor/c6_audio/src/BatchAudioControl.cpp": [
+          "BatchAudioControl::renderer",
+          "BatchAudioControl::service"
+        ],
+        "coprocessor/c6_audio/src/BatchFrameService.cpp": [
+          "BatchFrameService::emitFast",
+          "BatchFrameService::submit",
+          "BatchFrameService::fetch"
+        ],
+        "coprocessor/c6_audio/src/C6Endpoint.cpp": [
+          "rawDrain",
+          "nes_hosted_raw_rx",
+          "c6_probe_endpoint_init"
+        ],
+        "coprocessor/c6_audio/src/C6SelectRetained.cpp": [
+          "c6SelectRetainedA09"
+        ],
+        "coprocessor/c6_audio/src/IndexColourRun.cpp": [
+          "mergeDirty"
+        ],
+        "coprocessor/c6_audio/src/RawWorker.inc": [
+          "admission"
+        ],
+        "coprocessor/c6_audio/src/RetainedA09Policy.cpp": [
+          "select"
+        ],
+        "coprocessor/c6_audio/src/ServiceReady.cpp": [
+          "renderReady"
+        ],
+        "coprocessor/c6_audio/apu_fixed/FixedFilter.cpp": [
+          "fixedSample",
+          "fixedBlock"
+        ]
+      }
+    }
+  },
+  "release_tool_validation": {
+    "native_tests": 40,
+    "shared_tool_tests": 123,
+    "edition_tool_tests": 129,
+    "hardware_event": "p4c6-beta02-board-6eeb62b9-catalog38-20261123"
+  },
+  "clean_builds_other_editions": [
+    {
+      "project": "bitvyr_nes_p4/beta",
+      "image_version": "0.1",
+      "idf": "v6.1",
+      "project_name": "bitvyr_nes_p4",
+      "elf_sha256": "e3f45cac63c1415bbd2cd6c1029e9c9d7a93f09db3fca742d23d544ef4bd9257",
+      "image_sha256": "c8392dd364130fa4150615626fa094dab3fb89518ea331a991080b5176d9622f",
+      "bin_bytes": 1474000,
+      "embedded_elf_sha_matches": true,
+      "fullclean_removed_build_cache": true
+    },
+    {
+      "project": "bitvyr_nes_p4c6/beta_0_1",
+      "image_version": "0.1-beta",
+      "idf": "v6.1",
+      "project_name": "bitvyr_nes_p4c6",
+      "elf_sha256": "8bbcf040df1dc8be0677426f794a7b4caf0312e6698e9670efdb2aa722f2282f",
+      "image_sha256": "f75697238e674eb65a9576080c17dfcc8d0e264df3e2fa17cfc7653f968d75a5",
+      "bin_bytes": 1636704,
+      "embedded_elf_sha_matches": true,
+      "fullclean_removed_build_cache": true
+    }
+  ]
 }
