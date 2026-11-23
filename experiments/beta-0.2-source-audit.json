@@ -43,7 +43,13 @@
     "release_files_removed_from_working_snapshot": [
       "app/nes/cpu-quiet-spm-assert.ld",
       "app/nes/ppu-tick-spm-assert.ld"
-    ]
+    ],
+    "published_tree": {
+      "commit": "e5aa57cc72e2b3d9e330cc0b08b9cb07504fae92",
+      "files": 1694,
+      "tree": "b76733ccf8afc23af673c59f39d33907081958f2",
+      "list_paths_sizes_and_blob_ids": "git ls-tree -rl e5aa57cc72e2b3d9e330cc0b08b9cb07504fae92"
+    }
   },
   "dependencies": {
     "idf_target": "esp32p4",
