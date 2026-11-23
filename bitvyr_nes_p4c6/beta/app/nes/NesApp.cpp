@@ -9,6 +9,7 @@
 #include "audio/PcmStreamGuard.h"
 #include "esp_random.h"
 #include "storage/ZipArchive.h"
+#include "storage/Mmc5ChrPadding.h"
 #include "cartridge/Mmc5.h"
 #include "cartridge/Mmc5Audio.h"
 #include "esp_memory_utils.h"
@@ -580,6 +581,11 @@ struct NesApp::EmulationWorkerState final {
  */
 void NesApp::run() noexcept {
     NES_INITIALIZE_BUFFERED_UART();
+    // Политики выбираются до запуска Worker. Команды Library могут менять их между играми.
+    frameDirectPresent.requested=true;
+    CoupledVideoPipeline::setIndexedMemoryProbe(true);
+    machine_.selectMmc5InactiveGrant(true);
+    machine_.selectMmc5ZeroPoll(true);
 #if NES_APP_CPU0_VRC7
     std::printf("NES_EXPERIMENTAL_CPU0_VRC7 enabled=1 scope=frame_m85 pipeline=postdispatch wire=unchanged\n");
 #endif

@@ -1,0 +1,12 @@
+# Только новые четыре MMC5 fetch/render helpers; прежние hot kernels не перемещаются.
+[mapping:nes_mmc5_fetch_render_fused_flash]
+archive: libnes_core.a
+entries:
+    unity_0_cxx:_ZN3nes4core3Ppu15fetchRenderMmc5ILj0EEEvjRNS0_14Mmc5RasterPlanERNS0_4Mmc5Eb (default)
+    unity_0_cxx:_ZN3nes4core3Ppu15fetchRenderMmc5ILj1EEEvjRNS0_14Mmc5RasterPlanERNS0_4Mmc5Eb (default)
+    unity_0_cxx:_ZN3nes4core3Ppu15fetchRenderMmc5ILj2EEEvjRNS0_14Mmc5RasterPlanERNS0_4Mmc5Eb (default)
+    unity_0_cxx:_ZN3nes4core3Ppu15fetchRenderMmc5ILj3EEEvjRNS0_14Mmc5RasterPlanERNS0_4Mmc5Eb (default)
+    unity_0_cxx:_ZN3nes4core3Ppu18tickMmc5ReplayDotsEj (default)
+# Подтверждение одного кадра выполняет Main с доступным кэшем. Проверка
+# witness, которую оно вызывает, уже размещена в том же сегменте.
+    ThinPpu:_ZN3nes4core14ThinReplaySink6commitERKNS0_11ColourLeaseERKNS0_9ColourCutEy (default)

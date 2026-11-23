@@ -139,23 +139,6 @@ std::uint16_t* Board::gameControlsFramebuffer() noexcept {
     return state_ ? state_->gameControls : nullptr;
 }
 
-/**
- * @brief Переключает необязательную регистрацию времён вывода кадра.
- * @details Владелец CPU0 задаёт режим до подачи транзакции. Без NES_APP_FRAME_TIMING вызов ничего не делает.
- * @param enabled Включить соответствующую необязательную возможность.
- */
-void Board::setFrameTimingEnabled(bool enabled) noexcept {
-    (void)enabled;
-}
-/**
- * @brief Копирует диагностические отметки PPA и LCD.
- * @details Читается CPU0 после завершения/ожидания; отметка ISR приобретается через атомарный признак. Младшие 32 бита esp_timer могут переполняться.
- * @return Копия отметок и маски действительных полей; без диагностики — нули.
- */
-PresentationTiming Board::gamePresentationTiming() const noexcept {
-    PresentationTiming result{};
-    return result;
-}
 
 /**
  * @brief Синхронно выводит текущий игровой кадр через PPA.
@@ -201,14 +184,6 @@ bool Board::finishBorrowedGamePresent(const GameSourceTicket&ticket,unsigned tim
     if(!finishGameDisplay(*state_,timeoutMs))return false;
     state_->borrowedGameSource={};return true;
 }
-/** @brief Неблокирующий borrowed-poll проверяет полный ключ до чтения семафоров. */
-GamePresentPollResult Board::pollBorrowedGamePresent(const GameSourceTicket&ticket)noexcept{
-    if(!state_||!status_.display||!ticket.valid()||!sameGameSource(ticket,state_->borrowedGameSource))
-        return GamePresentPollResult::Fault;
-    const auto result=pollGameDisplay(*state_);
-    if(result==GamePresentPollResult::Submitted)state_->borrowedGameSource={};
-    return result;
-}
 
 /**
  * @brief Завершает ранее начатый игровой вывод.
@@ -218,6 +193,19 @@ GamePresentPollResult Board::pollBorrowedGamePresent(const GameSourceTicket&tick
  */
 bool Board::finishGamePresent(unsigned timeoutMs) noexcept {
     return state_ && status_.display && !state_->borrowedGameSource.valid() && finishGameDisplay(*state_, timeoutMs);
+}
+
+/** @brief Проверяет готовность дисплея, три буфера LCD и отсутствие зарегистрированного либо заимствованного источника. */
+bool Board::supportsDirectGamePresentPoll() const noexcept {
+    return state_&&status_.display&&state_->nativeBufferCount==3&&
+        !state_->registeredGameSource&&!state_->borrowedGameSource.valid();
+}
+
+/** @brief Продвигает подготовленную передачу на один шаг, используя сигналы завершения PPA и контроллера LCD. Ожидание переносится на следующий опрос. */
+GamePresentPollResult Board::pollGamePresent() noexcept {
+    if(!supportsDirectGamePresentPoll())
+        return GamePresentPollResult::Fault;
+    return pollGameDisplay(*state_);
 }
 
 /**

@@ -24,27 +24,22 @@ python -B tools/analyze_playthrough.py bitvyr_nes_p4/beta/build/validation/my-pl
 
 ## Автоматический прогон
 
-P4+C6 по умолчанию воспроизводит каталог из 26 измеренных сцен. Ввод и границы
-восстанавливаются из [журнала](../experiments/README.md) по SHA-256 архива.
-План до открытия COM показывает интервалы каждой сцены. P4 использует свой
-закреплённый банк. Для сравнения двух редакций укажите одинаковый банк через
-`--movies`.
+P4+C6 по умолчанию воспроизводит 38 маршрутов Beta 0.2. Для каждого CRC из события `p4c6-autonomous-6040-catalog-38-20261123` извлекаются записанные нажатия и три окна по 120 кадров. План до открытия COM показывает интервал каждой сцены. P4 использует свой банк. Для сравнения двух редакций укажите одинаковый банк через `--movies`. [Журнал](../experiments/README.md)
 Для P4+C6 есть дополнительная сцена Castlevania III в BLOCK 1-02. Выберите
 `--movies tools/c6-later-cviii-scene.json --crcs 7cf70cde` при запуске из
 корня репозитория. Проверяются три окна по 120 кадров. [Маршрут](c6-later-cviii-scene.json)
 В банке есть CRC, регион, последовательность кнопок и измеряемый интервал.
-Сначала посмотрите план без открытия COM:
+План можно посмотреть до открытия COM.
 
 ```powershell
 python -B tools/qualify_p4_device.py --expected-volume 28 --games c9ffbbdb
-python -B tools/qualify_c6_device.py --expected-volume 28 --crcs c9ffbbdb
+python -B tools/qualify_c6_device.py --expected-volume 7
 ```
 
-Для P4+C6 локальный ELF и журналы по умолчанию находятся в `bitvyr_nes_p4c6/beta/build`.
-Для замера выпуска из `beta_0_1` укажите его ELF через `--local-elf` и папку журнала через `--output`.
+Для P4+C6 локальный ELF берётся из `bitvyr_nes_p4c6/beta_0_2/build`, ожидаемый SHA-256 worker начинается с `c2660fac`. Путь к другому ELF P4 задаётся через `--local-elf`, SHA-256 worker — через `--c6-sha`, каталог захвата — через `--output`.
 
 Для прогона добавьте `--execute-root --attest-admitted-image-current`,
-`--port COM4 --serial <USB-серийный-номер>`, `--elf-sha <полный-SHA256>` и
+`--port COM4`, `--elf-sha <полный-SHA256>` и
 `--admission <boot.log>`. Лог загрузки и локальный ELF должны соответствовать
 прошивке на устройстве. Громкость проверяется чтением. Во время прогона оставьте
 экран и геймпад без нажатий.

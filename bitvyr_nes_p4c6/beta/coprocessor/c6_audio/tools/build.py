@@ -198,7 +198,7 @@ def prepare(args):
     save(out/'plan.json',dict(status='PREPARED_NEW_C6_ROOT_SDK_BOOTSTRAP_AND_ORDERED39_NOT_EXECUTED',variables={k:str(v)for k,v in variables.items()},configure=[str(variables['PYTHON']),str(variables['IDF']/'tools/idf.py'),'-C',str(generated_project),'-B',str(out/'sdk'),'-D','SDKCONFIG='+str(out/'sdkconfig'),'-D','SDKCONFIG_DEFAULTS='+defaults,'-D','IDF_TARGET=esp32c6','reconfigure'],sdk_targets=targets,commands=commands,external=external,host_tools={name:pin(variables[name.upper()])for name in lock['host_tools']},sdkconfig_seed=pin(checked(lock['sdkconfig'])),effective_sdkconfig_sha256=lock['effective_sdkconfig_sha256'],source_audit=audit(),effective_compile_sources=effective,source_recipe=[pin(PROJECT/'recipe'/n)for n in ['compile41.json','source-map.json','link-image.json','link.rsp.in','archive-order.json','external-lock.json']],SDK_executed=False,COM=False,flash=False))
     return out/'plan.json'
 
-def execute(path,args):
+def execute(path,args,config_check=verify_config):
     """Root выполняет fresh dependencies и exact active39; timeout сохраняет HOLD без flash."""
     path=path.resolve();plan=read(path);out=path.parent
     checked_output(out);assert not(out/'result.json').exists();audit()
@@ -229,7 +229,7 @@ def execute(path,args):
         if p.returncode:raise RuntimeError(label+' rc='+str(p.returncode))
     try:
         run('configure',plan['configure'],ROOT)
-        verify_config(out/'sdkconfig',lock)
+        config_check(out/'sdkconfig',lock)
         ninja=plan['variables']['NINJA']
         run('sdk-dependencies',[ninja,'-C',plan['variables']['SDK_BUILD'],*plan['sdk_targets']],ROOT)
         for row in plan['commands']:run(row['label'],row['argv'],row['cwd'])

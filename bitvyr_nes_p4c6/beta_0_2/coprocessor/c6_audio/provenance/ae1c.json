@@ -1,0 +1,39 @@
+{
+  "actual_result": {
+    "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/result.json",
+    "bytes": 3105,
+    "sha256": "dab9086bf1757e0066056cef48748d0ee34c3943a80a0fe055331b846fb2878d"
+  },
+  "source74": {
+    "path": "build/experiments/c6-nes60-20261112/c6-audio-batch-agent/c6-sdk-prep-agent/prepared03/before.json",
+    "bytes": 55099,
+    "sha256": "dfd6b3b61341f4a596fb6a8844e8291d4362c49d7ea8cfaa1ab664ede38500d5"
+  },
+  "origin41": {
+    "path": "build/experiments/resume-20261116/c6-header-deps-agent/report01.json",
+    "bytes": 24457,
+    "sha256": "b0badaceb0aae88e21012a1bdeb2169ffcebafa84693c488ddf167922b26f4f6"
+  },
+  "vectors21": {
+    "path": "build/experiments/resume-20261116/c6-header-deps-agent/active-private-vectors01.json",
+    "bytes": 789789,
+    "sha256": "792543128aec28fd03047dc00cf85dd36ac770e401af4e4bb482dff615711d72"
+  },
+  "source74_count": 74,
+  "active41": 41,
+  "baseline_extra_cpp": [
+    "C6Workload.cpp",
+    "C6ProbeMain.cpp"
+  ],
+  "root_shared_APU_unchanged": true,
+  "fixed_APU_patch": {
+    "path": "coprocessor/c6_audio/patches/fixed-apu.patch",
+    "bytes": 9329,
+    "sha256": "ffa90dedaadc5ec6288b57625384345e9169d445289dd4669ed6d231e107a24f"
+  },
+  "fresh_ELF_reproduced": false,
+  "FullClean_build_verified": false,
+  "SDK_executed": false,
+  "COM": false,
+  "firmware_changed": false
+}

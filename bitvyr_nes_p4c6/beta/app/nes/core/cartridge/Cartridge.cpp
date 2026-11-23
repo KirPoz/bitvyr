@@ -55,7 +55,9 @@ LoadResult Cartridge::load(const std::uint8_t* image, std::size_t size) noexcept
     submapper_ = nes2 ? image[8] >> 4 : 0;
     if (nes2) {
         mapper_ |= static_cast<std::uint16_t>((image[8] & 0x0f) << 8);
-        if ((submapper_ != 0 && !(mapper_ == 85 && submapper_ <= 2)) || (image[9] & 0x0f) == 0x0f || (image[9] >> 4) == 0x0f)
+        const bool knownSubmapper = submapper_ == 0 || (mapper_ == 71 && submapper_ == 1) ||
+            ((mapper_ == 7 || mapper_ == 85) && submapper_ <= 2);
+        if (!knownSubmapper || (image[9] & 0x0f) == 0x0f || (image[9] >> 4) == 0x0f)
             return LoadResult::UnsupportedFormat;
     }
     prgSize_ = static_cast<std::size_t>(image[4] | (nes2 ? ((image[9] & 15) << 8) : 0)) * 16384;
@@ -64,13 +66,21 @@ LoadResult Cartridge::load(const std::uint8_t* image, std::size_t size) noexcept
     if (!prgSize_ || offset > size || prgSize_ > size - offset || chrSize_ > size - offset - prgSize_)
         return LoadResult::Truncated;
     switch (mapper_) {
-        case 0: case 1: case 2: case 3: case 4: case 5: case 7: case 69: case 85: break;
+        case 0: case 1: case 2: case 3: case 4: case 5: case 7: case 69: case 71: case 85: break;
         case 160:
             if (!identifiedAladdin(image, size)) return LoadResult::UnsupportedMapper;
             break;
         default: return LoadResult::UnsupportedMapper;
     }
     if (mapper_ == 0 && prgSize_ > 32768) return LoadResult::UnsupportedFormat;
+    if (mapper_ == 71) {
+        const std::size_t maxPrgBytes = (submapper_ == 1 ? 128U : 256U) * 1024U;
+        if (prgSize_ > maxPrgBytes || chrSize_ > 8192U || (image[6] & 8U))
+            return LoadResult::UnsupportedFormat;
+        // NES 2.0 задаёт разводку явно. У старого формата $9000 отличает Fire Hawk
+        // от фиксированных плат, которые также могут записывать по $8000.
+        camericaMirrorStart_ = submapper_ == 1 ? 0x8000 : (!nes2 ? 0x9000 : 0xa000);
+    }
     expansionRamBytes_ = 8192;
     if (mapper_ == 69 || mapper_ == 85) {
         // Поддерживаемая арена не расширяется из-за заголовка: неизвестную RAM-плату отвергаем.
@@ -118,6 +128,7 @@ void Cartridge::reset() noexcept {
     if (mapper_ == 5 && mmc5_) { mmc5_->powerOn(); if(mmc5Audio_)mmc5Audio_->reset(); }
     expansionChr_.fill(0); expansionPrg_.fill(0);
     expansionMirror_ = initialMirroring_ == Mirroring::Horizontal ? 1 : 0;
+    if (mapper_ == 71 && submapper_ == 1) expansionMirror_ = 2;
     expansionRamControl_ = fme7Command_ = fme7IrqControl_ = 0;
     fme7Prg6000_ = 0x40; fme7Counter_ = 0;
     vrc7Counter_ = vrc7Latch_ = vrc7IrqControl_ = 0; vrc7Prescaler_ = 341;
@@ -194,7 +205,7 @@ Mirroring Cartridge::mirroring() const noexcept {
         return modes[mmc1Control_ & 3];
     }
     if (mapper_ == 4) return mmc3Mirror_ ? Mirroring::Horizontal : Mirroring::Vertical;
-    if (mapper_ == 69 || mapper_ == 85) {
+    if (mapper_ == 69 || mapper_ == 71 || mapper_ == 85) {
         // Значение 0 выводит PPU A10 на CIRAM A10, значение 1 — PPU A11.
         constexpr Mirroring modes[]{Mirroring::Vertical, Mirroring::Horizontal, Mirroring::Single0, Mirroring::Single1};
         return modes[expansionMirror_ & 3U];
@@ -222,7 +233,7 @@ std::size_t Cartridge::prgOffset(std::uint16_t address) const noexcept {
         const std::size_t bank = slot == 3 ? prgSize_ / 8192 - 1 : expansionPrg_[slot] & 0x3fU;
         return (bank * 8192 + (a & 8191U)) % prgSize_;
     }
-    if (mapper_ == 2) {
+    if (mapper_ == 2 || mapper_ == 71) {
         const std::size_t b = address < 0xc000 ? (bank_ & 0x0f) : prgSize_ / 16384 - 1;
         return (b * 16384 + (a & 0x3fff)) % prgSize_;
     }
@@ -262,7 +273,8 @@ Cartridge::Cpu6000Source Cartridge::selectCpu6000Source() const noexcept {
             return {prg_ + (std::size_t(fme7Prg6000_ & 0x3fU) * 8192U) % prgSize_, Cpu6000Kind::Rom};
         if (!(fme7Prg6000_ & 0x80U) || !expansionRamBytes_) return {nullptr, Cpu6000Kind::OpenBus};
     }
-    if (mapper_ == 85 && (!(expansionRamControl_ & 0x80U) || !expansionRamBytes_))
+    if (mapper_ == 71 || (mapper_ == 7 && submapper_ != 0) ||
+        (mapper_ == 85 && (!(expansionRamControl_ & 0x80U) || !expansionRamBytes_)))
         return {nullptr, Cpu6000Kind::OpenBus};
     if (mapper_ == 160 && legacy_.mapsPrgAt6000()) return {prg_, Cpu6000Kind::LegacyPrg};
     if ((mapper_ == 1 && (mmc1Prg_ & 0x10)) ||
@@ -327,6 +339,7 @@ Cartridge::QuietWram6000 Cartridge::quietWritableWram6000() noexcept {
     return {prgRam_.data()};
 }
 
+/** @brief Выбирает источник по адресу CPU. Для MMC5 учитывает подтверждение IRQ и побочные эффекты PCM, для остальных плат читает выбранный банк или открытую шину. */
 std::uint8_t Cartridge::cpuRead(std::uint16_t address, std::uint8_t openBus) const noexcept {
     if (!prg_) return openBus;
     if (mapper_ == 5) return readMmc5Cpu(address,openBus);
@@ -359,6 +372,19 @@ void Cartridge::cpuWrite(std::uint16_t address, std::uint8_t value, std::uint64_
             if (enabled && expansionRamBytes_) prgRam_[address & 8191U] = value;
         } else if (address >= 0x8000) {
             if (mapper_ == 69) writeFme7(address, value); else writeVrc7(address,value,cycle);
+        }
+        return;
+    }
+    if (mapper_ == 71) {
+        if (address >= 0xc000) {
+            // BF9093 подключает четыре линии банка, BF9097 подключает три.
+            const auto selected = static_cast<std::uint8_t>(value & (submapper_ == 1 ? 7U : 15U));
+            if (bank_ != selected) {
+                bank_ = selected;
+                refreshPrgPages();
+            }
+        } else if (address >= camericaMirrorStart_ && address < 0xa000) {
+            expansionMirror_ = static_cast<std::uint8_t>(2U + ((value >> 4) & 1U));
         }
         return;
     }
@@ -374,12 +400,15 @@ void Cartridge::cpuWrite(std::uint16_t address, std::uint8_t value, std::uint64_
         }
         return;
     }
-    if (address >= 0x6000 && address < 0x8000) {
+    if (address >= 0x6000 && address < 0x8000) {
+        if (mapper_ == 7 && submapper_ != 0) return;
         if (mapper_ == 1 && (mmc1Prg_ & 0x10)) return;
         if (mapper_ == 4 && ((mmc3Ram_ & 0xc0) != 0x80)) return;
         prgRam_[address & 8191] = value;
     } else if (address >= 0x8000) {
-        if (mapper_ == 2 || mapper_ == 3 || mapper_ == 7) {
+        if (mapper_ == 7) {
+            writeAxromLatch(axromLatchValue(address, value));
+        } else if (mapper_ == 2 || mapper_ == 3) {
             bank_ = value;
             if (mapper_ == 3) refreshChrPages();
             else refreshPrgPages();
@@ -464,13 +493,6 @@ void Cartridge::chrWrite(std::uint16_t address, std::uint8_t value) noexcept {
  * @param value Уже полученный либо записываемый байт; повторное шинное чтение здесь не подразумевается.
  */
 
-/** @details Чистый доступ к 6000 сохраняет RAM enable, ROM bank и открытую шину. */
-std::uint8_t Cartridge::readExpansion6000(std::uint16_t address, std::uint8_t openBus) const noexcept {
-    if (mapper_ == 69 && !(fme7Prg6000_ & 0x40U))
-        return prg_[(std::size_t(fme7Prg6000_ & 0x3fU) * 8192U + (address & 8191U)) % prgSize_];
-    const bool enabled = mapper_ == 69 ? (fme7Prg6000_ & 0x80U) != 0 : (expansionRamControl_ & 0x80U) != 0;
-    return enabled && expansionRamBytes_ ? prgRam_[address & 8191U] : openBus;
-}
 /** @details FME-7 command13 подтверждает IRQ независимо от оставленных enable bits. */
 void Cartridge::writeFme7(std::uint16_t address, std::uint8_t value) noexcept {
     switch (address & 0xe000U) {
@@ -515,6 +537,7 @@ bool Cartridge::sealVrc7Writer(Vrc7WriteTape*tape,std::uint64_t end)noexcept{
     if(!tape->seal(end)){failVrc7Trace(tape->fault());return false;}
     vrc7Writer_=nullptr;return true;
 }
+/** @brief Декодирует линии адреса VRC7, изменяет банки и IRQ. Для регистра FM сохраняет гостевой такт записи, по которому строится звуковой кадр. */
 void Cartridge::writeVrc7(std::uint16_t address,std::uint8_t value,std::uint64_t cycle)noexcept {
     const unsigned high = address & 0xf000U;
     const unsigned sub = (address & vrc7AddressMask_) != 0;
@@ -588,6 +611,7 @@ void Cartridge::clockExpansionCpu(unsigned count) noexcept {
     } else vrc7Counter_ = static_cast<std::uint8_t>(vrc7Counter_ + clocks);
 }
 
+/** @brief Декодирует регистры MMC3 по маске $E001. При смене режима банков пересчитывает таблицы страниц, при записи в регистры IRQ обновляет счётчик и линию прерывания. */
 void Cartridge::mmc3Write(std::uint16_t address, std::uint8_t value) noexcept {
     switch (address & 0xe001) {
         case 0x8000: {

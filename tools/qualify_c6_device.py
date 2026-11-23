@@ -1,5 +1,6 @@
 """Прогон P4+C6 по закреплённым игровым сценам с точным вводом."""
 import argparse
+import hashlib
 import json
 import math
 import re
@@ -15,16 +16,36 @@ from prepare_c6_routes import checked_edges, queue_plan, validate_bank
 
 COMMON = Path(__file__).resolve().parent
 PROJECT = "bitvyr_nes_p4c6"
-MEASURED_CATALOG_SHA256 = "6ab7eb0e5c002b9bbe2cbdeac6d5ea2748ff03e310254b91ff30c76233316515"
+CATALOG_EVENT = "p4c6-autonomous-6040-catalog-38-20261123"
+# SHA упорядоченного списка ключей 38 записей. Каждый ключ также проверяется по содержимому.
+MEASURED_CATALOG_SHA256 = "6607629a6bb92453ebefdcf6cefc8e32c41a382e765c32c90060b10d363647f8"
+RELEASE_BUILD = COMMON.parent / "bitvyr_nes_p4c6" / "beta_0_2" / "build"
 FRAME = "Non5Frame"
 MMC5_COUPLED = "M5Coupled"
 PERF_TAGS = {"NES_OUTPUT_FRAME_PIPELINE_TIMES", "NES_COUPLED_BENCH"}
 STATUS_TAGS = {"NES_OUTPUT_FRAME_PIPELINE_STATUS", "NES_COUPLED_BENCH_STATUS"}
-WARM_ELF = "f4eacf01cefde84ee38fa40eb3df1461ae309a1b3c0650aa35a1acdaca4271e8"
+RELEASE_C6_SHA = "c2660fac172c216b5a26424dd993af0377747b5688ae4bcaf739668465738d05"
 FAULT = re.compile(r"\b(?:ROM_(?:LOAD|READ)_FAIL|NES_(?:RUNTIME|WORKER)_FAIL|NES_(?:PAD|COMMAND|STATUS|COUPLED_BENCH|FRAME_PIPELINE_BENCH)_ERROR)\b|NES_C6_AUDIO_DRAIN success=0|Guru Meditation|assert failed|stack overflow|Task watchdog", re.I)
 
 
-def validate_image_admission(text, expected_elf):
+def read_c6_pin(path):
+    """Читает 32 байта рабочего символа из загружаемой секции ELF P4 до открытия UART."""
+    from elftools.elf.elffile import ELFFile
+    with path.open("rb") as stream:
+        elf = ELFFile(stream)
+        table = elf.get_section_by_name(".symtab")
+        symbols = table.get_symbol_by_name("_ZN3nes3app8c6_async11batch_image7warmElfE") if table else None
+        require(symbols and len(symbols) == 1, "Missing or ambiguous C6 identity symbol in P4 ELF")
+        symbol = symbols[0]
+        require(symbol["st_size"] == 32 and type(symbol["st_shndx"]) is int, "Invalid C6 identity symbol")
+        section = elf.get_section(symbol["st_shndx"])
+        offset = symbol["st_value"] - section["sh_addr"]
+        require(section["sh_type"] == "SHT_PROGBITS" and section["sh_flags"] & 2
+                and 0 <= offset <= section["sh_size"] - 32, "C6 identity is outside allocated section")
+        return section.data()[offset:offset + 32].hex()
+
+
+def validate_image_admission(text, expected_elf, c6_sha):
     """Связывает последний boot с локальным образом и пятью рабочими политиками."""
     prefix, tail = base.admit_boot(text, expected_elf, PROJECT)
     markers = (
@@ -39,12 +60,12 @@ def validate_image_admission(text, expected_elf):
         require(len(lines) == 1 and re.search(r"\benabled=1\b", lines[0]),
                 "Missing active marker: " + marker)
     return dict(app_elf=expected_elf, observed_boot_prefix=prefix,
-                active_profile_markers=list(markers), runtime_C6_elf=WARM_ELF)
+                active_profile_markers=list(markers), expected_c6_elf=c6_sha)
 
 
 def expected_lane(mapper):
     """Возвращает конвейер, которым работает данный картридж."""
-    require(mapper in (0, 1, 2, 3, 4, 5, 7, 69, 85, 160), "Unsupported C6 mapper")
+    require(mapper in (0, 1, 2, 3, 4, 5, 7, 69, 71, 85, 160), "Unsupported C6 mapper")
     return MMC5_COUPLED if mapper == 5 else FRAME
 
 
@@ -419,38 +440,61 @@ def run_game(link,movie,entry):
     return result
 
 def load_measured_catalog(journal):
-    """Восстанавливает 26 измеренных сцен с полным вводом и тремя окнами."""
+    """Восстанавливает ввод и окна 38 игровых сцен непосредственно из журнала измерений."""
     archive = experiments.read(journal)
-    data = experiments.lookup_payload(archive, MEASURED_CATALOG_SHA256)
-    require(len(data["games"]) == 26 and data["queue_capacity"] == 16, "Measured catalog scope changed")
-    bank = dict(data, games=[], route_preparation={"requested_windows": 3})
-    for game in data["games"]:
+    event = next((e for e in archive["chronology"] if e["id"] == CATALOG_EVENT), None)
+    require(event is not None, "Release catalog event missing")
+    evidence = event["result"]["durable_build_evidence"]
+    digest = hashlib.sha256(("\n".join(sorted(evidence["payloads"])) + "\n").encode()).hexdigest()
+    require(len(evidence["artifacts"]) == 38 and digest == MEASURED_CATALOG_SHA256, "Release catalog changed")
+    bank = dict(games=[], route_preparation={"requested_windows": 3})
+    for source in evidence["artifacts"]:
+        game = experiments.lookup_payload(archive, source)
+        crc = game["crc32"]
+        require(re.fullmatch(r"[a-f0-9]{8}", crc) and game["source_sha256"] == source,
+                "Invalid catalog identity")
+        start, last = game["roi_input0"]
         edges = checked_edges(game["edges"])
-        require(edges[-1]["frame"] < game["end_frame"], "Route stops before last input")
-        require(re.fullmatch(r"[0-9a-f]{64}", game["rom_sha256"]), "Measured ROM SHA-256 missing")
-        bank["games"].append(dict(game, edges=edges, queue_plan=queue_plan(edges)))
+        require(edges[-1]["frame"] <= last, "Input route extends beyond measured interval")
+        bank["games"].append(dict(crc32=crc, title=game["title"], mapper=game["mapper"], region=game["region"],
+                                  baseline_report=start, end_frame=last+1, roi_input0=[start,last],
+                                  roi_reports=[start+120, start+240, start+360], edges=edges,
+                                  queue_plan=queue_plan(edges)))
     validate_bank(bank)
     return bank
+
+
+def release_window_rates(stats):
+    """Возвращает скорость подачи только при трёх полных окнах с непрерывными счётчиками."""
+    roi = stats["roi"]
+    require(not stats["missing_baseline"] and not stats["missing_roi_endpoints"] and not stats["discontinuities"],
+            "Incomplete device-time interval")
+    require(stats["roi_fps_range"]["covered"] and roi["submitted_coverage_windows"] == 3
+            and roi["windows"] == 3 and roi["frames"] == 360, "Incomplete LCD submission coverage")
+    return {key: roi[key] for key in ("min_submitted_window_fps", "mean_submitted_fps",
+                                      "max_submitted_window_fps")}
 
 
 def main(argv=None):
     """Проверяет параметры запуска до открытия UART."""
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--movies",type=Path,help="Explicit input bank; default: the measured 26-scene catalog")
+    p.add_argument("--movies",type=Path,help="Свои маршруты; по умолчанию используются 38 измеренных сцен Beta 0.2")
     p.add_argument("--crcs",nargs="*");p.add_argument("--catalog-only",action="store_true")
     p.add_argument("--port",default="COM4");p.add_argument("--vid",type=lambda x:int(x,0),default=0x1a86)
     p.add_argument("--pid",type=lambda x:int(x,0),default=0x55d3);p.add_argument("--serial")
     p.add_argument("--expected-elf", "--elf-sha", dest="expected_elf")
     p.add_argument("--local-elf", type=Path, help="Сохранённый ELF для проверки SHA256")
+    p.add_argument("--c6-sha", default=RELEASE_C6_SHA, help="Ожидаемый ELF SHA-256 C6 для протокола HELLO")
     p.add_argument("--admission", type=Path)
     p.add_argument("--execute-root", action="store_true")
     p.add_argument("--attest-admitted-image-current", action="store_true")
-    p.add_argument("--output",type=Path,default=base.local_project_build(PROJECT)/"validation"/"device-runs")
+    p.add_argument("--output",type=Path,default=RELEASE_BUILD/"validation"/"device-runs")
     p.add_argument("--expected-volume",type=int,required=True,choices=range(1,101))
     a=p.parse_args(argv)
+    require(re.fullmatch(r"[0-9a-f]{64}", a.c6_sha), "Expected full lowercase C6 ELF SHA256")
     if a.movies is None:
         data = load_measured_catalog(COMMON.parent / "experiments.json")
-        movie_source = dict(sha256=MEASURED_CATALOG_SHA256, scope="measured_catalog_projection")
+        movie_source = dict(sha256=MEASURED_CATALOG_SHA256, scope="measured_catalog_projection", event=CATALOG_EVENT)
     else:
         data = json.loads(a.movies.read_text(encoding="utf-8"))
         movie_source = pin(a.movies)
@@ -467,7 +511,7 @@ def main(argv=None):
         local = base.local_image(PROJECT, a.expected_elf, a.local_elf)
     if not a.execute_root:
         summary = dict(execute=False, COM_opened=False, games=wanted,
-                       expected_volume=a.expected_volume, expected_lanes=lanes, movies=movie_source,
+                       expected_volume=a.expected_volume, expected_C6_ELF=a.c6_sha, expected_lanes=lanes, movies=movie_source,
                        roi_inputs={crc: routes[crc].get("roi_input0") for crc in wanted})
         if local is not None:
             summary["local_P4_image"] = local
@@ -475,12 +519,14 @@ def main(argv=None):
         return 0
     require(a.expected_elf and a.admission and a.attest_admitted_image_current,
             "Current image ELF, boot log and attestation are required")
-    local = local or base.local_image(PROJECT, a.expected_elf)
-    image_admission = validate_image_admission(a.admission.read_text(encoding="utf-8", errors="replace"), a.expected_elf)
+    local = local or base.local_image(PROJECT, a.expected_elf, RELEASE_BUILD / (PROJECT + ".elf"))
+    require(read_c6_pin(Path(local["path"])) == a.c6_sha, "Expected C6 ELF differs from the P4 HELLO pin")
+    image_admission = validate_image_admission(a.admission.read_text(encoding="utf-8", errors="replace"),
+                                               a.expected_elf, a.c6_sha)
     out=a.output.resolve()/time.strftime("c6-%Y%m%d-%H%M%S");out.mkdir(parents=True,exist_ok=False)
     summary=dict(tool=pin(Path(__file__)),helper=pin(COMMON/"device_session.py"),rolling_queue_helper=pin(COMMON/"pad_movie_queue.py"),movies=movie_source,admission=pin(a.admission),expected_P4_ELF=a.expected_elf,expected_volume=a.expected_volume,
                  C6_admission="runtime exact source-pinned HELLO; Root verifies current P4 image separately",
-                 expected_C6_ELF=WARM_ELF,image_admission=image_admission,games=[],host_time_FPS=False,NVS_written=False,SD_written=False)
+                 expected_C6_ELF=a.c6_sha,image_admission=image_admission,games=[],host_time_FPS=False,NVS_written=False,SD_written=False)
     summary["local_P4_image"] = local
     link=None
     try:
@@ -496,13 +542,21 @@ def main(argv=None):
                 if crc not in by_crc:
                     result=dict(status="HOLD",errors=["Movie CRC absent/unknown in current inventory"],can_continue=True)
                 else:
-                    try:result=run_game(link,routes[crc],by_crc[crc])
+                    try:
+                        result=run_game(link,routes[crc],by_crc[crc])
+                        if a.movies is None and result["status"] != "HOLD":
+                            try:
+                                result["lcd_submission_fps"] = release_window_rates(result["statistics"])
+                            except (KeyError, ValueError) as exc:
+                                result["status"] = "HOLD"
+                                result["errors"].append(str(exc))
                     except Exception as exc:result=dict(status="HOLD",errors=[str(exc)],can_continue=False)
                 link.log.flush();raw=(out/"raw.log").read_bytes()[begin:]
                 rawpath=out/(crc+".raw.log");rawpath.write_bytes(raw)
                 result.update(raw=pin(rawpath),commands=link.commands[cmd:])
                 path=out/(crc+".json");path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-                summary["games"].append(dict(crc32=crc,status=result["status"],result=pin(path)))
+                summary["games"].append(dict(crc32=crc,status=result["status"],result=pin(path),
+                                             lcd_submission_fps=result.get("lcd_submission_fps")))
                 (out/"result.json").write_text(json.dumps(summary,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
                 if not result["can_continue"]:break
         summary["status"]="HOLD" if any(g["status"]=="HOLD" for g in summary["games"]) else "PASS_CAPTURE_SCOPE_ONLY"

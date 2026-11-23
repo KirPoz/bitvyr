@@ -49,7 +49,13 @@ unsigned Machine::mmc5LocalReadFold(std::uint32_t pcAx,std::uint32_t baseOpenP,s
     const auto* const code=dataPrg[window&3U];if(!code)return 0;
     const auto body=Cpu6502::instructions_[code[pc&8191U]];
     const auto ending=Cpu6502::instructions_[code[branch&8191U]];
-    if(body.op!=Cpu6502::Op::LDA||ending.op!=Cpu6502::Op::BNE||ending.mode!=Cpu6502::Mode::Rel||
+#if defined(NES_EXPERIMENTAL_MMC5_ZERO_POLL_EXACT)
+    const bool zeroBranch=ending.op==Cpu6502::Op::BEQ && mmc5ZeroPollEnabled_;
+    if(zeroBranch&&(body.mode!=Cpu6502::Mode::Zp||length!=2U))return 0;
+#else
+    constexpr bool zeroBranch=false;
+#endif
+    if(body.op!=Cpu6502::Op::LDA||(!zeroBranch&&ending.op!=Cpu6502::Op::BNE)||ending.mode!=Cpu6502::Mode::Rel||
        static_cast<std::uint16_t>(after+static_cast<std::int8_t>(code[(branch+1U)&8191U]))!=pc)return 0;
     std::uint16_t base=0,address=0;unsigned bodyCycles=0;
     if(body.mode==Cpu6502::Mode::Zp&&length==2U){base=address=code[(pc+1U)&8191U];bodyCycles=3U;}
@@ -74,7 +80,10 @@ unsigned Machine::mmc5LocalReadFold(std::uint32_t pcAx,std::uint32_t baseOpenP,s
     }
     if(static_cast<std::uint16_t>(baseOpenP>>16U)!=base||code[dummy&8191U]!=((baseOpenP>>8U)&255U))return 0;
     const auto value=address<0x2000U?ram[address&0x7ffU]:(address<0x8000U?wram[address&8191U]:dataPrg[dataWindow&3U][address&8191U]);
-    if(!value||value!=((pcAx>>16U)&255U)||(baseOpenP&Cpu6502::Z)||(baseOpenP&Cpu6502::N)!=(value&Cpu6502::N))return 0;
+    // Взятому BEQ соответствует уже прочитанный нулевой RAM-байт. LDA/BNE
+    // по-прежнему требует ненулевое значение с совпавшими A/N/Z и шиной.
+    if((value==0U)!=zeroBranch||value!=((pcAx>>16U)&255U)||
+       ((baseOpenP&Cpu6502::Z)!=0U)!=zeroBranch||(baseOpenP&Cpu6502::N)!=(value&Cpu6502::N))return 0;
     const unsigned period=bodyCycles+3U+unsigned(branchCross),iterations=remaining/period;
     return iterations>=4U?iterations*period:0U;
 }

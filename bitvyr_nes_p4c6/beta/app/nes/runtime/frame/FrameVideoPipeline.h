@@ -243,11 +243,6 @@ public:
      */
     bool hasReady()const noexcept;
     
-    /**
-     * @brief Проверяет атомарное владение producer-заданием.
-     * @details false само по себе не заменяет настоящий done-семафор App.
-     */
-    bool borrowedByWorker()const noexcept;
     
     
     

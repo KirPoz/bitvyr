@@ -39,6 +39,7 @@ class Machine final : private CpuBus, private PpuBus, private ApuBus
     , private ApuTimingBus
 {
 public:
+    /** @brief Связывает CPU, PPU и APU с шиной новой машины, используя стандартное выделение памяти для пикселей. */
     Machine() noexcept;
     // Только погашенный срез сброса. Null явно выбирает обычного владельца после
     // сброса обеих сторон; промежуточный отказ не включает fallback автоматически.
@@ -121,6 +122,7 @@ public:
     bool immutableCpuPrgTailBound() const noexcept { return cartridge_.cpuPrgTail_.resident!=nullptr; }
 
 
+    /** @brief Связывает компоненты шины и передаёт политику выделения индексных пикселей PPU. Буферы картриджа подключаются при загрузке. */
     explicit Machine(LegacyPixelAllocator allocator) noexcept;
     /**
      * @brief Проверяет выбранный режим или наличие нужного хранилища владельца.
@@ -453,6 +455,14 @@ public:
      * @return Ссылка на фактические регистры, флаги и счётчик CPU.
      */
     const Cpu6502::State& cpuState() const noexcept { return cpu_.state(); }
+#if defined(NES_EXPERIMENTAL_MMC5_INACTIVE_GRANT)
+    /** @brief Выбирает метод допуска между владельцами кадров. Вызывающий подтвердил join. */
+    void selectMmc5InactiveGrant(bool enabled) noexcept { mmc5InactiveGrantEnabled_=enabled; }
+#endif
+#if defined(NES_EXPERIMENTAL_MMC5_ZERO_POLL_EXACT)
+    /** @brief Выбирает свёртку опроса RAM между кадрами с подтверждённым join. */
+    void selectMmc5ZeroPoll(bool enabled) noexcept { mmc5ZeroPollEnabled_=enabled; }
+#endif
     /**
      * @brief Выполняет диагностическое чтение с реальной семантикой адресного пространства.
      * @details Может подтвердить IRQ, сдвинуть контроллер или изменить PPU. Не подходит для безэффектного снимка памяти.
@@ -706,6 +716,8 @@ private:
      * @return Результат описанной проверки либо успешность перехода состояния; false обрабатывается вызывающим путём.
      */
     bool prepareVideoBgView() noexcept;
+    /** @brief Подготавливает отображение для уже проверенного VideoPacket. */
+    bool prepareVideoBgPacketView() noexcept;
     /**
      * @brief Сохраняет живые идентичности последних фоновых тайлов интервала.
      * @details При трёх и более тайлах внутренние байты уже вытеснены; последние три ссылки, tile/attribute, v и конечный адрес сохраняются точно.
@@ -1461,6 +1473,8 @@ private:
      * PRIVATE cpp-флаг не меняет layout или inline-тела Machine у consumers.
      */
     bool canRetainPrgRamWindow() const noexcept;
+    /** @brief Проводит запись регистра PRG 7/71 в уже допустимом тихом CPU-интервале. */
+    bool tryRetainDiscretePrgWrite(std::uint16_t address, std::uint8_t value) noexcept;
     std::uint8_t pendingCpuReads_ = 0, cpuReadBudget_ = 0;
     /**
      * @brief Доводит ожидающие задержки DMC до наблюдаемой CPU-границы.
@@ -1507,6 +1521,7 @@ private:
     bool beginOutputVrc7Tape(const OutputFrameTicket&)noexcept;
     /** @brief Закрывает trace после finalmetadata только при совпавшем retiredAudio cut. */
     bool sealOutputVrc7Tape(const OutputFrameTicket&)noexcept;
+    /** @brief Проверяет доступность и непересечение выходного диапазона с памятью машины, ROM и заимствованными буферами кадра перед записью результата. */
     bool outputWritableResult(const void* destination,std::size_t bytes) const noexcept;
     bool videoObservableOnly_ = false;
     VideoObserver* videoObserver_ = nullptr;
@@ -1529,6 +1544,12 @@ private:
     std::uint64_t colourEpoch_=1;
     ThinPpuChannel* thin_=nullptr;
     bool thinStickyFault_=false;
+#if defined(NES_EXPERIMENTAL_MMC5_INACTIVE_GRANT)
+    bool mmc5InactiveGrantEnabled_=false; ///< Локальная политика следующего запуска, вне состояния гостя.
+#endif
+#if defined(NES_EXPERIMENTAL_MMC5_ZERO_POLL_EXACT)
+    bool mmc5ZeroPollEnabled_=false; ///< Локальная политика следующего запуска, вне состояния гостя.
+#endif
 
 };
 

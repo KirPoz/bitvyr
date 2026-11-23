@@ -93,6 +93,8 @@ public:
      * @param target Свежий полный PPU той же shadow-шины на cycle0, без чужой активной привязки; остаётся живым всю replay-сессию.
      */
     bool bindExternalPpu(Ppu& target)noexcept;
+    /** @brief Явно допускает только RGB-only MMC5 с отдельным 256-байтным extent. */
+    bool bindExternalRgbOnlyPpu(Ppu& target)noexcept;
     /**
      * @brief Возвращает состояние или результат текущей привязки.
      * @details Ошибка, наличие хранилища и готовность изображения различаются; эти признаки сами по себе не выполняют повтор или аппаратное ожидание.
@@ -160,6 +162,8 @@ private:
      * @return Результат описанной проверки либо успешность перехода состояния; false обрабатывается вызывающим путём.
      */
     bool advance(std::uint64_t target)noexcept;
+    /** @brief Выбирает внешний PPU и режим индексного хранения на начальном срезе, до обработки событий цветового потока. */
+    bool bindExternalPpu(Ppu& target,bool rgbOnly)noexcept;
     /**
      * @brief Защёлкивает первую ошибку и запрещает готовность частичного результата.
      * @details Не откатывает уже исполненные побочные эффекты и не разрешает скрытую смену владельца.
@@ -189,6 +193,6 @@ private:
     std::uint64_t cycle_=0;
     unsigned phase_=0,lastActualRead_=0;
     Error error_=Error::None;
-    bool bound_=false;
+    bool bound_=false,rgbOnly_=false,rgbOnlyReady_=false;
 };
 }

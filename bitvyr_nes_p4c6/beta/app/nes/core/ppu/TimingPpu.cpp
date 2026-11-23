@@ -242,10 +242,15 @@ TimingPpu::StatusReadClassification TimingPpu::classifyDeferredStatus(unsigned d
  * @brief Разрешает сворачивание только при неизменном STATUS и прежних защёлках.
  * @details Eval не исполняется внутри const-поиска горизонта повторов.
  */
-bool TimingPpu::canRepeatStatusPoll(unsigned dots) const noexcept {
-    return classifyDeferredStatus(dots).kind == StatusReadKind::Stable && !(status_ & 0x40U) &&
-        !writeToggle_ && !nmiLine_ && !nmiPending_ &&
-        (openBus_ & 0xE0U) == (status_ & 0xE0U);
+bool TimingPpu::canRepeatStatusPoll(unsigned dots, bool allowLatchedSpriteZero) const noexcept {
+    if ((!allowLatchedSpriteZero && (status_ & 0x40U)) || writeToggle_ || nmiLine_ || nmiPending_ ||
+        (openBus_ & 0xE0U) != (status_ & 0xE0U)) return false;
+    if (classifyDeferredStatus(dots).kind == StatusReadKind::Stable) return true;
+    // Если Sprite Zero Hit и Overflow установлены, видимые строки больше не меняют STATUS.
+    // Ограничиваем такой опрос началом строки 240, до границы VBlank.
+    return allowLatchedSpriteZero && (status_ & 0xe0U) == 0x60U &&
+        unsigned(scanline_) < 240U && dot_ <= 340U && !(renderDelay_ | nmiDelay_) &&
+        dots <= (240U - unsigned(scanline_)) * 341U - dot_;
 }
 
 /**
@@ -398,6 +403,52 @@ inline unsigned firstOamYBit(std::uint32_t word) noexcept {
     return bit+unsigned(!(word&1U));
 }
 }
+/**
+ * @brief Вычисляет максимальный положительный горизонт прежнего STATUS-опроса.
+ * @details До первой возможной точки изменения флагов читаемый STATUS постоянен.
+ * Не выполняет оценку OAM и сохраняет прежний запрет на неизвестный sprite-кэш.
+ */
+unsigned TimingPpu::repeatStatusPollDots(unsigned limit, bool allowLatchedSpriteZero) const noexcept {
+    const unsigned row = static_cast<unsigned>(scanline_);
+    const unsigned dot = dot_;
+    if (row >= 240U || dot > 340U || (renderDelay_ | nmiDelay_) || (status_ & 0x80U) ||
+        (!allowLatchedSpriteZero && (status_ & 0x40U)) || writeToggle_ || nmiLine_ || nmiPending_ ||
+        (openBus_ & 0xE0U) != (status_ & 0xE0U)) return 0;
+    // Оба флага закреплены до pre-render. Включена сама граница 240:0.
+    if (allowLatchedSpriteZero && (status_ & 0xE0U) == 0x60U)
+        return std::min(limit, (240U - row) * 341U - dot);
+    if (!dot) return 0;
+    limit = std::min(limit, 340U - dot);
+    const unsigned next = evaluationNextDot_;
+    if (!(status_ & 0x20U)) {
+        if (!next) return 0;
+        if (next <= 256U && (next == 1U || !evaluationDone_)) {
+            const unsigned position = next == 1U ? 0U : secondaryPosition_;
+            const unsigned firstEven = next <= 64U ? 66U : next + (next & 1U);
+            const unsigned firstOverflow = firstEven + 2U * (32U - std::min(32U, position));
+            // Интервал длины d оканчивается уже обработанной точкой dot+d-1.
+            if (firstOverflow <= 256U) {
+                if (firstOverflow <= dot) return 0;
+                limit = std::min(limit, firstOverflow - dot);
+            }
+        }
+    }
+    if (!limit || (status_ & 0x40U) || dot > 255U ||
+        !renderingEnabled_ || (mask_ & 0x18U) != 0x18U) return limit;
+    if (!spriteCacheValid_) return 0;
+    if (!spriteZeroRow_) return limit;
+    const unsigned first = (mask_ & 6U) == 6U ? dot - 1U : std::max(dot - 1U, 8U);
+    const unsigned last = std::min(dot + limit - 2U, 254U);
+    for (unsigned x = first; x <= last; x = (x & ~7U) + 8U) {
+        const unsigned tile = x & ~7U;
+        const unsigned hi = std::min(last - tile, 7U);
+        const unsigned mask = (0xFFU << (x & 7U)) & (0xFFU >> (7U - hi));
+        const unsigned hit = spriteZeroMask_[x >> 3U] & mask;
+        if (hit) return tile + firstOamYBit(hit) - dot + 1U;
+    }
+    return limit;
+}
+
 /**
  * @brief Находит допустимую серию заведомо неподходящих OAM Y-пар.
  * @details Не перескакивает особые n=63/переполнение/частичную защёлку; последний прочитанный байт и secondary-позиция остаются точными.
@@ -892,50 +943,6 @@ inline void TimingPpu::spriteFetchDot(unsigned&slot,unsigned&cachedSlot,std::uin
 #else
 #define NES_VIDEO_GROUP_NOINLINE
 #endif
-/**
- * @brief Передаёт текущее событие временному захвату PPU.
- * @details Захват не является постоянным владельцем и не допускает элиминации данных по политике чужого основного PPU.
- * @param sprite Различает sprite/background-траекторию выборки; не заменяет проверку сигналов маппера.
- * @param capture Ограниченная завершённая временная группа; публикуются только count инициализированных event-слов.
- */
-void TimingPpu::emitCapture(const Capture& capture,bool sprite) noexcept {
-    if(capture.overflow||capture.count>12){packet_->fault(VideoFault::InvalidEvent);return;}
-    /**
-     * @brief Восстанавливает VideoEvent из двух полностью инициализированных raw-слов локального Capture; индекс ограничен опубликованным count.
-     * @note Не сохраняется после возврата внешнего метода; захваченные ссылки/указатели остаются у текущего владельца.
-     */
-    auto at=[&](unsigned i)noexcept{return VideoEvent{capture.words[i*2],capture.words[i*2+1]};};
-    if(sprite&&capture.count==3){
-        const auto meta=at(0),low=at(1),high=at(2);
-        const auto kind=low.value&VideoByteRef::kindMask;
-        if(meta.op()==VideoOp::SpriteMeta&&low.op()==VideoOp::SpriteLow&&high.op()==VideoOp::SpriteHigh&&
-           meta.arg0()==low.arg0()&&meta.arg0()==high.arg0()&&meta.arg0()<8&&
-           !meta.arg1()&&!meta.arg2()&&!low.arg1()&&!low.arg2()&&!high.arg1()&&!high.arg2()&&
-           !(meta.value>>25)&&(kind==VideoByteRef::rom||kind==VideoByteRef::chrRam)&&
-           (low.value&VideoByteRef::offsetMask)<=0x1FFFFFF7U&&high.value==low.value+8U){
-            packet_->addSpriteTile(meta.arg0(),meta.value&255U,(meta.value>>8)&255U,(meta.value>>16)&255U,
-                (meta.value>>24)!=0,low.value);return;
-        }
-    }else if(!sprite&&capture.count==12){
-        bool valid=true;
-        for(unsigned i=0;i<12;++i){
-            const auto e=at(i);
-            if(i==0)valid&=e.tag==static_cast<unsigned>(VideoOp::BgLoad)&&!e.value;
-            else if(i==4)valid&=e.op()==VideoOp::BgAttribute&&(e.arg0()==0||e.arg0()==2||e.arg0()==4||e.arg0()==6)&&!e.arg1()&&!e.arg2();
-            else if(i==7)valid&=e.tag==static_cast<unsigned>(VideoOp::BgLow);
-            else if(i==10)valid&=e.tag==static_cast<unsigned>(VideoOp::BgHigh);
-            else valid&=e.tag==(static_cast<unsigned>(VideoOp::BgShift)|(1U<<8))&&!e.value;
-        }
-        const auto low=at(7).value,high=at(10).value,kind=low&VideoByteRef::kindMask;
-        if(valid&&(kind==VideoByteRef::rom||kind==VideoByteRef::chrRam)&&
-           (low&VideoByteRef::offsetMask)<=0x1FFFFFF7U&&high==low+8U){
-            packet_->addPreloadTile(low,nextAttribute_);return;
-        }
-    }
-    // Редкий некомпактный захват сохраняет порядок каждого исходного tag/value. Пока
-    // стековый sink активен, payload не виден consumer.
-    for(unsigned i=0;i<capture.count;++i){const auto e=at(i);packet_->add(e.op(),e.arg0(),e.arg1(),e.arg2(),e.value);}
-}
 /**
  * @brief Выполняет ограниченные фазы fetch-слотов спрайтов.
  * @details Dummy-адреса, 8x16 tile bit, flip и реальные low/high-стробы сохраняются даже для невидимого слота.
@@ -1554,43 +1561,6 @@ void TimingPpu::replayMmc5InplaceDotsEager(unsigned dots,bool clockFirstM2) noex
     }
 }
 
-/** @details Pure дополнительный certificate сужает B3 до literal BG и безопасного
- * Sprite0. Вне этого домена прежний scalar replay получает все clocks.
- * На dot249 и далее новый оператор не входит; E_EV255/256 остаются исходными. */
-unsigned TimingPpu::replayMmc5QuietBlock(unsigned clocks) noexcept {
-    const unsigned grouped=clocks-(clocks%8U);
-    const unsigned dots=grouped*3U;
-    if(!grouped||clocks>80U||bus_.ppuRemainder_>4U||pal_||trackBusCycles_||trackBusAddresses_||
-       !packet_||capture_||this!=&bus_.timingPpu_||packet_!=bus_.videoPacket_||
-       !bus_.outputJob_||bus_.outputInitializing_||bus_.videoObserver_||bus_.videoObservableOnly_||
-       !renderingEnabled_||!renderingNext_||!(mask_&0x18U)||renderDelay_||nmiDelay_||
-       nmiPending_||frameReady_||(status_&0x80U)||unsigned(scanline_)>=240U||
-       dot_<9U||dot_>225U||((dot_-1U)&7U)||dots>249U-dot_||
-       !spriteCacheValid_||(spriteZeroRow_&&!(status_&0x40U))||spriteCacheClocks_>256U-dots||
-       fineX_>7U||(v_&0x8000U)||(t_&0x8000U)||nextAttribute_>3U||pendingBackgroundShifts_>16U||
-       !pendingPixels_||pendingPixels_>256U-dots||pendingFill_||pendingPaletteIndex_||
-       pendingPixelX_>=256U||pendingPixelX_+pendingPixels_!=dot_-1U||
-       evaluationNextDot_<1U||evaluationNextDot_>dot_||!packet_->canAppendMmc5Quiet(dots))return 0;
-    for(const auto atom:backgroundAtoms_)if((atom&~255U)!=VideoByteRef::literal)return 0;
-    auto* mapper=bus_.mmc5QuietMapper();
-    if(!mapper||!mapper->canRunQuietBackground())return 0;
-    // Тот же полный certificate; новый оператор не создаёт дополнительный M2 owner.
-    runMmc5InplaceBg(dots/8U,*mapper);
-    mapper->finishQuietBackground(busAddress_);
-    return grouped;
-    Mmc5TrustedState state{backgroundAtoms_,pendingPixels_,pendingPixelX_,pendingBackgroundShifts_,spriteCacheClocks_};
-    for(unsigned count=0;count<grouped;count+=8U){
-        runMmc5QuietTile(state,*mapper);
-        runMmc5QuietTile(state,*mapper);
-        runMmc5QuietTile(state,*mapper);
-    }
-    backgroundAtoms_=state.atoms;
-    pendingPixels_=state.pixels;pendingPixelX_=state.x;
-    pendingBackgroundShifts_=static_cast<decltype(pendingBackgroundShifts_)>(state.shifts);
-    spriteCacheClocks_=static_cast<decltype(spriteCacheClocks_)>(state.sprites);
-    mapper->finishQuietBackground(busAddress_);
-    return grouped;
-}
 }
 namespace nes::core {
 /** @details Первый Draw закрывает incoming tile. Existing BgRun содержит первые
@@ -1599,9 +1569,27 @@ namespace nes::core {
  * Offset возвращается тем же data read, без отдельного lookup/validation pass. */
 void TimingPpu::runMmc5InplaceBg(unsigned tiles,Mmc5& mapper) noexcept {
     if(auto* plan=acquireMmc5RasterPlan(mapper)){runMmc5PlanBg(tiles,mapper,*plan);return;}
+    if (!mapper.chrFullyBacked()) {
+        runMmc5IrregularBg(tiles,mapper);
+        return;
+    }
 #define NES_MMC5_BG_TILE(Scroll,TileX,Planes) mapper.ppuReadQuietBackgroundTile((Scroll),control_,bus_.nametables_.data(),(TileX),(Planes))
 #include "Mmc5BackgroundRun.inl"
 #undef NES_MMC5_BG_TILE
+}
+/** @details Только неполный CHR выводит буквальные выборки, не меняя формат пакета. */
+#if defined(__GNUC__) || defined(__clang__)
+[[gnu::noinline]]
+#endif
+void TimingPpu::runMmc5IrregularBg(unsigned tiles,Mmc5& mapper) noexcept {
+    // Пакет хранит байты выборки. Адреса недостающих банков не попадают в renderer.
+    Mmc5TrustedState state{backgroundAtoms_,pendingPixels_,pendingPixelX_,pendingBackgroundShifts_,spriteCacheClocks_};
+    for (unsigned tile=0; tile<tiles; ++tile) runMmc5QuietTile(state,mapper);
+    backgroundAtoms_=state.atoms;
+    pendingPixels_=state.pixels;
+    pendingPixelX_=state.x;
+    pendingBackgroundShifts_=static_cast<decltype(pendingBackgroundShifts_)>(state.shifts);
+    spriteCacheClocks_=static_cast<decltype(spriteCacheClocks_)>(state.sprites);
 }
 /** @details Порядок literal Draw/load/fetch и четыре реальных MMC5 reads прежний.
  * Только certified owner без наблюдателей удерживает dot/адрес/next в локальных

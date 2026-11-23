@@ -61,16 +61,6 @@ struct AudioStats final {
 };
 
 /**
- * @brief Младшие 32 бита времён esp_timer и маска семи действительных отметок LCD/PPA. Снимок берёт CPU0 после ограждения; интервал submit→done включает работу SDK/кэша.
- */
-struct PresentationTiming final {
-    // Младшие 32 бита времени esp_timer; копируются CPU0 после завершения/ограждения.
-    // Биты: начало/конец LCD-wait, подача/возврат/завершение PPA,
-    // начало/конец подачи LCD. Интервал PPA включает подготовку SDK и кэша.
-    std::uint32_t times[7]{};
-    std::uint32_t bits=0;
-};
-/**
  * @brief Внутренний владелец дескрипторов периферии и долговечных буферов платы. Main владеет выводом; ISR используют ограниченные атомарные поля/семафоры, фоновая задача сенсора — только свой снимок.
  */
 struct BoardState;
@@ -162,14 +152,6 @@ public:
      * @return false сохраняет ticket/источник для позднего drain; true снимает borrow.
      */
     bool finishBorrowedGamePresent(const GameSourceTicket&ticket,unsigned timeoutMs=80)noexcept;
-    /**
-     * @brief Продвигает borrowed PPA/native LCD без ожидания из Main colour-pump.
-     * @param ticket Полный immutable ticket, принятый beginBorrowedGamePresent.
-     * @return Pending сохраняет borrow; Submitted снимает только этот source loan;
-     * Fault не отменяет неизвестного владельца. Submitted не доказывает VSYNC.
-     * @pre Ядро инициализации дисплея, три native-буфера, единственный Main-владелец.
-     */
-    [[nodiscard]] GamePresentPollResult pollBorrowedGamePresent(const GameSourceTicket&ticket)noexcept;
     // Панели шириной 80 пикселей упакованы с шагом 160 и не разделяют пиксели меню.
     /**
      * @brief Предоставляет отдельные боковые панели управления.
@@ -188,18 +170,6 @@ public:
      * @param scale Целый масштаб шрифта 1..8; вне диапазона рисование не выполняется.
      */
     void drawGameText(int x,int y,const char* text,std::uint16_t color=0xffff,unsigned scale=2) noexcept;
-    /**
-     * @brief Переключает необязательную регистрацию времён вывода кадра.
-     * @details Владелец CPU0 задаёт режим до подачи транзакции. Без NES_APP_FRAME_TIMING вызов ничего не делает.
-     * @param enabled Включить соответствующую необязательную возможность.
-     */
-    void setFrameTimingEnabled(bool enabled) noexcept;
-    /**
-     * @brief Копирует диагностические отметки PPA и LCD.
-     * @details Читается CPU0 после завершения/ожидания; отметка ISR приобретается через атомарный признак. Младшие 32 бита esp_timer могут переполняться.
-     * @return Копия отметок и маски действительных полей; без диагностики — нули.
-     */
-    [[nodiscard]] PresentationTiming gamePresentationTiming() const noexcept;
     /**
      * @brief Синхронно выводит текущий игровой кадр через PPA.
      * @details Завершает предыдущее заимствование, начинает новое и дожидается его окончания на ядре инициализации дисплея.
@@ -221,6 +191,13 @@ public:
      * @return true при успешном завершении либо отсутствии pending-операции; false при ошибке.
      */
     [[nodiscard]] bool finishGamePresent(unsigned timeoutMs = 80) noexcept;
+    /** @brief Проверяет наличие трёх native-буферов. Двухбуферный вывод сохраняет finish. */
+    [[nodiscard]] bool supportsDirectGamePresentPoll() const noexcept;
+    /**
+     * @brief Продвигает начатый direct-вывод по настоящим PPA/LCD-токенам без ожидания.
+     * @details Pending/Fault сохраняют источник. Для borrowed используется отдельный вызов с ключом.
+     */
+    [[nodiscard]] GamePresentPollResult pollGamePresent() noexcept;
     // Ландшафтный RGB565-кадр поворачивается в ограждённый native DPI-буфер.
     /**
      * @brief Выводит кадр меню с поворотом в физический буфер LCD.

@@ -347,21 +347,22 @@ struct MachineEventKernelTestAccess {
      * @brief Проверяет межстрочный допуск MMC3 и исключительную границу 240:0.
      * @param m Остановленная машина с настоящими mapper4 и Output writer.
      * @param nearBlank true проверяет последний видимый ряд, false — допуск двух строк.
+     * @param fixedSprites Включает спрайты 8×8 с фиксированной верхней таблицей.
      * @details Задаёт локальный срез PPU без продвижения CPU/APU. Все последующие
      * выборки, строб A12 и утверждение IRQ выполняют обычные методы ядра.
      */
-    static void verifyOrdinaryCrosslineHorizon(Machine& m,bool nearBlank){
+    static void verifyOrdinaryCrosslineHorizon(Machine& m,bool nearBlank,bool fixedSprites){
         CHECK(m.outputFrameExecutable()&&m.cartridge_.mapper()==4U);
         constexpr unsigned dotsPerLine=341U,startDot=7U;
         const unsigned scanline=nearBlank?239U:237U;
-        const unsigned irqDistance=nearBlank?6U:10U;
+        const unsigned irqDistance=fixedSprites?(nearBlank?3U:4U):(nearBlank?6U:10U);
         auto& p=m.timingPpu_;
         auto& cart=m.cartridge_;
         p.reset();
         p.bind(m.videoPacket_);
         p.setBusTracking(true,true);
         p.scanline_=static_cast<std::int16_t>(scanline);
-        p.control_=0x20U; // Фон из таблицы 0, спрайты 8×16.
+        p.control_=fixedSprites?0x08U:0x20U; // В обоих режимах фон из нижней таблицы.
         p.mask_=0x18U;
         p.renderingEnabled_=p.renderingNext_=true;
         for(unsigned slot=0;slot<8U;++slot){
@@ -385,7 +386,7 @@ struct MachineEventKernelTestAccess {
         for(unsigned dot=0;dot<8U;++dot)cart.ppuCycle();
 
         // Входная фаза 6 даёт один подъём $2FF8→$3000. На строке 239 четыре
-        // спрайтовых фронта оставляют ещё один до IRQ. Прирост fine Y делает
+        // спрайтовых фронта (один при 8×8) оставляют ещё один до IRQ. Fine Y делает
         // A12 высоким на первой точке гашения при выставлении v.
         p.cpuWrite(6U,0x2fU);
         p.cpuWrite(6U,0xf8U);
@@ -1281,9 +1282,9 @@ unsigned ordinaryDebtJoins(){
  */
 void ordinaryCrosslineHorizon(){
     auto rom=romImage();rom[6]=0x40U;
-    for(bool nearBlank:{false,true}){
+    for(bool nearBlank:{false,true})for(bool fixedSprites:{false,true}){
         auto fixture=std::make_unique<Fixture>(rom);
-        Access::verifyOrdinaryCrosslineHorizon(fixture->machine,nearBlank);
+        Access::verifyOrdinaryCrosslineHorizon(fixture->machine,nearBlank,fixedSprites);
         fixture->stop();
     }
 }

@@ -1,0 +1,8 @@
+# Новый TU и впервые удерживаемый qRDS исполняются из cached Flash.
+# Общий archive default — noflash; отдельный cpp сам по себе этого не меняет.
+[mapping:nes_mmc5_read_fold_flash]
+archive: libnes_core.a
+entries:
+    MachineMmc5LocalReadFold (default)
+    unity_0_cxx:_ZNK3nes4core7Machine14quietRomWindowEt (default)
+    Machine:_ZNK3nes4core7Machine14quietRomWindowEt (default)

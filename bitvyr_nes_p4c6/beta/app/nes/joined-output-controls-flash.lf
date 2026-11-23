@@ -15,6 +15,7 @@ entries:
 # begin/copy выполняются один раз на кадр вне M2, с прежними owner/fault/counter checks.
     unity_0_cxx:_ZN3nes4core7Machine20copyOutputVisibleRamERKNS0_17OutputFrameTicketEPhj (default)
     unity_0_cxx:_ZN3nes4core7Machine16beginOutputFrameERKNS0_17OutputFrameTicketE (default)
+    unity_0_cxx:_ZN3nes4core7Machine22finalizeOutputMetadataERKNS0_17OutputFrameTicketEPhj (default)
 # Waveform полного Apu активен у Main AudioRenderer; Worker Output использует TimingApu.
 # Generic Legacy может вызывать полный Apu на Worker: это не универсально cold-размещение.
     unity_0_cxx:_ZN3nes4core3Apu10emitSampleEv (default)

@@ -1,0 +1,5 @@
+# Fused diagnostic helper остаётся во Flash и при общей core-SRAM политике.
+[mapping:nes_replay_fused_rgb_flash]
+archive: libnes_core.a
+entries:
+    PpuRgbOutput (default)

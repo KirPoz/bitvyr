@@ -1,4 +1,4 @@
-# Единственный C++17 профиль Bitvyr0.1-beta; SDK/FreeRTOS в Core отсутствуют.
+# Переносимое ядро C++17. Прошивка и нативные тесты используют одинаковые настройки.
 add_library(nes_core STATIC
     "Machine.cpp"
     "cpu/Cpu6502.cpp"
@@ -37,6 +37,18 @@ target_compile_definitions(nes_core PUBLIC NES_CORE_EXPANSION_DAC_PACKET=1 NES_C
 # Аппаратно выбранные P16 body-политики; public headers/layout и scalar tests прежние.
 target_compile_definitions(nes_core PRIVATE
     NES_EXPERIMENTAL_GENERIC_AFFINE_QUIET=1 NES_EXPERIMENTAL_OAM_TERMINAL_MASK=1)
+# Быстрое окно кода RAM используется только исполнителем последовательностей инструкций CPU.
+set_property(SOURCE "cpu/CpuQuietBlock.cpp" APPEND PROPERTY
+    COMPILE_DEFINITIONS NES_EXPERIMENTAL_CPU_RAM_CODE_WINDOW=1)
+# Эти признаки меняют интерфейс Machine и должны совпадать у всех её потребителей.
+target_compile_definitions(nes_core PUBLIC
+    NES_EXPERIMENTAL_MMC5_INACTIVE_GRANT=1
+    NES_EXPERIMENTAL_MMC5_ZERO_POLL_EXACT=1)
+target_compile_definitions(nes_core PRIVATE
+    NES_EXPERIMENTAL_MMC5_DUMMY_SPRITE_REUSE=1
+    NES_EXPERIMENTAL_MMC5_REPLAY_VISIBLE=1
+    NES_EXPERIMENTAL_RETAIN_DISCRETE_STATUS=1
+    NES_EXPERIMENTAL_MMC5_GRANT_SINGLE_AUDIO_CHECK=1)
 set_target_properties(nes_core PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 0)
 set_source_files_properties(
     "MachineMmc5LocalReadFold.cpp"

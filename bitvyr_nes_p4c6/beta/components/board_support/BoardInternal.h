@@ -121,7 +121,7 @@ bool beginGameDisplay(BoardState& state,const GameSourceTicket*ticket=nullptr) n
 bool finishGameDisplay(BoardState& state, unsigned timeoutMs) noexcept;
 /**
  * @brief Проверяет PPA и прежнюю LCD-границу без ожидания и подаёт сохранённый native index.
- * @details Только triple-native; Pending/Fault не снимают borrowed source.
+ * @details Только три native-буфера. Публичный вызов проверяет direct или borrowed ownership.
  * @param state Main-owned долговечное состояние с валидным активным выводом.
  * @return Submitted после настоящего PPA completion и принятой LCD submission.
  */

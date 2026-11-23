@@ -11,6 +11,8 @@
 #include "apu/AudioRenderer.h"
 #include "ppu/VideoRenderer.h"
 #include "cpu/RomWindow.h"
+#include "../../app/nes/storage/Mmc5ChrPadding.h"
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstdio>
@@ -48,17 +50,24 @@ struct Program {
  * @param variant 0 — обычные read/store/RMW, 1 — protection/banks/open bus,
  * 2 — NMI/MMC5/APU IRQ и DMC, 3 — изменяемый WRAM-код, 4 — динамика MMIO,
  * 5 — физически отсутствующая RAM с открытой шиной.
+ * @param chrPages Размер CHR в единицах 8 КиБ. При 65 страницах выбирается пустой хвост.
  * @return Владеющие байты NES2 ROM с 8 KiB SRAM, кроме явного no-RAM сценария.
  */
-std::vector<std::uint8_t> image(unsigned variant){
-    std::vector<std::uint8_t> rom(16+32768+8192,0);
-    rom[0]='N';rom[1]='E';rom[2]='S';rom[3]=0x1a;rom[4]=2;rom[5]=1;
+std::vector<std::uint8_t> image(unsigned variant,unsigned chrPages=1){
+    std::vector<std::uint8_t> rom(16+32768+8192*chrPages,0);
+    rom[0]='N';rom[1]='E';rom[2]='S';rom[3]=0x1a;rom[4]=2;rom[5]=static_cast<std::uint8_t>(chrPages);
     rom[6]=0x50;rom[7]=0x08;rom[10]=variant==5?0:7;
     Program p;p.byte(0x78);p.byte(0xd8);p.set(0x4017,0x40);
     p.set(0x5114,0x80);p.set(0x5115,0x81);p.set(0x5116,0x82);p.set(0x5117,0x83);
     p.set(0x5102,2);p.set(0x5103,1);p.set(0x5113,0);
     p.set(0x4015,1);p.set(0x4000,0xbf);p.set(0x4002,0x40);p.set(0x4003,0xf8);
-    p.set(0x2000,variant==2?0x80:0);p.set(0x2001,0x18);
+    p.set(0x2000,variant==2?0x80:0);
+    if (chrPages == 65) {
+        p.set(0x5101,1);p.set(0x5123,130); // Первый отсутствующий банк CHR 4 КиБ.
+        p.set(0x2006,0x3f);p.set(0x2006,3);p.set(0x2007,0x16);
+        p.set(0x2006,0);p.set(0x2006,0);p.set(0x2005,0);p.set(0x2005,0);
+    }
+    p.set(0x2001,0x18);
     if(variant==2){
         p.set(0x5203,120);p.set(0x5204,0x80);p.set(0x4010,0x8f);
         p.set(0x4012,0);p.set(0x4013,1);p.set(0x4015,0x11);p.byte(0x58);
@@ -183,11 +192,41 @@ void run(unsigned variant){
     
     std::printf("MMC5 WRAM variant=%u frames=8 NMI=%u IRQ=%u DMC=%llu exact-state output\n",variant,unsigned(ram[0x10]),unsigned(ram[0x11]),static_cast<unsigned long long>(f->dmc));
 }
+
+/** @brief Сопоставляет реальный output-пакет с ROM, у которого $FF физически лежит в хвосте. */
+void unevenChrOutput() {
+    const auto irregular = image(0,65);
+    const auto geometry = nes::app::mmc5ChrPadding(irregular.data(),irregular.size());
+    CHECK(geometry.bytes == 16 + 32768 + 1024U*1024U && geometry.chrBanks == 128U);
+    CHECK(nes::app::mmc5ChrPadding(irregular.data(),irregular.size()-1).bytes == 0);
+    CHECK(nes::app::mmc5ChrPadding(irregular.data(),irregular.size()+1).bytes == 0);
+    auto padded = irregular;
+    padded.resize(geometry.bytes,0xff);
+    padded[5] = geometry.chrBanks;
+    CHECK(nes::app::mmc5ChrPadding(padded.data(),padded.size()).bytes == 0);
+    auto a=std::make_unique<Fixture>();
+    auto b=std::make_unique<Fixture>();
+    a->init(irregular);b->init(padded);
+    bool visible=false;
+    for (unsigned frame=0;frame<5;++frame) {
+        a->frame(frame);b->frame(frame);
+        CHECK(!a->cut.cpu.jammed && !b->cut.cpu.jammed);
+        CHECK(a->cut.endCycle==b->cut.endCycle && a->cut.cpu.pc==b->cut.cpu.pc);
+        CHECK(a->rgb==b->rgb);
+        visible |= std::any_of(a->rgb.begin(),a->rgb.end(),[&](auto pixel){return pixel!=a->rgb[0];});
+        CHECK(a->packets[frame&1U].release());
+        CHECK(b->packets[frame&1U].release());
+    }
+    CHECK(visible);
+    CHECK(a->machine.cancelOutputFrames(a->lease));
+    CHECK(b->machine.cancelOutputFrames(b->lease));
+}
 }
 /** @brief Выполняет semantic проверки и при запросе пишет external differential canonical файл. */
 int main(int argc,char** argv){
     CHECK(argc==1||argc==2);if(argc==2){output=std::fopen(argv[1],"wb");CHECK(output);}
     for(unsigned variant=0;variant<6;++variant)run(variant);
+    unevenChrOutput();
     if(output)CHECK(std::fclose(output)==0);
     std::printf("MMC5 WRAM Output: %u checks passed\n",checks);
 }

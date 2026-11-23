@@ -82,6 +82,10 @@ std::vector<std::uint8_t> image(unsigned mapper,bool chrRam){
 }
 }
 namespace nes::core {
+/** @brief Запускает имеющийся quiet decoder с уже выданным тестовой машиной бюджетом. */
+struct CpuQuietMmioTestAccess {
+    static unsigned run(Cpu6502& cpu, unsigned budget) { return cpu.runQuietBlock(budget); }
+};
 /** @brief Native friendship использует существующие поля, не добавляет product hooks или состояния. */
 struct MachineEventKernelTestAccess {
  /** @brief Читает RAM только у завершённого sole-owner, обходя запрещённый detached debug API. */
@@ -149,7 +153,99 @@ struct MachineEventKernelTestAccess {
     setCut(42);
     p.dot_ = 340;
     CHECK(!p.tryReadDeferredStatus(1, value) && p.evaluationNextDot_ == 197);
+
+    p.scanline_ = 239;
+    p.dot_ = 330;
+    p.evaluationNextDot_ = 257;
+    p.evaluationDone_ = true;
+    p.status_ = 0x60;
+    p.openBus_ = 0x67;
+    p.writeToggle_ = false;
+    CHECK(!p.canRepeatStatusPoll(1, false));
+    CHECK(p.canRepeatStatusPoll(11, true));
+    CHECK(!p.canRepeatStatusPoll(12, true));
+    p.status_ = 0x40;
+    p.openBus_ = 0x47;
+    CHECK(p.canRepeatStatusPoll(10, true));
+    CHECK(!p.canRepeatStatusPoll(11, true));
+    closedStatusHorizon(m);
  }
+
+ /** @brief Сверяет математический горизонт с прежним предикатом и поиском. */
+ static void closedStatusHorizon(Machine& m) {
+    auto& p = m.timingPpu_;
+    constexpr unsigned offers[]{1, 2, 3, 11, 21, 42, 55, 128, 255, 340, 681, 765, 65535};
+    constexpr unsigned spots[]{0, 1, 2, 6, 7, 8, 9, 10, 63, 64, 65, 66, 67, 129, 130,
+                               195, 196, 197, 198, 254, 255, 256, 257, 339, 340, 341};
+    constexpr int rows[]{-1, 0, 1, 59, 238, 239, 240, 241, 260};
+    constexpr unsigned phases[]{0, 1, 2, 63, 64, 65, 66, 67, 195, 196, 197, 198, 254, 255, 256, 257};
+    constexpr unsigned masks[]{0, 0x08, 0x10, 0x18, 0x1a, 0x1c, 0x1e};
+    std::uint32_t rng = 0x91a76034U;
+    const auto nextRand = [&]() {
+        rng ^= rng << 13U;
+        rng ^= rng >> 17U;
+        rng ^= rng << 5U;
+        return rng;
+    };
+    const auto randomElem = [&](const auto& values) {
+        return values[nextRand() % (sizeof(values) / sizeof(values[0]))];
+    };
+    const auto verify = [&](unsigned limit, bool allow, unsigned debt, unsigned stride) {
+        const unsigned horizon = p.repeatStatusPollDots(limit, allow);
+        CHECK(horizon <= limit);
+        if (horizon) CHECK(p.canRepeatStatusPoll(horizon, allow));
+        if (horizon < limit) CHECK(!p.canRepeatStatusPoll(horizon + 1U, allow));
+        if (limit < debt) return;
+        unsigned old = (limit - debt) / stride;
+        while (old >= 2U && !p.canRepeatStatusPoll(debt + stride * old, allow)) --old;
+        const unsigned current = horizon < debt ? 0U : (horizon - debt) / stride;
+        CHECK((current < 2U ? 0U : current) == (old < 2U ? 0U : old));
+    };
+    for (unsigned i = 0; i < 135000U; ++i) {
+        p.scanline_ = static_cast<std::int16_t>(randomElem(rows));
+        p.dot_ = static_cast<std::uint16_t>(i & 1U ? randomElem(spots) : nextRand() % 341U);
+        p.evaluationNextDot_ = static_cast<std::uint16_t>(i & 2U ? randomElem(phases) : nextRand() % 259U);
+        p.secondaryPosition_ = static_cast<std::uint8_t>(nextRand() % 41U);
+        p.evaluationDone_ = (nextRand() & 3U) == 0U;
+        p.renderingEnabled_ = (nextRand() & 7U) != 0U;
+        p.renderDelay_ = nextRand() % 37U == 0U;
+        p.nmiDelay_ = nextRand() % 37U == 0U;
+        p.nmiPending_ = nextRand() % 37U == 0U;
+        p.nmiLine_ = nextRand() % 37U == 0U;
+        p.writeToggle_ = nextRand() % 37U == 0U;
+        p.status_ = static_cast<std::uint8_t>((nextRand() % 8U) << 5U);
+        p.openBus_ = static_cast<std::uint8_t>((nextRand() % 37U != 0U ? p.status_ : 0U) | (nextRand() & 31U));
+        p.mask_ = static_cast<std::uint8_t>(randomElem(masks));
+        p.spriteCacheValid_ = nextRand() % 10U != 0U;
+        p.spriteZeroRow_ = nextRand() % 4U != 0U;
+        p.spriteZeroMask_.fill(0);
+        const unsigned x = i & 8U ? unsigned(p.dot_ < 255U ? p.dot_ : 254U) : nextRand() % 256U;
+        p.spriteZeroMask_[x >> 3U] = static_cast<std::uint8_t>(1U << (x & 7U));
+        const unsigned offer = randomElem(offers);
+        const unsigned debt = 3U * (nextRand() % 240U);
+        const unsigned stride = 3U * (7U + nextRand() % 3U);
+        verify(offer, false, debt, stride);
+        verify(offer, true, debt, stride);
+    }
+    // Использовать явные границы x=7/8/254/255, включая отсутствие видимого x=255.
+    p.scanline_ = 239; p.dot_ = 1; p.status_ = p.openBus_ = 0x20U;
+    p.evaluationNextDot_ = 1; p.evaluationDone_ = false;
+    p.renderDelay_ = p.nmiDelay_ = p.nmiPending_ = p.nmiLine_ = p.writeToggle_ = false;
+    p.renderingEnabled_ = p.spriteCacheValid_ = p.spriteZeroRow_ = true;
+    for (unsigned x : {0U, 7U, 8U, 254U, 255U}) {
+        p.spriteZeroMask_.fill(0);
+        p.spriteZeroMask_[x >> 3U] = static_cast<std::uint8_t>(1U << (x & 7U));
+        for (unsigned mask : {0x18U, 0x1eU}) {
+            p.mask_ = static_cast<std::uint8_t>(mask);
+            verify(745U, false, 3U, 21U);
+            CHECK(p.repeatStatusPollDots(745U, false) == (x == 255U || (x < 8U && mask == 0x18U) ? 339U : x));
+        }
+    }
+    p.status_ = p.openBus_ = 0x60; p.dot_ = 0;
+    CHECK(p.repeatStatusPollDots(400U, true) == 341U);
+    CHECK(p.repeatStatusPollDots(400U, false) == 0U);
+ }
+
  /** @brief Проверяет фактическую Plain bulk-ветку через отличающийся опубликованный SpriteTile. */
  static void spriteSlot(Machine&m,VideoPacket&packet){
   auto&p=m.timingPpu_;p.packet_=&packet;p.capture_=nullptr;p.trackBusCycles_=p.trackBusAddresses_=false;
@@ -159,6 +255,69 @@ struct MachineEventKernelTestAccess {
   CHECK(m.canVideoBgSpan(false,false,8,0,0));CHECK(!m.canVideoBgSpan(true,false,8,0,0));CHECK(!m.canVideoBgSpan(false,true,8,0,0));
   p.spriteFetchGroup<false>(8);CHECK(p.dot_==273);CHECK(packet.header().eventCount==2);CHECK(packet.events()[0].op()==VideoOp::SpriteTile);
   CHECK(p.sprites_[1].valid&&p.sprites_[1].x==23&&p.sprites_[1].index==1);p.packet_=nullptr;
+ }
+ /** @brief Наблюдает фактическую M2-запись PRG и границу при смене CIRAM. */
+ static void discretePrgWrite(Machine& m, unsigned address, unsigned value, bool retained) {
+    auto& p = m.timingPpu_;
+    CHECK(m.outputFrameExecutable());
+    p.scanline_ = 40;
+    p.dot_ = 83;
+    m.pendingPpuDots_ = 3;
+    m.refreshPpuDeferBudget();
+    m.refreshCpuReadBudget();
+    CHECK(m.cpuReadBudget_ >= 4);
+    m.videoBgViewDirty_ = false;
+    m.ram_[0x200] = 0x8d;
+    m.ram_[0x201] = static_cast<std::uint8_t>(address);
+    m.ram_[0x202] = static_cast<std::uint8_t>(address >> 8);
+    auto state = m.cpu_.state();
+    state.pc = 0x200;
+    state.a = static_cast<std::uint8_t>(value);
+    state.p = 0x24;
+    m.cpu_.setState(state);
+    const auto start = m.cpuCycles();
+    m.stepInstruction();
+    CHECK(m.cpuCycles() == start + 4U && m.openBus_ == value);
+    if (retained) {
+        CHECK(m.pendingCpuReads_ == 4 && m.pendingPpuDots_ == 3 && p.dot_ == 83);
+        CHECK(!m.videoBgViewDirty_);
+        m.observeCpuReads();
+        m.flushPpu();
+    } else {
+        CHECK(!m.pendingCpuReads_ && !m.pendingPpuDots_ && m.videoBgViewDirty_);
+    }
+    CHECK(p.dot_ == 98);
+ }
+ /** @brief Проверяет, что короткий BEQ передаёт петлю свёртке даже при quiet-исполнении ветви. */
+ static void quietStatusBeq(Machine& m, std::uint16_t poll) {
+    m.observeCpuReads();
+    m.flushPpu();
+    auto& p = m.timingPpu_;
+    CHECK(m.outputFrameExecutable());
+    p.scanline_ = 42;
+    p.dot_ = 80;
+    p.openBus_ = 0;
+    p.status_ = 0;
+    p.evaluationNextDot_ = 257;
+    p.renderingEnabled_ = p.renderingNext_ = false;
+    p.renderDelay_ = p.nmiDelay_ = 0;
+    m.refreshPpuDeferBudget();
+    auto cpu = m.cpu_.state();
+    cpu.pc = poll;
+    cpu.a = 0x80;
+    cpu.p = 0x24;
+    m.cpu_.setState(cpu);
+    p.writeToggle_ = true;
+    m.refreshCpuReadBudget();
+    CHECK(m.cpuReadBudget_ >= 4 && m.ppuDeferBudget_ >= 12);
+    m.stepInstruction(); // Настоящий BIT STATUS, включая последнюю шинную защёлку.
+    CHECK(m.pendingCpuReads_ == 4 && p.dot_ == 80 && !p.writeToggle_);
+    CHECK(m.cpu_.state().pc == poll + 3U && (m.cpu_.state().p & 2U));
+    m.refreshCpuReadBudget();
+    const auto begin = m.cpuCycles();
+    const unsigned folded = CpuQuietMmioTestAccess::run(m.cpu_, 64);
+    CHECK(folded > 3U && (folded - 3U) % 7U == 0);
+    CHECK(m.cpuCycles() == begin + folded && m.cpu_.state().pc == poll);
  }
  /** @brief Выполняет настоящий LDA $6000 на Timing владельце и проверяет retained debt до getter barrier. */
  static void retained(Machine&m){
@@ -222,6 +381,45 @@ void directed(const std::vector<std::uint8_t>&r){
  auto retained=std::make_unique<Machine>();CHECK(retained->load(r.data(),r.size(),Region::Ntsc)==LoadResult::Ok);
  Access::retained(*retained);
 }
+/**
+ * @brief Проверяет разрешённую смену PRG и обязательную материализацию при смене CIRAM.
+ * @details AxROM submapper 2 сохраняет конфликт с ранее отображённым байтом.
+ * Camerica submapper 1 отделяет PRG-регистр от управления CIRAM.
+ */
+void discretePrgWrites(unsigned mapper) {
+    std::vector<std::uint8_t> rom(16 + 65536, 0);
+    std::memcpy(rom.data(), "NES\x1a", 4);
+    rom[4] = 4;
+    rom[6] = static_cast<std::uint8_t>(mapper << 4U);
+    rom[7] = static_cast<std::uint8_t>((mapper & 0xf0U) | 8U);
+    rom[8] = mapper == 7U ? 0x20U : 0x10U;
+    rom[11] = 7;
+    rom[16 + 32768] = 0x10;
+    rom[16 + 4097] = 1;
+    rom[16 + 32768 + 4097] = 3;
+    rom[16 + 16384] = 0x5a;
+    auto frame = std::make_unique<Frame>();
+    frame->init(rom);
+    auto& machine = frame->machine;
+    const OutputFrameTicket ticket{frame->lease, 0, 0, machine.cpuCycles(), 0};
+    CHECK(machine.beginOutputFrame(ticket));
+    CHECK(machine.cartridge().mirroring() == Mirroring::Single0);
+    if (mapper == 7U) {
+        Access::discretePrgWrite(machine, 0x9001U, 0x11U, true);
+        CHECK(machine.cartridge().cpuRead(0x9001U) == 3);
+        Access::discretePrgWrite(machine, 0x8000U, 0x11U, false);
+        CHECK(machine.cartridge().cpuRead(0x9001U) == 1);
+    } else {
+        Access::discretePrgWrite(machine, 0xc000U, 1, true);
+        CHECK(machine.cartridge().cpuRead(0x8000U) == 0x5a);
+        Access::discretePrgWrite(machine, 0x8000U, 0x10U, false);
+        CHECK(machine.cartridge().cpuRead(0x8000U) == 0x5a);
+    }
+    CHECK(machine.cartridge().mirroring() == Mirroring::Single1);
+    CHECK(machine.stopOutputWriter(frame->lease));
+    CHECK(machine.cancelOutputFrames(frame->lease));
+}
+
 /** @brief Создаёт тестовый NROM и выполняет чтение STATUS под владельцем Frame. */
 void deferredSpriteStatus() {
     std::vector<std::uint8_t> rom(16 + 32768 + 8192, 0);
@@ -235,34 +433,57 @@ void deferredSpriteStatus() {
     Access::deferredSpriteStatus(frame->machine);
 }
 
-/** @brief Проверяет опрос VBlank через LDA/BPL с независимым скалярным PPU.
+/** @brief Варианты короткого опроса VBlank в тестовых ROM. */
+enum class StatusPoll { LdaBpl, BitBpl, BitBeq };
+
+/** @brief Сравнивает короткий опрос VBlank с независимым скалярным PPU.
  * @param cross Выбирает пересечение PRG-страницы с дополнительным шинным чтением.
  */
-void statusPoll(bool cross) {
+void statusPoll(bool cross, unsigned mapper = 0, StatusPoll kind = StatusPoll::LdaBpl, bool latched = false) {
+    const bool bit = kind != StatusPoll::LdaBpl;
+    const bool beq = kind == StatusPoll::BitBeq;
     Program p;
     p.byte(0x78);
     p.set(0x4017,0x40);
     p.set(0x2000,0);
-    p.set(0x2001,0x08);
+    if (latched) {
+        p.set(0x2003,0);
+        p.set(0x4014,2); // OAM из нулевой RAM. Tile0 непрозрачен, Sprite Zero Hit устанавливается.
+    }
+    p.set(0x2001,latched ? 0x1e : 0x08);
+    if (beq) p.imm(0xa9,0x80);
     if(cross) {
         p.abs(0x4c,0xe0fd);
         p.code.resize(0xfd,0xea);
     }
     const auto poll=p.address();
-    p.abs(0xad,0x2002);
-    p.branch(0x10,poll);
-    p.imm(0x85,0x10);
+    p.abs(bit ? 0x2c : 0xad,0x2002);
+    p.branch(beq ? 0xf0 : 0x10,poll);
+    if (!bit) p.imm(0x85,0x10);
     p.byte(0x08);
     p.byte(0x68);
     p.imm(0x85,0x11);
     p.imm(0xe6,0x12);
+    if (beq) p.imm(0xa9,0x80);
     p.abs(0x4c,poll);
     std::vector<std::uint8_t> rom(16+32768+8192,0);
     std::memcpy(rom.data(),"NES\x1a",4);
     rom[4]=2;
     rom[5]=1;
+    rom[6]=static_cast<std::uint8_t>(mapper << 4U);
+    rom[7]=static_cast<std::uint8_t>(mapper & 0xf0U);
     std::memcpy(rom.data()+16+0x6000,p.code.data(),p.code.size());
     rom[16+0x7ffd]=0xe0;
+    if (latched) for (unsigned i=0;i<8;++i) rom[16+32768+i]=0xff;
+    if (beq && !cross) {
+        auto quiet = std::make_unique<Frame>();
+        quiet->init(rom);
+        const OutputFrameTicket ticket{quiet->lease, 0, 0, quiet->machine.cpuCycles(), 0};
+        CHECK(quiet->machine.beginOutputFrame(ticket));
+        Access::quietStatusBeq(quiet->machine, static_cast<std::uint16_t>(poll));
+        CHECK(quiet->machine.stopOutputWriter(quiet->lease));
+        CHECK(quiet->machine.cancelOutputFrames(quiet->lease));
+    }
 
     auto scalar=std::make_unique<Machine>();
     CHECK(scalar->load(rom.data(),rom.size(),Region::Ntsc)==LoadResult::Ok);
@@ -281,7 +502,9 @@ void statusPoll(bool cross) {
         CHECK(frame->packets[n&1U].release());
     }
     CHECK(Access::ram(*scalar,0x12)>0);
-    CHECK((Access::ram(*scalar,0x10)&0x80U)!=0 && (Access::ram(*scalar,0x11)&0x82U)==0x80U);
+    if (latched) CHECK((Access::ram(*scalar,bit ? 0x11U : 0x10U)&0x40U)!=0);
+    CHECK((Access::ram(*scalar,0x11)&0x80U)!=0);
+    if (!bit) CHECK((Access::ram(*scalar,0x10)&0x80U)!=0 && (Access::ram(*scalar,0x11)&0x82U)==0x80U);
     CHECK(frame->machine.cancelOutputFrames(frame->lease));
 }
 #endif
@@ -322,6 +545,15 @@ int main(int argc,char**argv) {
 #if !FASTCAP_SCALAR
     statusPoll(false);
     statusPoll(true);
+    statusPoll(false, 1, StatusPoll::BitBpl, true);
+    statusPoll(true, 1, StatusPoll::LdaBpl, true);
+    for (unsigned mapper : {7U, 71U}) {
+        discretePrgWrites(mapper);
+        statusPoll(false, mapper, StatusPoll::BitBpl);
+        statusPoll(true, mapper);
+        statusPoll(false, mapper, StatusPoll::BitBeq);
+        statusPoll(true, mapper, StatusPoll::BitBeq);
+    }
     deferredSpriteStatus();
 #endif
     if(canonical)CHECK(std::fclose(canonical)==0);

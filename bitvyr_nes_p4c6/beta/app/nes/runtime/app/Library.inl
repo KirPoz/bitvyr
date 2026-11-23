@@ -207,6 +207,21 @@ bool NesApp::startGame(std::size_t index) noexcept {
         return false;
     }
     info.crc = crc;
+    std::size_t imageBytes = info.size;
+    if (info.mapper == 5U) {
+        const auto padding = mmc5ChrPadding(image, imageBytes);
+        if (padding.bytes) {
+            // Размер и CRC в библиотеке описывают файл на SD. Видео получает
+            // полный диапазон рабочей копии от начала заголовка до хвоста CHR.
+            constexpr auto caps = MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT;
+            if (auto* expanded = static_cast<std::uint8_t*>(heap_caps_realloc(image, padding.bytes, caps))) {
+                image = expanded;
+                std::memset(image + imageBytes, 0xff, padding.bytes - imageBytes);
+                image[5] = padding.chrBanks;
+                imageBytes = padding.bytes;
+            }
+        }
+    }
     currentPalHint_ = info.pal;
     info.pal = settings_.effectivePal(info.pal);
     if(!videoMapperSupported(info.mapper)){
@@ -221,7 +236,7 @@ bool NesApp::startGame(std::size_t index) noexcept {
     if(!prepareCartridgeSession(info.mapper)){
         heap_caps_free(image);ESP_LOGE(tag,"ROM_LOAD_FAIL index=%u reason=cartridge_state_or_audio_owner",unsigned(index));return false;
     }
-    const auto result = machine_.load(image,info.size,
+    const auto result = machine_.load(image,imageBytes,
                                       info.pal?core::Region::Pal:core::Region::Ntsc);
     if (result != core::LoadResult::Ok) {
         heap_caps_free(image);
@@ -236,8 +251,12 @@ bool NesApp::startGame(std::size_t index) noexcept {
         menuDirty_ = true;
         return false;
     }
-    heap_caps_free(activeRom_);activeRom_=image;
+    heap_caps_free(activeRom_);activeRom_=image;activeRomBytes_=imageBytes;
     selected_=index;current_=info;
+    // Читаем загруженный картридж и выбранный регион после успешного Machine::load.
+    const auto mapper=machine_.cartridge().mapper();
+    frameDirectPresent.enabled=frameDirectPresent.requested&&machine_.region()==core::Region::Ntsc&&
+        (mapper==7U||mapper==71U);
     if(!configureVideoWorker()){workerFault("cpu_bench_launch");return false;}
     invalidateSnapshot();
     resetCounters();

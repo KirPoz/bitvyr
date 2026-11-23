@@ -1,5 +1,5 @@
-# This file was generated using idf.py save-defconfig or menuconfig [D] key. It can be edited manually.
-# Espressif IoT Development Framework (ESP-IDF) 6.1.0 Project Minimal Configuration
+# Профиль ESP-IDF 6.1 для ESP32-P4 и платы с 32 МиБ flash. Частота P4 и размер резерва внутренней памяти заданы ниже.
+# NimBLE обслуживает геймпад через ESP-Hosted на SDIO, FATFS использует UTF-8 для каталога игр на SD.
 #
 # default:
 CONFIG_IDF_TARGET="esp32p4"

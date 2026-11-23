@@ -6,6 +6,9 @@ entries:
     PpuColourReplay:_ZN3nes4core15PpuColourReplay10readActualEyjRh (default)
     PpuColourReplay:_ZN3nes4core15PpuColourReplay12checkWitnessEv (default)
     PpuColourReplay:_ZN3nes4core15PpuColourReplay15bindExternalPpuERNS0_3PpuE (default)
+    # RGB-only добавляет две холодные привязки на reset7.
+    PpuColourReplay:_ZN3nes4core15PpuColourReplay15bindExternalPpuERNS0_3PpuEb (default)
+    PpuColourReplay:_ZN3nes4core15PpuColourReplay22bindExternalRgbOnlyPpuERNS0_3PpuE (default)
     PpuColourReplay:_ZN3nes4core15PpuColourReplay20checkProgressWitnessEv (default)
     PpuColourReplay:_ZN3nes4core15PpuColourReplay5applyEyjjh (default)
     PpuColourReplay:_ZN3nes4core15PpuColourReplay5beginEPKhjNS0_6RegionE (default)

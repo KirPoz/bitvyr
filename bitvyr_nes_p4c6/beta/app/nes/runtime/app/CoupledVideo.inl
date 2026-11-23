@@ -24,7 +24,7 @@ bool NesApp::configureCoupledVideoPipeline() noexcept {
         unsigned(startupAudio.inputCount),unsigned(startupAudio.dmcCount),unsigned(startupAudio.region),unsigned(startupAudio.capabilities));
     std::uint16_t*alternateRgb=nullptr;
     if(current_.mapper==5){alternateRgb=board_.gameFramebuffer();if(!alternateRgb)return false;}
-    worker_->coupled=CoupledVideoPipeline::create(machine_,activeRom_,current_.size,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_,alternateRgb);
+    worker_->coupled=CoupledVideoPipeline::create(machine_,activeRom_,activeRomBytes_,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_,alternateRgb);
     std::printf("NES_COUPLED_SETUP stage=post_create ok=%u main_stack_free=%u\n",unsigned(worker_->coupled!=nullptr),unsigned(uxTaskGetStackHighWaterMark(nullptr)));
     if(!worker_->coupled)return false;
     if(worker_->coupled->rgbPoolEnabled()&&!board_.registerGameSource(worker_->coupled->ownedRgb())){
@@ -33,7 +33,8 @@ bool NesApp::configureCoupledVideoPipeline() noexcept {
         return false;
     }
     if(!configureC6AudioBackend())return false;
-    ESP_LOGI(tag,"NES_COUPLED_BENCH_MODE mapper=%u producer=signals consumer=actual_core rgb=staging game_fps_claim=0",unsigned(current_.mapper));return true;
+    ESP_LOGI(tag,"NES_COUPLED_BENCH_MODE mapper=%u producer=signals consumer=actual_core rgb=staging maximum_video_burst=%u game_fps_claim=0",
+        unsigned(current_.mapper),coupled_done::CoupledPump::maximumVideoBurst);return true;
 }
 /**
  * @brief Получает завершённый сигнальный кадр Coupled и проверяет его совместный цветной результат. Не подменяет обычный Frame-тракт.
@@ -41,11 +42,11 @@ bool NesApp::configureCoupledVideoPipeline() noexcept {
 bool NesApp::retireCoupledFrame() noexcept {
     auto&w=*worker_;auto&c=*w.coupled;const auto begin=esp_timer_get_time();
     coupled_done::WaitStats waitStats{}; // На stack Main; нет общей горячей cache-line с Worker.
+    coupled_done::CoupledPump service{};
     const auto joined=coupled_done::waitDone<1>(waitStats,
         [&]()noexcept{return xSemaphoreTake(w.done,0)==pdTRUE;},
         [&]()noexcept{
-            if(!c.pump()||!pumpC6AudioBackend(false))return false;
-            return true;
+            return service.afterVideo(c.pump(),[&]()noexcept{return pumpC6AudioBackend(false);});
         },
         [&]()noexcept{return c.expired();},
         []()noexcept{std::atomic_signal_fence(std::memory_order_seq_cst);});
@@ -60,7 +61,7 @@ bool NesApp::retireCoupledFrame() noexcept {
     w.inFlight=false;
     const auto region=current_.pal?core::Region::Pal:core::Region::Ntsc;
     if(w.result!=core::RunStatus::FrameReady||w.generation!=sessionGeneration_||w.inputFrame!=frames_||
-       !c.matches(machine_,activeRom_,current_.size,region,sessionGeneration_)) {workerFault("coupled_join_identity");return false;}
+       !c.matches(machine_,activeRom_,activeRomBytes_,region,sessionGeneration_)) {workerFault("coupled_join_identity");return false;}
     const auto cycle=machine_.cpuCycles(),frame=machine_.frames();
     if(!videoWorkerReady()||machine_.region()!=region||frame!=frames_+1||!c.jointReady(cycle,frame)){workerFault("coupled_joint");return false;}
     auto&s=*w.snapshot;s.ready=false;s.generation=sessionGeneration_;s.completedFrames=frames_+1;
@@ -77,7 +78,7 @@ bool NesApp::retireCoupledFrame() noexcept {
     w.audioPacketPending=w.packetForSnapshot=!preAck;
     // При loan PCM уже принадлежит присоединённому Main; baseline DSP остаётся прежним.
     if(!preAck&&!prepareSnapshotAudio())return false;
-    if(!c.matches(machine_,activeRom_,current_.size,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_)||
+    if(!c.matches(machine_,activeRom_,activeRomBytes_,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_)||
        s.generation!=sessionGeneration_||!c.accept()){workerFault("coupled_accept");return false;}
     ++frames_;++periodFrames_;advanceFrameDeadline();coreUs_+=w.coreUs;maxCoreUs_=std::max(maxCoreUs_,w.coreUs);inputUs_+=w.inputUs;
     w.coupledPumpUs+=esp_timer_get_time()-begin;const auto&t=c.times();
@@ -104,7 +105,7 @@ void NesApp::coupledVideoStatus() noexcept {
     if(!finishCoupledPresent()){workerFault("coupled_status_ppa");return;}
     auto&w=*worker_;auto&c=*w.coupled;
     if(!prepareSnapshotAudio())return;
-    if((playing_||pausedGame_)&&!c.matches(machine_,activeRom_,current_.size,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_)){workerFault("coupled_status_lease");return;}
+    if((playing_||pausedGame_)&&!c.matches(machine_,activeRom_,activeRomBytes_,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_)){workerFault("coupled_status_lease");return;}
     const auto cpu=machine_.cpuState();std::uint64_t ram=1469598103934665603ULL;
     for(unsigned i=0;i<2048;++i)ram=(ram^machine_.debugRead(i))*1099511628211ULL;
     for(unsigned i=0x6000;i<0x8000;++i)ram=(ram^machine_.debugRead(i))*1099511628211ULL;
@@ -112,7 +113,7 @@ void NesApp::coupledVideoStatus() noexcept {
     const auto count=!remoteAudio&&frames_?w.audioRenderer->sampleCount():0U;const auto pcm=remoteAudio?0ULL:pcmStateHash(w.audioRenderer->samples(),count);
     std::printf("NES_AUDIO_PCM_WITNESS game=%u guest_frames=%llu qualified=0 ready_verified_frames=0 count_matches=0 fixed_crc_matches=0 golden_available=0\n",unsigned(selected_),static_cast<unsigned long long>(frames_));
     std::uint64_t rgb=1469598103934665603ULL;const auto*p=
-        c.matches(machine_,activeRom_,current_.size,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_)?c.pixels():nullptr;
+        c.matches(machine_,activeRom_,activeRomBytes_,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_)?c.pixels():nullptr;
     if(p)for(unsigned i=0;i<61440;++i){rgb=(rgb^(p[i]&255U))*1099511628211ULL;rgb=(rgb^(p[i]>>8))*1099511628211ULL;}
     const bool pad=frames_&&w.snapshot->generation==sessionGeneration_&&w.snapshot->completedFrames==frames_;
     std::printf("NES_COUPLED_BENCH_STATUS {\"playing\":%s,\"game\":%u,\"frames\":%llu,\"generation\":%llu,\"mapper\":%u,\"region\":\"%s\",\"crc32\":\"%08lx\",\"owner\":\"%s\",\"game_fps_claim\":false,\"pc\":%u,\"a\":%u,\"x\":%u,\"y\":%u,\"sp\":%u,\"p\":%u,\"cpu_cycles\":%llu,\"cpu_state_cycles\":%llu,\"ram_hash\":\"%016llx\",\"pcm_count\":%u,\"pcm_hash\":\"%016llx\",\"image_available\":%s,\"rgb_hash\":\"%016llx\",\"input_valid\":%s,\"input_frame\":%llu,\"input_mask\":%u,\"submitted_frames\":%llu,\"device_us\":%lld}\n",

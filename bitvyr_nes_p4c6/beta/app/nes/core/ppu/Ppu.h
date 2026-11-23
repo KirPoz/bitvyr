@@ -123,7 +123,10 @@ public:
      * @param allocator Политика allocate/free для индексных пикселей; callback-ресурсы должны оставаться действительными.
      * @param bus Заимствованная шина микросхемы; её объект переживает устройство и исключает недопустимый рекурсивный вызов.
      */
-    Ppu(Bus& bus, LegacyPixelAllocator allocator) noexcept : bus_(bus), pixels_(allocator) { reset(); }
+    enum class IndexExtent : std::uint8_t { Frame, RgbScanline };
+    /** @brief RgbScanline выделяет 256 байт только для внешнего RGB-only актора. */
+    Ppu(Bus& bus, LegacyPixelAllocator allocator, IndexExtent extent=IndexExtent::Frame) noexcept
+        : bus_(bus), pixels_(allocator,extent) { reset(); }
     /**
      * @brief Создаёт PPU, связанный с указанной шиной.
      * @details Срок жизни шины должен покрывать весь срок жизни PPU. Копия не получает автоматически RGB-контекст или полномочия основного временного владельца.
@@ -150,7 +153,11 @@ public:
      * @details Ошибка, наличие хранилища и готовность изображения различаются; эти признаки сами по себе не выполняют повтор или аппаратное ожидание.
      * @return Результат описанной проверки либо успешность перехода состояния; false обрабатывается вызывающим путём.
      */
-    bool pixelsReady() const noexcept { return pixels_.data() != nullptr; }
+    bool pixelsReady() const noexcept { return pixels_.data() && !pixels_.rowOnly(); }
+    /** @brief Владеющий extent для RAM capability/alias admission; это не кадр для чтения. */
+    const void* indexedStorageIdentity() const noexcept { return pixels_.data(); }
+    /** @brief Возвращает фактический размер хранилища индексных пикселей. При выводе только в RGB без индексного буфера возвращает ноль. */
+    std::size_t indexedStorageBytes() const noexcept { return pixels_.data()?pixels_.size():0; }
     /**
      * @brief Возвращает устройство в определённое исходное состояние.
      * @details Обнуляет соответствующие счётчики, защёлки и конвейеры; сброс Machine требует исключительного владения и не равен освобождению ROM или буферов приложения.
@@ -288,7 +295,7 @@ public:
      */
     [[nodiscard]] const std::uint8_t* framebuffer() const noexcept { flushPixels();
         fenceRgbOutput();
-        return pixels_.data(); }
+        return pixels_.rowOnly()?nullptr:pixels_.data(); }
     /**
      * @brief Возвращает растровую координату либо дробную фазу текущего владельца.
      * @details Значения относятся к одному уже материализованному срезу; номер строки не заменяет CPU-cycle или PAL-остаток.
@@ -340,6 +347,10 @@ private:
      * @param dots Число уже разрешённых PPU-точек; caller ограничивает CPU/MMIO, delay и raster-границами.
      */
     inline void tickDotsInline(unsigned dots) noexcept;
+    /** @brief Исполняет уже разрешённые точки NTSC MMC5 у стационарного цветового актора. */
+    void tickMmc5ReplayDots(unsigned dots) noexcept;
+    /** @brief Выполняет ровно одну полную предвыборку на точках 321–328 или 329–336. */
+    inline void mmc5ReplayPrefetchTile(Mmc5& mapper) noexcept;
     /**
      * @brief Один выбранный OAM-слот: X/атрибуты/индекс, low/high-плоскости и признаки действительности. Порядок слотов сохраняет приоритет первого непрозрачного.
      * @ingroup nes_ppu
@@ -672,13 +683,14 @@ private:
         };
         std::unique_ptr<std::uint8_t[],Deleter> bytes_;
         LegacyPixelAllocator::Allocate allocate_;
+        unsigned stride_=width;
     public:
         /**
          * @brief Создаёт либо копирует владеющее индексное хранилище полного PPU.
          * @details При heap-политике выделение может не удаться; копирование сохраняет политику и данные, а отсутствие pixels не должно останавливать время или Sprite0.
          * @param allocator Политика allocate/free для индексных пикселей; callback-ресурсы должны оставаться действительными.
          */
-        explicit PixelStorage(LegacyPixelAllocator allocator) noexcept;
+        explicit PixelStorage(LegacyPixelAllocator allocator, IndexExtent extent=IndexExtent::Frame) noexcept;
         /**
          * @brief Создаёт либо копирует владеющее индексное хранилище полного PPU.
          * @details При heap-политике выделение может не удаться; копирование сохраняет политику и данные, а отсутствие pixels не должно останавливать время или Sprite0.
@@ -696,7 +708,15 @@ private:
          * @details Операция ограничена текущим буфером и не изменяет геометрию физического дисплея.
          * @param value Уже полученный либо записываемый байт; повторное шинное чтение здесь не подразумевается.
          */
-        void fill(std::uint8_t value) noexcept { if(bytes_)std::fill_n(bytes_.get(),width*height,value); }
+        void fill(std::uint8_t value) noexcept { if(bytes_)std::fill_n(bytes_.get(),size(),value); }
+        /** @brief Один физический ряд RGB-only или полный адресуемый индексный кадр. */
+        bool rowOnly() const noexcept { return stride_==0; }
+        /** @brief Возвращает число индексных байтов в выделенной строке или в полном кадре согласно шагу хранения. */
+        std::size_t size() const noexcept { return rowOnly()?width:width*height; }
+        /** @brief Точный байт текущей строки; caller ограничивает row и x. */
+        std::uint8_t* at(unsigned row,unsigned x) const noexcept {
+            return bytes_?bytes_.get()+row*stride_+x:nullptr;
+        }
         /**
          * @brief Предоставляет пиксель по индексу внутри собственного хранилища.
          * @details Вызов допустим только после проверки наличия allocation и границ. Ссылка не продлевает срок жизни пиксельного буфера.

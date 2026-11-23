@@ -1,0 +1,9 @@
+# Новые MMC5/широкий FIR helpers: отдельные cache-enabled task TU.
+[mapping:nes_mmc5_helpers_flash]
+archive: libnes_core.a
+entries:
+    Mmc5 (default)
+    Mmc5Audio (default)
+    CartridgeMmc5 (default)
+    MachineMmc5 (default)
+    ApuExpansion (default)

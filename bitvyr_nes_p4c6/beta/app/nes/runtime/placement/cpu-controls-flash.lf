@@ -36,4 +36,4 @@ entries:
     unity_0_cxx:_ZThn4_N3nes4core7MachineD0Ev (default)
     unity_0_cxx:_ZThn8_N3nes4core7MachineD0Ev (default)
     unity_0_cxx:_ZN3nes4core7MachineD2Ev (default)
-    unity_0_cxx:_ZN3nes4core3Ppu12PixelStorageC2ENS0_20LegacyPixelAllocatorE (default)
+    unity_0_cxx:_ZN3nes4core3Ppu12PixelStorageC2ENS0_20LegacyPixelAllocatorENS1_11IndexExtentE (default)

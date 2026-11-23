@@ -1,0 +1,28 @@
+--- upstream/sdio_slave_api.c
++++ bitvyr/sdio_slave_api.c
+@@ -1,6 +1,6 @@
+ /*
+  * SPDX-FileCopyrightText: 2015-2026 Espressif Systems (Shanghai) CO LTD
+- *
++ * Modified by Bitvyr contributors (2026): Caller-owned DMA reply envelopes and source completion; see patches/sdio_slave_api.c.patch.
+  * SPDX-License-Identifier: Apache-2.0
+  */
+ 
+@@ -128,9 +128,10 @@
+ 	MEMPOOL_ALLOC(buf_mp_tx_g, nbytes, need_memset);
+ }
+ 
++static int nes_raw_dma_done(void* pointer);
+ static inline void sdio_buffer_tx_free(void *buf)
+ {
+-	MEMPOOL_FREE(buf_mp_tx_g, buf);
++	if (!nes_raw_dma_done(buf)) { MEMPOOL_FREE(buf_mp_tx_g, buf); }
+ }
+ 
+ #if !SIMPLIFIED_SDIO_SLAVE
+@@ -942,3 +943,5 @@
+ {
+ }
+ #endif
++
++#include "C6Extension.inc"

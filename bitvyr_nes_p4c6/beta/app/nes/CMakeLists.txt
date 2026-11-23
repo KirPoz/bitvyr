@@ -67,5 +67,9 @@ target_compile_definitions(${COMPONENT_LIB} PRIVATE NES_EXPERIMENTAL_BATCH_FETCH
 # Main обслуживает C6 между порциями цветной обработки.
 target_compile_definitions(${COMPONENT_LIB} PRIVATE NES_EXPERIMENTAL_FRAME_COLOUR_PUMP=1)
 
+# NTSC 7/71 перекрывает вывод с работой CPU1. Цветовая строка MMC5 размещается в HP SRAM.
+target_compile_definitions(${COMPONENT_LIB} PRIVATE
+    NES_EXPERIMENTAL_FRAME_DIRECT_POLL=1 NES_DIAGNOSTIC_MMC5_INDEX_MEMORY=1)
+
 # Третий блок PCM в PSRAM сохраняет остаток при частичной записи I2S.
 target_compile_definitions(${COMPONENT_LIB} PRIVATE NES_EXPERIMENTAL_C6_PCM_THREE_TICKETS=1)

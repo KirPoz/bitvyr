@@ -7,6 +7,32 @@ namespace nes::app::coupled_done {
 /** @brief Результат ожидания; Ready означает только успешный tryDone, не matching identity или join. */
 enum class WaitResult : std::uint8_t { Ready, Fault };
 
+/** @brief Итог одного шага цветовой очереди CPU0. */
+enum class VideoResult : std::uint8_t { Processed, Empty, Fault };
+
+/**
+ * @brief Обслуживает аудио при пустой очереди или после четырёх подряд обработанных видеозапросов.
+ * @details Main обрабатывает не больше одного video callback за вызов. Внешний цикл проверяет
+ * семафор и deadline после каждого callback. Уже ожидающие префиксы сгруппированы без
+ * изменения их FIFO-порядка. Пустая очередь сразу возвращает ход C6 и I2S, включая паузы
+ * между короткими сериями. Ошибка видео прерывает вызов до следующего обращения к аудио.
+ */
+class CoupledPump final {
+public:
+    static constexpr unsigned maximumVideoBurst=4;
+
+    /** @brief Передаёт ход аудиоканалу в пределах максимальной серии. */
+    template<class PumpAudio>
+    bool afterVideo(VideoResult result,PumpAudio&& audio) noexcept {
+        if(result==VideoResult::Fault)return false;
+        if(result==VideoResult::Processed&&++videoBurst_<maximumVideoBurst)return true;
+        videoBurst_=0;
+        return audio();
+    }
+private:
+    unsigned videoBurst_=0;
+};
+
 /**
  * @brief Main-owned числовая статистика одного ожидания без владения ресурсами.
  * @details loops/pumpCalls считают начатые pump; semAttempts включает initial,

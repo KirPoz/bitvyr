@@ -18,11 +18,12 @@ namespace nes::core {
  * @details При heap-политике выделение может не удаться; копирование сохраняет политику и данные, а отсутствие pixels не должно останавливать время или Sprite0.
  * @param allocator Политика allocate/free для индексных пикселей; callback-ресурсы должны оставаться действительными.
  */
-Ppu::PixelStorage::PixelStorage(LegacyPixelAllocator allocator) noexcept
-    : bytes_(nullptr,Deleter{allocator.release}),allocate_(allocator.allocate) {
+Ppu::PixelStorage::PixelStorage(LegacyPixelAllocator allocator, IndexExtent extent) noexcept
+    : bytes_(nullptr,Deleter{allocator.release}),allocate_(allocator.allocate),
+      stride_(extent==IndexExtent::RgbScanline?0U:width) {
     if(bool(allocator.allocate)!=bool(allocator.release))return;
-    if(allocator.allocate)bytes_.reset(allocator.allocate(width*height));
-    else bytes_.reset(new(std::nothrow) std::uint8_t[width*height]);
+    if(allocator.allocate)bytes_.reset(allocator.allocate(size()));
+    else bytes_.reset(new(std::nothrow) std::uint8_t[size()]);
 }
 /**
  * @brief Создаёт либо копирует владеющее индексное хранилище полного PPU.
@@ -30,11 +31,11 @@ Ppu::PixelStorage::PixelStorage(LegacyPixelAllocator allocator) noexcept
  * @param other Источник глубокого копирования индексных пикселей; политика allocator сохраняется, чужое выделение не усваивается.
  */
 Ppu::PixelStorage::PixelStorage(const PixelStorage& other) noexcept
-    :bytes_(nullptr,Deleter{other.bytes_.get_deleter().release}),allocate_(other.allocate_) {
+    :bytes_(nullptr,Deleter{other.bytes_.get_deleter().release}),allocate_(other.allocate_),stride_(other.stride_) {
     if(!other.bytes_)return;
-    if(allocate_)bytes_.reset(allocate_(width*height));
-    else bytes_.reset(new(std::nothrow) std::uint8_t[width*height]);
-    if(bytes_)std::copy_n(other.bytes_.get(),width*height,bytes_.get());
+    if(allocate_)bytes_.reset(allocate_(size()));
+    else bytes_.reset(new(std::nothrow) std::uint8_t[size()]);
+    if(bytes_)std::copy_n(other.bytes_.get(),size(),bytes_.get());
 }
 
 namespace {
@@ -694,6 +695,9 @@ void Ppu::spriteFetchGroup(unsigned dots) noexcept {
         pureSlots = dots >= 8U && !trackBusAddresses_ && bus_.fullPpuSpanView(v_, 0U, pureView);
     }
     Mmc5* fullSpriteMapper = nullptr;
+#if defined(NES_EXPERIMENTAL_MMC5_DUMMY_SPRITE_REUSE)
+    std::uint16_t previousDummyPattern=0xffffU, previousDummyPlanes=0;
+#endif
     if constexpr (!Clocked) {
         // Тот же stationary C0 domain, что у FullPpu BG: M2 и CPU/MMIO
         // уже ограничены owner. Никаких допущений о конкретной игре/IRQ state.
@@ -710,8 +714,23 @@ void Ppu::spriteFetchGroup(unsigned dots) noexcept {
             // Phase0 сохраняет metadata/valid/OAMADDR и настоящий NT address.
             // Helper включает оба discarded NT /RD даже для пустого OAM slot.
             fetchSpritePhase<0, true, false>(slot, pattern);
+#if defined(NES_EXPERIMENTAL_MMC5_DUMMY_SPRITE_REUSE)
+            std::uint16_t planes;
+            // Предыдущий полный слот закончил в R0/lastCHR. У того же
+            // паттерна NT,NT,low,high возвращают ровно это же состояние,
+            // не меняя IRQ или CHR mapping. Частичный хвост завершает вызов.
+            const bool dummy=sprites_[slot].index==0xffU;
+            if(dummy&&pattern==previousDummyPattern){
+                planes=previousDummyPlanes;
+            }else{
+                planes=fullSpriteMapper->ppuReadFullSpriteSlot(busAddress_,pattern,bus_.nametables_.data());
+                previousDummyPattern=dummy?pattern:std::uint16_t{0xffffU};
+                previousDummyPlanes=planes;
+            }
+#else
             const auto planes = fullSpriteMapper->ppuReadFullSpriteSlot(
                 busAddress_, pattern, bus_.nametables_.data());
+#endif
             const auto low = static_cast<std::uint8_t>(planes);
             const auto high = static_cast<std::uint8_t>(planes >> 8U);
             auto& sprite = sprites_[slot];
@@ -858,6 +877,7 @@ void Ppu::rebuildBackgroundPairs() const noexcept {
     if(auto* rgb=PpuRgbOutput::activeFor(this))rgb->paletteRebuilt();
 }
 
+/** @brief Совмещает восемь пикселей фона со спрайтами по приоритету и маске. Записывает результат в выбранный индексный или RGB-выход. */
 #if defined(__GNUC__) || defined(__clang__)
 [[gnu::always_inline]]
 #endif
@@ -933,8 +953,7 @@ void Ppu::flushPixels() const noexcept {
         (expandedPixelPlane[((static_cast<unsigned>(attributeLow_) << shift) >> 8) & 255] << 2) |
         (expandedPixelPlane[((static_cast<unsigned>(attributeHigh_) << shift) >> 8) & 255] << 3);
     const unsigned mask = mask_;
-    auto* output = pixels_.data();
-    if(output)output += static_cast<unsigned>(scanline_) * width + start;
+    auto* output = pixels_.at(static_cast<unsigned>(scanline_),start);
     const auto* sprites = spriteRow_.data() + start;
     auto* rgb=PpuRgbOutput::activeFor(this);
     if(rgb)rgb->beginSpan(*this,static_cast<unsigned>(scanline_),start,count,mask>>5,lineEmphasis_[static_cast<unsigned>(scanline_)]);
@@ -1006,10 +1025,10 @@ void Ppu::renderPixel() noexcept {
     if (!rendering() && (v_ & 0x3F00) == 0x3F00) location = paletteAddress(v_);
     auto* rgb=PpuRgbOutput::activeFor(this);
     if(rgb)rgb->beginSpan(*this,static_cast<unsigned>(scanline_),x,1,mask_>>5,lineEmphasis_[static_cast<unsigned>(scanline_)]);
-    if(pixels_.data())
-    pixels_[static_cast<unsigned>(scanline_) * width + x] = palette_[location] & ((mask_ & 1) ? 0x30 : 0x3F);
+    auto* output=pixels_.at(static_cast<unsigned>(scanline_),x);
+    if(output)*output=palette_[location] & ((mask_ & 1) ? 0x30 : 0x3F);
     lineEmphasis_[static_cast<unsigned>(scanline_)] = mask_ >> 5;
-    if(rgb){rgb->selectedIndices(pixels_.data()+static_cast<unsigned>(scanline_)*width+x,x,1,mask_>>5);rgb->finishSpan(*this);}
+    if(rgb&&output){rgb->selectedIndices(output,x,1,mask_>>5);rgb->finishSpan(*this);}
     if (rendering()) {
         if (spriteCacheValid_) ++spriteCacheClocks_;
         else {
@@ -1083,6 +1102,7 @@ void Ppu::visibleUnclockedGroup(unsigned dots) noexcept {
     visibleDotPhase<2>();
 }
 
+/** @brief Исполняет одну точку PPU, сохраняя порядок шинных сигналов, сдвигов фона и изменений состояния строки. */
 [[gnu::always_inline]] inline void Ppu::tickInline() noexcept {
     if (trackBusCycles_) bus_.ppuCycle();
     // Большинство активных точек не начинает/заканчивает кадр, не копирует scroll, не выбирает
@@ -1227,8 +1247,7 @@ void Ppu::fetchRenderMmc5(unsigned tiles, Mmc5RasterPlan& plan,
     std::uint32_t attributes = (((static_cast<std::uint32_t>(attributeLow_) << initialShift) & 0xFF00U) | ((nextAttribute_ & 1) ? 255U : 0U)) |
         ((((static_cast<std::uint32_t>(attributeHigh_) << initialShift) & 0xFF00U) | ((nextAttribute_ & 2) ? 255U : 0U)) << 16);
     unsigned x = dot_ - 1;
-    auto* output = pixels_.data();
-    if(output)output += static_cast<unsigned>(scanline_) * width + x;
+    auto* output = pixels_.at(static_cast<unsigned>(scanline_),x);
     const auto* sprites = spriteRow_.data() + x;
     const unsigned fineX = fineX_;
     // Сохранить произвольную историю первого тайла. Завершённая последующая загрузка имеет
@@ -1591,6 +1610,7 @@ void Ppu::fetchLegacyTileSpan(unsigned tiles) noexcept {
     renderFetchedTiles(fetched, tiles);
 }
 
+/** @brief Разворачивает подготовленные плоскости тайлов, применяет прокрутку и спрайты и продвигает положение вывода до конца группы. */
 #if defined(__GNUC__) || defined(__clang__)
 [[gnu::noinline]]
 #elif defined(_MSC_VER)
@@ -1605,8 +1625,7 @@ void Ppu::renderFetchedTiles(const std::uint32_t* fetched, unsigned tiles) noexc
     std::uint32_t attributes = (((static_cast<std::uint32_t>(attributeLow_) << initialShift) & 0xFF00U) | ((nextAttribute_ & 1) ? 255U : 0U)) |
         ((((static_cast<std::uint32_t>(attributeHigh_) << initialShift) & 0xFF00U) | ((nextAttribute_ & 2) ? 255U : 0U)) << 16);
     unsigned x = dot_ - 1;
-    auto* output = pixels_.data();
-    if(output)output += static_cast<unsigned>(scanline_) * width + x;
+    auto* output = pixels_.at(static_cast<unsigned>(scanline_),x);
     const auto* sprites = spriteRow_.data() + x;
     const unsigned fineX = fineX_;
     // Сохранить произвольную историю первого тайла. Завершённая последующая загрузка имеет
@@ -1734,6 +1753,113 @@ inline void Ppu::tile8() noexcept {
     dot_ = static_cast<std::uint16_t>(dot_ + 8);
 }
 
+/** @brief Загружает предшествующие плоскости и выполняет четыре чтения следующего тайла MMC5 в аппаратном порядке. */
+[[gnu::always_inline]] inline void Ppu::mmc5ReplayPrefetchTile(Mmc5& mapper) noexcept {
+    // Загрузить прежние плоскости до четырёх /RD следующего тайла. Шинный
+    // детектор и split latch остаются живыми даже при длинном интервале.
+    loadBackground();
+    const auto tile=mapper.ppuReadFullBackgroundTile(v_,control_,bus_.nametables_.data(),(dot_-321U)>>3U);
+    nextTile_=tile.tile;
+    nextAttribute_=static_cast<std::uint8_t>((unsigned(tile.attribute)>>(((v_>>4U)&4U)|(v_&2U)))&3U);
+    nextLow_=tile.low;
+    nextHigh_=tile.high;
+    const auto highAddress=static_cast<std::uint16_t>(((control_&0x10U)?0x1000U:0U)+unsigned(tile.tile)*16U+((v_>>12U)&7U)+8U);
+    incrementX();
+    coarseXSignal_=false;
+    busAddress_=highAddress;
+    pendingBackgroundShifts_=8U;
+    dot_=static_cast<std::uint16_t>(dot_+8U);
+}
+
+/** @brief Продвигает графический PPU на запрошенное число точек MMC5, группируя безопасные интервалы и исполняя границы строки отдельно. */
+#if defined(NES_EXPERIMENTAL_MMC5_REPLAY_VISIBLE)
+void Ppu::tickMmc5ReplayDots(unsigned dots) noexcept {
+    auto* mapper=bus_.mmc5QuietMapper();
+    if(dots<64U||pal_||static_cast<unsigned>(scanline_)>=height||!renderingEnabled_||
+       (renderDelay_|nmiDelay_)||trackBusCycles_||trackBusAddresses_||!mapper||
+       !bus_.cartridge_.loaded()||bus_.cartridge_.mapper()!=5U||bus_.cycles_||
+       bus_.pendingCpuReads_||bus_.pendingPpuDots_||bus_.audioPacket_||bus_.videoPacket_){
+        tickDots(dots);
+        return;
+    }
+    // Очередной replay cut не содержит CPU/MMIO. Переходы /RD меняют
+    // живой detector, но не карты CHR/NT, policy или адреса таблиц плана.
+    Mmc5RasterPlan plan;
+    bool prepared=false;
+    while(dots&&static_cast<unsigned>(scanline_)<height){
+        if(dot_==0U){
+            evaluationNextDot_=1;
+            buildSpriteRow();
+            busAddress_=static_cast<std::uint16_t>(((control_&0x10U)?0x1000U:0U)+unsigned(nextTile_)*16U+((v_>>12U)&7U));
+            ++dot_;
+            --dots;
+        }else if(dot_<=256U){
+            unsigned take=std::min(dots,257U-dot_);
+            const unsigned lead=deferredPrefix();
+            if(spriteCacheValid_&&!lead&&take>=8U){
+                take&=~7U;
+                const unsigned tiles=take/8U;
+                if(tiles==1U)tile8<false,false>();
+                else{
+                    // Один план только на этот advance. Фактический R0 и
+                    // latches проверяются заново в каждом tile span.
+                    if(!prepared){
+                        if(!mapper->prepareRasterPlan(plan,bus_.nametables_.data(),control_))break;
+                        prepared=true;
+                    }
+                    flushPixels();
+                    const bool quiet=mapper->canReadFullQuietBackgroundSpan();
+                    using Policy=Mmc5RasterPlan::Policy;
+                    switch(plan.policy()){
+                    case Policy::Normal:fetchRenderMmc5<0>(tiles,plan,*mapper,quiet);break;
+                    case Policy::Extended:fetchRenderMmc5<1>(tiles,plan,*mapper,quiet);break;
+                    case Policy::SplitNormal:fetchRenderMmc5<2>(tiles,plan,*mapper,quiet);break;
+                    case Policy::SplitExtended:fetchRenderMmc5<3>(tiles,plan,*mapper,quiet);break;
+                    }
+                }
+            }else{
+                take=std::min(take,spriteCacheValid_&&lead?lead:8U);
+                tickDots(take);
+            }
+            dots-=take;
+        }else if(dot_<321U){
+            if(dot_==257U){
+                // Точный пролог dot257 до sprite phase 0. Группа начинает с
+                // прежнего состояния, включая запись horizontal scroll.
+                loadBackground();
+                finishHorizontalScrollSignal();
+                synchronizeSpriteEvaluation(256U);
+            }
+            const unsigned take=std::min(dots,321U-dot_);
+            spriteFetchGroup<false>(take);
+            dots-=take;
+        }else if(dot_<337U){
+            if((dot_==321U||dot_==329U)&&dots>=8U){
+                mmc5ReplayPrefetchTile(*mapper);
+                dots-=8U;
+            }else{
+                const unsigned take=std::min({dots,1U+((336U-dot_)&7U),4U});
+                tickDots(take);
+                dots-=take;
+            }
+        }else{
+            // На видимой строке 337–340 нет пиксельных/scroll событий.
+            // Два настоящих /RD сохраняются, данные Dummy не имеют latch.
+            const unsigned take=std::min(dots,341U-dot_);
+            for(unsigned i=0;i<take;++i,++dot_){
+                if(dot_==337U)loadBackground();
+                if(dot_==337U||dot_==339U)busAddress_=static_cast<std::uint16_t>(0x2000U|(v_&0xfffU));
+                else mapper->ppuReadStrobe(busAddress_);
+            }
+            dots-=take;
+            if(dot_==341U){dot_=0;++scanline_;}
+        }
+    }
+    if(dots)tickDots(dots);
+}
+#endif
+
+/** @brief Обрабатывает разрешённый интервал точек PPU. Для однородных участков использует групповой путь, для остатка сохраняет точный порядок одиночных точек. */
 [[gnu::always_inline]] inline void Ppu::tickDotsInline(unsigned dots) noexcept {
     // Только стационарный C0: уже разрешённые восемь точек не содержат CPU/MMIO,
     // пикселей или внешнего address/clock observer. Остальные домены прежние.
@@ -1744,22 +1870,8 @@ inline void Ppu::tile8() noexcept {
         !bus_.pendingPpuDots_ && !bus_.audioPacket_ && !bus_.videoPacket_) {
         if (auto* mapper = bus_.mmc5QuietMapper()) {
             do {
-                // Phase0 сначала загружает старые planes. Существующий typed
-                // reader сохраняет все четыре /RD и живые ExRAM/split latches;
-                // повторное CHR декодирование high не требуется в whole8.
-                loadBackground();
-                const auto tile = mapper->ppuReadFullBackgroundTile(v_, control_,
-                    bus_.nametables_.data(), (dot_ - 321U) >> 3U);
-                nextTile_ = tile.tile;
-                nextAttribute_ = static_cast<std::uint8_t>((unsigned(tile.attribute) >>
-                    (((v_ >> 4U) & 4U) | (v_ & 2U))) & 3U);
-                nextLow_ = tile.low; nextHigh_ = tile.high;
-                const auto highAddress = static_cast<std::uint16_t>(
-                    ((control_ & 0x10U) ? 0x1000U : 0U) + unsigned(tile.tile) * 16U +
-                    ((v_ >> 12U) & 7U) + 8U);
-                incrementX(); coarseXSignal_ = false;
-                busAddress_ = highAddress; pendingBackgroundShifts_ = 8U;
-                dot_ = static_cast<std::uint16_t>(dot_ + 8U); dots -= 8U;
+                mmc5ReplayPrefetchTile(*mapper);
+                dots-=8U;
             } while (dots >= 8U && dot_ == 329U);
             if (!dots) return;
         }
@@ -1862,9 +1974,8 @@ inline void Ppu::tile8() noexcept {
             if (spriteCacheValid_) materializeSprites();
             const unsigned location = (v_ & 0x3F00) == 0x3F00 ? paletteAddress(v_) : 0;
             const auto colour = static_cast<std::uint8_t>(palette_[location] & ((mask_ & 1) ? 0x30 : 0x3F));
-            auto* output = pixels_.data();
-            if(output){output += static_cast<unsigned>(scanline_) * width + dot_ - 1;
-                for(unsigned i=0;i<dots;++i)output[i]=colour;}
+            auto* output = pixels_.at(static_cast<unsigned>(scanline_),dot_-1);
+            if(output)for(unsigned i=0;i<dots;++i)output[i]=colour;
             if(auto* rgb=PpuRgbOutput::activeFor(this)){rgb->beginSpan(*this,static_cast<unsigned>(scanline_),dot_-1,dots,mask_>>5,lineEmphasis_[static_cast<unsigned>(scanline_)]);rgb->uniform(dot_-1,dots,colour,mask_>>5);}
             lineEmphasis_[static_cast<unsigned>(scanline_)] = static_cast<std::uint8_t>(mask_ >> 5);
             if(auto* rgb=PpuRgbOutput::activeFor(this))rgb->finishSpan(*this);

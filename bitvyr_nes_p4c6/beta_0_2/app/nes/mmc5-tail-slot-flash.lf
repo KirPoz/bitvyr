@@ -1,0 +1,12 @@
+# Только новые held-slot методы. Общая guest IRQ policy находится в guest-irq-flash.lf.
+[mapping:nes_mmc5_tail_slot_flash]
+archive: libnes_core.a
+entries:
+    unity_0_cxx:_ZNK3nes4core4Mmc521readQuietSpritePlanesEtRhS2_ (default)
+    Mmc5:_ZNK3nes4core4Mmc521readQuietSpritePlanesEtRhS2_ (default)
+    unity_0_cxx:_ZN3nes4core9TimingPpu21tryMmc5HeldSpriteSlotERNS0_4Mmc5E (default)
+    TimingMmc5Raster:_ZN3nes4core9TimingPpu21tryMmc5HeldSpriteSlotERNS0_4Mmc5E (default)
+    unity_0_cxx:_ZN3nes4core9TimingPpu22tryMmc5HeldSpriteGroupEjRNS0_4Mmc5E (default)
+    TimingMmc5Raster:_ZN3nes4core9TimingPpu22tryMmc5HeldSpriteGroupEjRNS0_4Mmc5E (default)
+    unity_0_cxx:_ZN3nes4core9TimingPpu25replayMmc5HeldSpriteGroupEj (default)
+    TimingMmc5Raster:_ZN3nes4core9TimingPpu25replayMmc5HeldSpriteGroupEj (default)

@@ -1,0 +1,35 @@
+{
+  "link": [
+    "${TOOLCHAIN}/bin/riscv32-esp-elf-gcc.exe",
+    "@${OUT}/link.rsp",
+    "-o",
+    "${OUT}/network_adapter.elf"
+  ],
+  "image": [
+    "${PYTHON}",
+    "-m",
+    "esptool",
+    "--chip",
+    "esp32c6",
+    "elf2image",
+    "--flash-mode",
+    "dio",
+    "--flash-freq",
+    "40m",
+    "--flash-size",
+    "4MB",
+    "--elf-sha256-offset",
+    "0xb0",
+    "--flash-mmu-page-size",
+    "64KB",
+    "--min-rev-full",
+    "0",
+    "--max-rev-full",
+    "99",
+    "-o",
+    "${OUT}/network_adapter.bin",
+    "${OUT}/network_adapter.elf"
+  ],
+  "cwd": "${SDK_BUILD}",
+  "SDK_executed": false
+}

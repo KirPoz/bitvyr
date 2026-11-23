@@ -8,6 +8,17 @@
 #define NES_EXPERIMENTAL_FRAME_COLOUR_PUMP 0
 #endif
 static_assert(NES_EXPERIMENTAL_FRAME_COLOUR_PUMP==0||NES_EXPERIMENTAL_FRAME_COLOUR_PUMP==1,"colour pump boolean");
+#if defined(NES_EXPERIMENTAL_FRAME_DIRECT_POLL)
+namespace {
+/** @brief Эксперимент и счётчики только для Main. Включение в Library, без сохранения в NVS. */
+struct FrameDirectPresentMode final {
+    bool enabled=false;
+    bool requested=false; // Запрос Library хранится рядом с эффективным флагом игры.
+    std::uint32_t earlySubmitted=0, sourceReused=0;
+};
+FrameDirectPresentMode frameDirectPresent;
+}
+#endif
 /**
  * @brief Возвращает номер входного задания Frame-тракта из его принятого состояния. Не материализует изменяемый PPU.
  */
@@ -21,17 +32,44 @@ std::uint64_t NesApp::framePipelineCycle()const noexcept {
     return worker_&&worker_->framePipeline?worker_->framePipeline->acceptedCycle():machine_.cpuCycles();
 }
 /**
- * @brief Завершает прежнюю асинхронную передачу Frame-изображения и обновляет счётчики только по подтверждённому результату Board.
+ * @brief Продвигает Frame-изображение по аппаратному результату Board.
+ * @param poll Неблокирующий опрос во время CPU1. true при Pending сохраняет все владения.
+ * @return При обычном finish успех подтверждает завершение. При poll Pending также допустим.
  */
+#if defined(NES_EXPERIMENTAL_FRAME_DIRECT_POLL)
+bool NesApp::framePipelinePresentMatches(std::uint64_t previousFrame)const noexcept {
+    const auto& w=*worker_;
+    return previousFrame&&w.pipelinePresentPending&&!w.pipelinePresentFailed&&
+        w.pipelinePresentGeneration==sessionGeneration_&&w.pipelinePresentFrame==previousFrame&&
+        w.pipelinePresentStarted>w.pipelinePresentCompleted&&
+        w.pipelinePresentStarted-w.pipelinePresentCompleted==1;
+}
 bool NesApp::finishFramePipelinePresent()noexcept {
+    return finishFramePipelinePresent(false);
+}
+bool NesApp::finishFramePipelinePresent(bool poll)noexcept {
+#else
+bool NesApp::finishFramePipelinePresent()noexcept {
+#endif
     if(!worker_||!worker_->pipelinePresentPending)return true;
     auto&w=*worker_;
     // Только скопированный lease Board Main; getter производителя/actor здесь недопустим.
     const bool valid=w.pipelinePresentGeneration==sessionGeneration_&&
         w.pipelinePresentFrame&&w.pipelinePresentFrame<=frames_;
+#if defined(NES_EXPERIMENTAL_FRAME_DIRECT_POLL)
+    if(poll&&(!frameDirectPresent.enabled||!framePipelinePresentMatches(frames_)))return false;
+    using Result=platform::GamePresentPollResult;
+    const auto begin=esp_timer_get_time();
+    const auto result=poll?board_.pollGamePresent():(board_.finishGamePresent()?Result::Submitted:Result::Fault);
+    presentUs_+=esp_timer_get_time()-begin;
+    if(result==Result::Pending)return true;
+    const bool finished=result==Result::Submitted;
+    if(poll&&finished)++frameDirectPresent.earlySubmitted;
+#else
     const auto begin=esp_timer_get_time();
     const bool finished=board_.finishGamePresent();
     const auto elapsed=esp_timer_get_time()-begin;presentUs_+=elapsed;
+#endif
     if(!finished){
         if(!w.pipelinePresentFailed)++displayErrors_;
         w.pipelinePresentFailed=true;
@@ -54,14 +92,23 @@ bool NesApp::presentFramePipelineAsync()noexcept {
     auto&w=*worker_;auto&pipeline=*w.framePipeline;auto&s=*w.snapshot;
     const auto valid=/** @brief Повторно проверяет текущие Main generation/ROM/region и режим Worker до использования заимствованного цветного контекста. */
                      [&]()noexcept{return executionMode_==ExecutionMode::Worker&&
-        pipeline.matches(activeRom_,current_.size,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_);};
+        pipeline.matches(activeRom_,activeRomBytes_,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_);};
     if(!playing_||!valid()||!pipeline.pixels()||s.generation!=sessionGeneration_||s.completedFrames!=frames_){
         workerFault("frame_pipeline_publication");return false;
     }
+#if defined(NES_EXPERIMENTAL_FRAME_DIRECT_POLL)
+    // RGB уже переписан после PPA completion; native-кадр ещё может ожидать LCD.
+    // Удерживаем его точный lease до успешной подачи старого индекса.
+    if(w.pipelinePresentPending&&
+       (!frameDirectPresent.enabled||!framePipelinePresentMatches(s.completedFrames-1)||!finishFramePipelinePresent())){
+        workerFault("frame_pipeline_direct_pending");return false;
+    }
+#else
     // Direct-режим завершил прежнее чтение источника ДО записи C0.
     // Новый pending lease здесь нарушает инвариант; его нельзя скрывать drain
     // после того, как общий буфер уже мог быть перезаписан.
     if(w.pipelinePresentPending){workerFault("frame_pipeline_direct_pending");return false;}
+#endif
     auto*destination=board_.gameFramebuffer();
     if(!destination||!valid()){workerFault("frame_pipeline_rgb_owned");return false;}
     if(destination!=pipeline.pixels()){workerFault("frame_pipeline_direct_identity");return false;}
@@ -102,7 +149,7 @@ bool NesApp::configureFrameVideoPipeline()noexcept {
     useCpu0Fm=machine_.hasVrc7Fm(); // Actual capability после joined fullreset; submapper1 исключён.
 #endif
     if(worker_->frameFm)return false;
-    worker_->framePipeline=FrameVideoPipeline::createOutput(machine_,activeRom_,current_.size,
+    worker_->framePipeline=FrameVideoPipeline::createOutput(machine_,activeRom_,activeRomBytes_,
         current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_,*worker_->activeAudio,borrowedRgb,core::Ppu::width*core::Ppu::height,useCpu0Fm);
     if(!worker_->framePipeline)return false;
     // Только cold witness actual буфера: flags не подменяют свойства обоих концов.
@@ -147,18 +194,31 @@ bool NesApp::releaseFramePipelineForLoad()noexcept {
  */
 bool NesApp::retireFramePipelineFrame()noexcept {
     auto&w=*worker_;auto&pipeline=*w.framePipeline;const auto begin=esp_timer_get_time();
-    // Пока Worker N производит противоположный slot, Main продвигает только
-    // immutable audio N-1. PCM ready не является sourceDone либо Worker join.
+    // Пока Worker N занят, Main продвигает только прежние immutable audio и native-вывод.
+    // Ни готовность PCM, ни завершение PPA не заменяют настоящий Worker done.
+    const char* pumpFault="frame_c6_wait_pump";
+#if defined(NES_EXPERIMENTAL_FRAME_DIRECT_POLL)
+    const bool directPoll=frameDirectPresent.enabled&&framePipelinePresentMatches(frames_)&&board_.supportsDirectGamePresentPoll();
+    unsigned pumpCalls=0;
+#endif
     auto done=frame_done::WaitResult::Ready;
     if(w.c6Audio)done=frame_done::waitDone(begin,
         [&]()noexcept{return xSemaphoreTake(w.done,0)==pdTRUE;},
-        [&]()noexcept{return pumpC6AudioBackend(false);},
+        [&]()noexcept{
+#if defined(NES_EXPERIMENTAL_FRAME_DIRECT_POLL)
+            // Сначала настоящий done. Между опросами PPA/LCD оставляем до128 вызовов C6.
+            if(directPoll&&w.pipelinePresentPending&&((pumpCalls++&127U)==0U)&&!finishFramePipelinePresent(true)){
+                pumpFault="frame_pipeline_direct_poll";return false;
+            }
+#endif
+            return pumpC6AudioBackend(false);
+        },
         []()noexcept{return esp_timer_get_time();},
         []()noexcept{vTaskDelay(1);});
     else if(xSemaphoreTake(w.done,pdMS_TO_TICKS(1500))!=pdTRUE)done=frame_done::WaitResult::Deadline;
     if(done!=frame_done::WaitResult::Ready){
         if(done==frame_done::WaitResult::Deadline){pipeline.stop(FrameVideoPipeline::Error::Deadline);workerFault("frame_pipeline_timeout");}
-        else if(executionMode_!=ExecutionMode::Faulted)workerFault("frame_c6_wait_pump");
+        else if(executionMode_!=ExecutionMode::Faulted)workerFault(pumpFault);
         return false; // Ни timeout, ни pump fault не дают joined job либо разрешение free/reset.
     }
     w.inFlight=false;
@@ -167,7 +227,7 @@ bool NesApp::retireFramePipelineFrame()noexcept {
     const auto workerWaitUs=esp_timer_get_time()-begin;
     workerWaitUs_+=workerWaitUs;
     if(!joined||w.result!=core::RunStatus::FrameReady||w.generation!=sessionGeneration_||
-       w.inputFrame+1!=pipeline.producedFrames()||!pipeline.matches(activeRom_,current_.size,
+       w.inputFrame+1!=pipeline.producedFrames()||!pipeline.matches(activeRom_,activeRomBytes_,
        current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_)){
         workerFault("frame_pipeline_producer");return false;
     }
@@ -211,7 +271,7 @@ bool NesApp::consumeFramePipelineFrame(bool publish)noexcept {
         return pipeline.error()==FrameVideoPipeline::Error::None;
     }
     const auto valid=/** @brief Повторно проверяет текущие Main generation/ROM/region и режим Worker до использования заимствованного цветного контекста. */
-                     [&]()noexcept{return executionMode_==ExecutionMode::Worker&&pipeline.matches(activeRom_,current_.size,
+                     [&]()noexcept{return executionMode_==ExecutionMode::Worker&&pipeline.matches(activeRom_,activeRomBytes_,
         current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_);};
     std::int64_t fmWall=0;
     if(w.frameFm){
@@ -248,6 +308,18 @@ bool NesApp::consumeFramePipelineFrame(bool publish)noexcept {
     const auto fail=/** @brief Сначала снимает подготовленное DSP-заимствование, затем переводит Worker в fault; возвращает false без публикации частичного кадра. */
                     [&](const char*reason)noexcept{prepared.abortAndDisarm();workerFault(reason);return false;};
     if(!valid())return fail("frame_pipeline_early_session");
+#if defined(NES_EXPERIMENTAL_FRAME_DIRECT_POLL)
+    std::uint16_t* destination=nullptr;
+    if(frameDirectPresent.enabled&&publish&&w.c6Audio&&w.pipelinePresentPending&&board_.supportsDirectGamePresentPoll()){
+        if(!framePipelinePresentMatches(frames_))return fail("frame_pipeline_direct_lease");
+        const auto begin=esp_timer_get_time();
+        const auto source=board_.acquireCompletedGameSource(destination);
+        presentUs_+=esp_timer_get_time()-begin;
+        if(source!=platform::GameSourceAcquireResult::Ready||!destination||destination!=pipeline.pixels())
+            return fail("frame_pipeline_direct_ppa_source");
+        ++frameDirectPresent.sourceReused;
+    }else{
+#endif
     // DSP(N) использовал только неизменяемые пакеты, пока PPA(N-1) держала источник.
     // До настоящего завершения source-drain запрещены getter/запись Ppu/RGB.
     const bool previous=w.pipelinePresentPending;
@@ -256,7 +328,13 @@ bool NesApp::consumeFramePipelineFrame(bool publish)noexcept {
         const auto start=esp_timer_get_time();const bool finished=board_.finishGamePresent();presentUs_+=esp_timer_get_time()-start;
         if(!finished)return fail("frame_pipeline_direct_previous_ppa");
     }
-    auto*const destination=board_.gameFramebuffer();const auto*const accepted=pipeline.pixels();
+#if defined(NES_EXPERIMENTAL_FRAME_DIRECT_POLL)
+        destination=board_.gameFramebuffer();
+    }
+#else
+    auto*const destination=board_.gameFramebuffer();
+#endif
+    const auto*const accepted=pipeline.pixels();
     if(!destination||(accepted&&accepted!=destination))return fail("frame_pipeline_direct_owned");
 #if NES_EXPERIMENTAL_FRAME_COLOUR_PUMP
     // Контекст живёт только до синхронного consumeColour; callback не сохраняется.
@@ -264,7 +342,7 @@ bool NesApp::consumeFramePipelineFrame(bool publish)noexcept {
         NesApp*app;FrameVideoPipeline*pipeline;const std::uint8_t*rom;std::size_t bytes;
         core::Region region;std::uint64_t generation;const char*reason;std::int64_t deadline;
     };
-    ColourPumpContext colourPump{this,&pipeline,activeRom_,current_.size,
+    ColourPumpContext colourPump{this,&pipeline,activeRom_,activeRomBytes_,
         current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_,nullptr,pipeline.pendingDeadlineUs()};
     const auto progress=+[](void*raw)noexcept{
         auto&c=*static_cast<ColourPumpContext*>(raw);
@@ -313,7 +391,7 @@ void NesApp::frameVideoStatus()noexcept {
         static_cast<unsigned long long>(w.pipelinePresentStarted),static_cast<unsigned long long>(w.pipelinePresentCompleted),static_cast<unsigned long long>(submittedFrames_),
         w.pipelinePresentPending?"true":"false",static_cast<unsigned long long>(w.pipelinePresentGeneration),static_cast<unsigned long long>(w.pipelinePresentFrame),
         static_cast<unsigned long long>(w.pipelineCompletedGeneration),static_cast<unsigned long long>(w.pipelineCompletedFrame));
-    if(executionMode_==ExecutionMode::Faulted||!pipeline.matches(activeRom_,current_.size,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_)){
+    if(executionMode_==ExecutionMode::Faulted||!pipeline.matches(activeRom_,activeRomBytes_,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_)){
         std::printf("NES_FRAME_PIPELINE_BENCH_ERROR reason=session fault=%u\n",unsigned(pipeline.error()));return;
     }
     const bool witnessed=pipeline.acceptedFrames()&&pipeline.refreshWitness(*worker_->audioRenderer);

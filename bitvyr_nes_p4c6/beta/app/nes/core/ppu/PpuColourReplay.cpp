@@ -43,6 +43,14 @@ bool PpuColourReplay::isActiveShadow(const Machine* machine)noexcept{
  * @param target Свежий полный PPU той же shadow-шины на cycle0, без чужой активной привязки; остаётся живым всю replay-сессию.
  */
 bool PpuColourReplay::bindExternalPpu(Ppu& target)noexcept{
+    return bindExternalPpu(target,false);
+}
+/** @brief Привязывает внешний PPU к цветовой обработке с выводом исключительно в RGB. Все проверки владения выполняет общий метод привязки. */
+bool PpuColourReplay::bindExternalRgbOnlyPpu(Ppu& target)noexcept{
+    return bindExternalPpu(target,true);
+}
+/** @brief Проверяет исходный срез до загрузки ROM и привязывает единственный внешний PPU к обработчику цветового потока. */
+bool PpuColourReplay::bindExternalPpu(Ppu& target,bool rgbOnly)noexcept{
     // Привязать ровно один раз до любой загрузки или продвижения владельца.
     if(error_!=Error::None||bound_||activeShadow.load(std::memory_order_relaxed)||selectedPpu_!=&machine_.ppu_||
        machine_.cycles_||machine_.cpu_.state().cycles||machine_.pendingCpuReads_||machine_.pendingPpuDots_||
@@ -52,7 +60,7 @@ bool PpuColourReplay::bindExternalPpu(Ppu& target)noexcept{
        target.writeToggle_||target.oamAddress_||target.fineX_||target.openBus_||target.readBuffer_||
        target.renderDelay_||target.renderingEnabled_||target.renderingNext_||target.nmiDelay_||
        target.nmiLine_||target.nmiPending_||target.frameReady_||target.status_)return fail(Error::Busy);
-    if(!target.pixelsReady())return fail(Error::NoPixels);
+    if(!target.pixels_.data()||target.pixels_.rowOnly()!=rgbOnly)return fail(Error::NoPixels);
     /**
      * @brief Проверяет пересечение заимствованных диапазонов через разности адресов без переполнения; память не читается и владение не передаётся.
      * @note Не сохраняется после возврата внешнего метода; захваченные ссылки/указатели остаются у текущего владельца.
@@ -62,11 +70,13 @@ bool PpuColourReplay::bindExternalPpu(Ppu& target)noexcept{
         return x<=y?y-x<an:x-y<bn;
     };
     const auto* pixels=target.pixels_.data();
+    const auto extent=target.pixels_.size();
     if(overlaps(&target,sizeof(target),&machine_,sizeof(machine_))||
-       overlaps(pixels,Ppu::width*Ppu::height,&machine_,sizeof(machine_))||
-       overlaps(pixels,Ppu::width*Ppu::height,&target,sizeof(target))||
-       (machine_.ppu_.pixels_.data()&&overlaps(pixels,Ppu::width*Ppu::height,machine_.ppu_.pixels_.data(),Ppu::width*Ppu::height)))return fail(Error::Busy);
+       overlaps(pixels,extent,&machine_,sizeof(machine_))||
+       overlaps(pixels,extent,&target,sizeof(target))||
+       (machine_.ppu_.pixels_.data()&&overlaps(pixels,extent,machine_.ppu_.pixels_.data(),Ppu::width*Ppu::height)))return fail(Error::Busy);
     selectedPpu_=&target;
+    rgbOnly_=rgbOnly;
     return true;
 }
 /**
@@ -82,7 +92,7 @@ bool PpuColourReplay::begin(const std::uint8_t* rom,std::size_t bytes,Region reg
     if(bound_)return fail(Error::Busy);
     if(machine_.cycles_||machine_.cpu_.state().cycles||machine_.pendingCpuReads_||machine_.pendingPpuDots_||
        machine_.videoPacket_||machine_.audioPacket_||machine_.cartridge_.loaded())return fail(Error::Busy);
-    if(!pixelsReady())return fail(Error::NoPixels);
+    if(!pixelsReady()&&!rgbOnly_)return fail(Error::NoPixels);
     const Machine* empty=nullptr;
     if(!activeShadow.compare_exchange_strong(empty,&machine_,std::memory_order_relaxed))return fail(Error::Busy);
     bound_=true;forbiddenClock.store(false,std::memory_order_relaxed);
@@ -90,6 +100,7 @@ bool PpuColourReplay::begin(const std::uint8_t* rom,std::size_t bytes,Region reg
     std::memcpy(initialApu_.data(),&machine_.apu_,sizeof(machine_.apu_));
     std::memcpy(initialTimingApu_.data(),&machine_.timingApu_,sizeof(machine_.timingApu_));
     if(machine_.cartridge_.load(rom,bytes)!=LoadResult::Ok)return fail(Error::Load);
+    if(rgbOnly_&&machine_.cartridge_.mapper()!=5U)return fail(Error::NoPixels);
     sourceImage_=rom;sourceBytes_=bytes;
     region_=region;machine_.region_=region;
     machine_.videoPacket_=nullptr;machine_.videoObserver_=nullptr;machine_.videoCapable_=false;machine_.audioPacket_=nullptr;
@@ -112,6 +123,7 @@ bool PpuColourReplay::begin(const std::uint8_t* rom,std::size_t bytes,Region reg
 bool PpuColourReplay::advance(std::uint64_t target)noexcept{
     if(error_!=Error::None)return false;
     if(target<cycle_||target-cycle_>45000U)return fail(Error::Time);
+    if(rgbOnly_&&target>7U&&!rgbOnlyReady_)return fail(Error::NoPixels);
     if(machine_.cartridge_.mapper()==5U){
         // C1 передаёт каждый реальный idle3 edge. Между ними M2 не меняет
         // inFrame/nameRepeat/splitY/tile latch; реальные PPU RD остаются у C0.
@@ -120,7 +132,13 @@ bool PpuColourReplay::advance(std::uint64_t target)noexcept{
         const auto q=phase_+(target-cycle_)*(region_==Region::Pal?16U:15U);
         const auto dots=static_cast<unsigned>(q/5U);phase_=static_cast<unsigned>(q%5U);
         
-        if(dots)targetPpu().tickDots(dots);
+        if(dots){
+#if defined(NES_EXPERIMENTAL_MMC5_REPLAY_VISIBLE)
+            targetPpu().tickMmc5ReplayDots(dots);
+#else
+            targetPpu().tickDots(dots);
+#endif
+        }
         cycle_=target;return true;
     }
     const auto q=phase_+(target-cycle_)*(region_==Region::Pal?16U:15U);

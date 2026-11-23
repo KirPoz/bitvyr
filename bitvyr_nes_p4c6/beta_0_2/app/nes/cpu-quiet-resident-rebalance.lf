@@ -1,0 +1,33 @@
+# Диагностическое перераспределение ограниченной исполняемой low-SRAM P4.
+# Сохраняется общий noflash; CpuQuietBlock снова попадает туда целиком.
+# Эти пять общих путей перенесены во Flash ради места, без изменений кода.
+# Они не объявляются неиспользуемыми: влияние на все сцены проверяется на плате.
+# Дополнительная joined настройка output owner выполняется один раз и размещена во Flash.
+# Частоты, границы памяти и MPU/PMP прежние; mutable data остаются внутренними.
+# Фактические адреса и выходные секции проверяются в каждом новом ELF.
+# XIP требует дополнительный ранний SDK-код в SRAM. Только при XIP обычный
+# quiet text исполняется из кешируемой PSRAM; таблицы и mutable data остаются
+# под прежним noflash. Это освобождает SRAM без уменьшения стеков.
+[scheme:nes_cpu_quiet_xip_text_only]
+entries:
+    text -> flash_text
+
+[mapping:nes_cpu_quiet_resident_rebalance]
+archive: libnes_core.a
+entries:
+    if SPIRAM_XIP_FROM_PSRAM = y:
+        CpuQuietBlock:_ZN3nes4core7Cpu650223runQuietBlockWithPolicyILb0ELb0EEEmj (nes_cpu_quiet_xip_text_only)
+        CpuQuietBlock:_ZN3nes4core7Cpu650223runQuietBlockWithPolicyILb0ELb1EEEmj (nes_cpu_quiet_xip_text_only)
+    unity_0_cxx:_ZN3nes4core9TimingPpu15backgroundGroupILb0ELb0EEEvj (default)
+    unity_0_cxx:_ZN3nes4core9TimingPpu15backgroundGroupILb1ELb1EEEvj (default)
+    unity_0_cxx:_ZN3nes4core9TimingPpu11renderPixelEv (default)
+    unity_0_cxx:_ZN3nes4core7Machine3dmaEv (default)
+    unity_0_cxx:_ZN3nes4core7Machine16collapseIdleLoopEttjjy (default)
+    unity_0_cxx:_ZN3nes4core7Machine21configureOutputFramesERKNS0_18OutputFrameBindingERNS0_16OutputFrameLeaseE (default)
+    # Полный аналоговый APU работает в task-context с доступным Flash-кешем.
+    # Это горячий DSP-путь Main и fallback Worker; эффект проверяется одинаковым A/B.
+    unity_0_cxx:_ZN3nes4core3Apu16advanceCpuCyclesEjb (nes_apu_renderer_cached_text_only)
+    # Только MMC5 template размещается во Flash, обычная политика остаётся resident.
+    # Actual RV32 uint32_t имеет base type unsigned long (m), host использует unsigned int (j).
+    # Template return type входит в mangling; linked section и остаток helpers проверяются отдельно.
+    CpuQuietBlock:_ZN3nes4core7Cpu650223runQuietBlockWithPolicyILb1ELb0EEEmj (default)

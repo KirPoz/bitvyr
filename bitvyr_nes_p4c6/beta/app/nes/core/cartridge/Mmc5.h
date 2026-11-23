@@ -41,7 +41,7 @@ public:
      * @brief Подключает неизменяемые ROM и внешнюю WRAM без копирования/очистки RAM.
      * @param prg PRG-ROM с размером степени двух от 8 KiB до 1 MiB.
      * @param prgBytes Число байтов PRG-ROM.
-     * @param chr CHR-ROM с размером степени двух от 1 KiB до 1 MiB.
+     * @param chr CHR-ROM размером от 1 КиБ до 1 МиБ, кратным 1 КиБ. Незаполненная часть адресного окна читается как $FF.
      * @param chrBytes Число байтов CHR-ROM.
      * @param ram WRAM; nullptr допустим только при ramBytes=0.
      * @param ramBytes 0, 8, 16, 32, 64 либо 128 KiB; выбирает проводку ExROM.
@@ -137,7 +137,7 @@ public:
     /** @brief Передаёт только настоящий PPU /RD edge, если значение читает другой путь. */
     void ppuReadStrobe(std::uint16_t address) noexcept;
     /**
-     * @brief Вычисляет CHR-ROM offset без нового strobe или изменения per-tile latch.
+     * @brief Вычисляет адрес CHR без нового строба. Адрес может попасть в недостающий хвост образа.
      * @details Для BG-pattern вызывающий предварительно выполняет BackgroundName.
      */
     std::size_t chrOffset(std::uint16_t address, Fetch kind = Fetch::Cpu) const noexcept;
@@ -304,6 +304,15 @@ private:
     const std::uint8_t* chr_{};
     std::uint8_t* ram_{};
     std::size_t prgBytes_{}, chrBytes_{}, ramBytes_{};
+    // Адресные линии образуют степень двух. Пустой хвост за chrBytes_ читается как $FF.
+    std::uint32_t chrAddressMask_{};
+    /** @brief Разрешает пути с прямым доступом, когда все адреса подкреплены ROM. */
+    bool chrFullyBacked() const noexcept { return chrBytes_ == std::size_t(chrAddressMask_) + 1U; }
+    /** @brief Читает байт CHR; пустой хвост отдаёт $FF, а отключённый источник — 0. */
+    std::uint8_t readChrByte(std::size_t offset) const noexcept {
+        if (offset < chrBytes_) return chr_[offset];
+        return chr_ && offset <= chrAddressMask_ ? 0xffU : 0U;
+    }
     std::array<std::uint8_t, 1024> exRam_{};
     std::array<std::uint8_t, 5> prgBanks_{};
     std::array<std::uint16_t, 12> chrBanks_{};

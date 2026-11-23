@@ -1,0 +1,12 @@
+# Только новый экспериментальный endpoint; базовые PPU/CPU kernels не меняются.
+[mapping:nes_event_kernel_endpoint_flash]
+archive: libnes_core.a
+entries:
+    unity_0_cxx:_ZN3nes4core9TimingPpu26tryMmc5VisiblePhaseSegmentEj (default)
+    unity_0_cxx:_ZN3nes4core9TimingPpu18runMmc5IrregularBgEjRNS0_4Mmc5E (default)
+# Cache-enabled wrapper перед и после настоящего stepFrameImpl, один раз на кадр.
+    ThinPpu:_ZN3nes4core7Machine9stepFrameEv (default)
+# ??????????? ???????????? ??????; ???????? ???? ?? ?? ????????.
+    ThinPpu:_ZN3nes4core14ThinReplaySink4failENS0_11ColourFaultE (default)
+    ThinPpu:_ZN3nes4core14ThinPpuChannel4failENS0_11ColourFaultE (default)
+    unity_0_cxx:_ZN3nes4core7Machine24prepareVideoBgPacketViewEv (default)

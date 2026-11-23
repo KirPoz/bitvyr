@@ -101,7 +101,7 @@ Machine::VideoSpriteMode Machine::videoSpriteMode(std::uint16_t pattern,bool clo
     if(!clocked&&!addressed){
         switch(cartridge_.mapper()){
         // 69/85 не имеют PPU read-latch/A12 clock; CPU IRQ/FM/PSG не пропускаются здесь.
-        case 0:case 1:case 2:case 3:case 7:case 69:case 85:return VideoSpriteMode::Plain;
+        case 0:case 1:case 2:case 3:case 7:case 69:case 71:case 85:return VideoSpriteMode::Plain;
         default:break;
         }
     }
@@ -177,7 +177,7 @@ bool Machine::configureObservableVideo(bool enabled) noexcept {
     const auto mapper=cartridge_.mapper();
     if(enabled && cartridge_.loaded() && mapper!=0 && mapper!=2 && mapper!=4
         && mapper!=3 && mapper!=5
-        && mapper!=69 && mapper!=85 && mapper!=160
+        && mapper!=69 && mapper!=71 && mapper!=85 && mapper!=160
         && mapper!=1 && mapper!=7
 )return false;
     observeCpuReads();
@@ -200,12 +200,12 @@ void Machine::videoReset() noexcept {
     // уже сброшенный полный Ppu; отказ загрузки не вызывает videoReset и не переключает владельца.
     if(videoObservableOnly_ && cartridge_.loaded() && mapper!=0 && mapper!=2 && mapper!=4
         && mapper!=3 && mapper!=5
-        && mapper!=69 && mapper!=85 && mapper!=160
+        && mapper!=69 && mapper!=71 && mapper!=85 && mapper!=160
         && mapper!=1 && mapper!=7
 )
         videoObservableOnly_=false;
     videoCapable_=!cartridge_.loaded()||mapper==0||mapper==1||mapper==2||
-        mapper==3||mapper==4||mapper==7||mapper==69||mapper==85||mapper==160
+        mapper==3||mapper==4||mapper==7||mapper==69||mapper==71||mapper==85||mapper==160
         ||(mapper==5&&(outputOwner_
             ||videoObservableOnly_
             ))
@@ -335,7 +335,7 @@ bool Machine::canVideoBgSpan(bool clocked,bool addressed,[[maybe_unused]] unsign
     if(clocked||addressed)return false;
     switch(cartridge_.mapper()){
     // Только чистые PPU-чтения: CPU IRQ и selected64 audio horizon ограничены отдельно.
-    case 0:case 1:case 2:case 3:case 7:case 69:case 85:return true;
+    case 0:case 1:case 2:case 3:case 7:case 69:case 71:case 85:return true;
     default:return false;
     }
 }
@@ -355,12 +355,19 @@ void Machine::completeVideoBgSpan([[maybe_unused]] unsigned tiles,[[maybe_unused
  * @details Observable-владелец не требует записи mapping-view; остальные пути сохраняют проверки физических CHR-ссылок и ёмкости.
  * @return Результат описанной проверки либо успешность перехода состояния; false обрабатывается вызывающим путём.
  */
+[[gnu::noinline]]
 bool Machine::prepareVideoBgView() noexcept {
     if(!cartridge_.loaded())return false;
     // Consumer не требует записи отображения. Вызывающий допускает только прежние
     // полные проверки S0/mapper/wires и фиксирует то же хвостовое состояние.
     if(videoObservableOnly_)return true;
     if(!videoPacket_)return false;
+    return prepareVideoBgPacketView();
+}
+
+/** @details Только режим VideoPacket заполняет и хранит таблицу отображения. */
+[[gnu::noinline]]
+bool Machine::prepareVideoBgPacketView() noexcept {
     // Sprite/scalar/CPU FD/FE-чтения могут заменить страницы без CPU-записи.
     // Cartridge помечает все refresh, поэтому повторный разбор восьми ссылок
     // нужен лишь после инвалидации. Стробы и сами отображения уже применены.

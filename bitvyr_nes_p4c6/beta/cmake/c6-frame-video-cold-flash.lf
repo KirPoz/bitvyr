@@ -6,7 +6,6 @@ entries:
     unity_0_cxx:_ZN3nes4core9TimingPpu16runMmc5InplaceBgEjRNS0_4Mmc5E (default)
     unity_0_cxx:_ZN3nes4core9TimingPpu16runMmc5QuietTileERNS1_16Mmc5TrustedStateERNS0_4Mmc5E (default)
     unity_0_cxx:_ZN3nes4core9TimingPpu26replayMmc5InplaceDotsEagerEjb (default)
-    unity_0_cxx:_ZN3nes4core9TimingPpu20replayMmc5QuietBlockEj (default)
     unity_0_cxx:_ZN3nes4core9TimingPpu21loadMmc5TrustedPlanesERNS1_16Mmc5TrustedStateE (default)
     unity_0_cxx:_ZZN3nes4core3Ppu13fetchTileSpanILb0ELb0ELb0EEEvjENKUlT_E_clIZNS2_ILb0ELb0ELb0EEEvjEUltjE0_EEDaS3_ (default)
     unity_0_cxx:_ZZN3nes4core3Ppu13fetchTileSpanILb0ELb0ELb0EEEvjENKUlT_E_clIZNS2_ILb0ELb0ELb0EEEvjEUltjE1_EEDaS3_ (default)

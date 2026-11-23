@@ -798,12 +798,52 @@ void quietTileNoChrReads(){
 }
 }
 
+/** @brief Проверяет границу фактических 520 КиБ во всех режимах выбора CHR. */
+static void unevenChr() {
+    Fixture f;
+    auto& m = f.mapper;
+    f.chr.resize(520U * 1024U);
+    for (unsigned bank : {127U,128U,129U}) {
+        f.chr[bank*4096U]=static_cast<std::uint8_t>(bank);
+        f.chr[bank*4096U+8U]=static_cast<std::uint8_t>(bank ^ 0x40U);
+    }
+    CHECK(m.attach(f.prg.data(), f.prg.size(), f.chr.data(), f.chr.size(), nullptr, 0));
+    Mmc5TestAccess::Plan p{};
+    CHECK(!Mmc5TestAccess::prepare(m,p,f.ciram.data(),0));
+    m.cpuWrite(0x5101,1);
+    m.cpuWrite(0x2001,0x18);
+    for (unsigned bank : {127U,128U,129U,130U,255U}) {
+        const auto low=bank < 130U ? bank : 0xffU;
+        const auto high=bank < 130U ? bank ^ 0x40U : 0xffU;
+        const auto offset=bank*4096U;
+        m.cpuWrite(0x5123,static_cast<std::uint8_t>(bank));
+        const auto normal=m.ppuRead(0,Mmc5::Fetch::Cpu,f.ciram.data(),0);
+        CHECK(normal.chrOffset==offset && normal.value==low);
+        const auto sprite=m.ppuRead(8,Mmc5::Fetch::SpritePattern,f.ciram.data(),0);
+        CHECK(sprite.chrOffset==offset+8U && sprite.value==high);
+        m.cpuWrite(0x5104,2);
+        m.cpuWrite(0x5c00,static_cast<std::uint8_t>(bank & 63U));
+        m.cpuWrite(0x5130,static_cast<std::uint8_t>(bank >> 6U));
+        m.cpuWrite(0x5104,1);
+        const auto extended=Mmc5TestAccess::tile(m,0,0,f.ciram.data(),0);
+        CHECK(extended.lowChrOffset==offset&&extended.low==low&&extended.high==high);
+        m.cpuWrite(0x5104,2);m.cpuWrite(0x5c00,0);
+        m.cpuWrite(0x5104,0);m.cpuWrite(0x5202,static_cast<std::uint8_t>(bank));
+        m.cpuWrite(0x5200,0x81);
+        const auto split=Mmc5TestAccess::tile(m,0,0,f.ciram.data(),0);
+        CHECK(split.lowChrOffset==offset&&split.low==low&&split.high==high);
+        m.cpuWrite(0x5200,0);
+        m.cpuWrite(0x5130,0);
+    }
+    CHECK(!m.attach(f.prg.data(),f.prg.size(),f.chr.data(),f.chr.size()-1U,nullptr,0));
+}
+
 /** @brief Запускает только переносимые unit-проверки; это не FPS/полная MMC5-приёмка. */
 int main() {
     prgModes(); prgRam(); chrModes(); nametables(); irq(); multiplier(); resetDetection(); split();
     quietTileNormal(); quietTilePolicies(); quietTileInvalidBacking();
     rasterPlanRuns();rasterPlanPartial();rasterPlanEpoch();
-    quietTileNoChrReads();
+    quietTileNoChrReads();unevenChr();
     CHECK(Mmc5TestAccess::preparedPlans>0&&rasterRuns>0&&rasterPartialReads>0);
     std::printf("MMC5_RASTER_PLAN_DIRECT_PASS prepared=%u runs=%u partial=%u plan_bytes=%zu\n",
         Mmc5TestAccess::preparedPlans,rasterRuns,rasterPartialReads,sizeof(Mmc5TestAccess::Plan));

@@ -1,0 +1,6 @@
+# Горячие функции ядра исполняются из внутренней SRAM.
+# Таблицы переходов компилятора размещает связанная схема noflash.
+[mapping:nes_core_internal]
+archive: libnes_core.a
+entries:
+    * (noflash)

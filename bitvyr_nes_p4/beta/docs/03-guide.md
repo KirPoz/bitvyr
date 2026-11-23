@@ -1,9 +1,9 @@
 # Сборка и использование Bitvyr
 
-1. Откройте [Bitvyr.code-workspace](../../../Bitvyr.code-workspace) в VS Code. В **ESP-IDF: Pick a Workspace Folder** выберите **Bitvyr NES P4** для локального звука или **Bitvyr NES P4+C6 Beta 0.1** для стабильного выпуска с аудио на C6. Можно открыть папку редакции отдельно внутри клонированного репозитория. Общие модули сборки находятся в корневом `cmake/`.
+1. Откройте [Bitvyr.code-workspace](../../../Bitvyr.code-workspace) в VS Code. В **ESP-IDF: Pick a Workspace Folder** выберите **Bitvyr NES P4** для локального звука или **Bitvyr NES P4+C6 Beta 0.2** для стабильного выпуска с аудио на C6. Можно открыть папку редакции отдельно внутри клонированного репозитория. Общие модули сборки находятся в корневом `cmake/`.
 2. Выполните **ESP-IDF: Select Current ESP-IDF Version** и выберите установленный ESP-IDF 6.1. Проект задаёт цель `esp32p4`.
 3. Выполните **ESP-IDF: Build Your Project**. Для пересборки удалите `build` через **ESP-IDF: Full Clean Project** и снова выполните **Build Your Project**.
-4. Если выбрали редакцию P4+C6, проверьте [прошивку сопроцессора](../../../bitvyr_nes_p4c6/beta_0_1/docs/03-guide.md). Выберите UART платы. При первой установке P4 используйте **ESP-IDF: Flash (UART) Your Project**. Для обновления приложения используйте **ESP-IDF: Flash App Only (UART)**. Monitor работает на 115200 бод.
+4. Если выбрали редакцию P4+C6, проверьте [прошивку сопроцессора](../../../bitvyr_nes_p4c6/beta_0_2/docs/03-guide.md). Выберите UART платы. При первой установке P4 используйте **ESP-IDF: Flash (UART) Your Project**. Для обновления приложения используйте **ESP-IDF: Flash App Only (UART)**. Monitor работает на 115200 бод.
 
 Эквивалент для терминала ESP-IDF из папки этой редакции:
 

@@ -353,11 +353,12 @@ bool finishGameDisplay(BoardState& state, unsigned timeoutMs) noexcept {
  * прежний LCD-токен получен до submitDisplay, поэтому его wait80 не достижим.
  * Post-draw drain сохранён: callback до cur_fb_index store не доказывает принятие
  * нового индекса. Источник возвращается после PPA completion и принятой подачи,
- * отдельно от следующей физической развёртки. Fault не отменяет borrowed loan.
+ * отдельно от следующей физической развёртки. Публичный вызов проверяет
+ * владение direct либо borrowed. Fault сохраняет источник для прежнего drain.
  */
 GamePresentPollResult pollGameDisplay(BoardState&state)noexcept{
     if(xPortGetCoreID()!=state.displayCore)return GamePresentPollResult::Fault;
-    if(state.nativeBufferCount!=3||!state.gamePresentPending||!state.borrowedGameSource.valid())
+    if(state.nativeBufferCount!=3||!state.gamePresentPending)
         return GamePresentPollResult::Fault;
     return detail::pollGamePresentation(state.gamePresentGpuReady,state.framePending,state.gamePresentPending,
         [&]()noexcept{return xSemaphoreTake(state.gamePresentDone,0)==pdTRUE;},

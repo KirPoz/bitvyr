@@ -57,6 +57,7 @@ bool overlap(const void*a,std::size_t an,const void*b,std::size_t bn)noexcept{
  * @param f Первая сохраняемая ошибка протокола.
  * @return false после фиксации первой ошибки; успешный частичный результат не выдаётся.
  */
+[[gnu::noinline]]
 bool ThinReplaySink::fail(ColourFault f)noexcept{if(fault_==ColourFault::None)fault_=f;ready_=false;actor_.invalidateActual();return false;}
 /**
  * @brief Терминально отменяет текущую привязку/сеанс после нарушения контракта.
@@ -133,6 +134,7 @@ bool ThinReplaySink::commit(const ColourLease&l,const ColourCut&c,std::uint64_t 
  * @param f Первая сохраняемая ошибка протокола.
  * @return false после фиксации первой ошибки; успешный частичный результат не выдаётся.
  */
+[[gnu::noinline]]
 bool ThinPpuChannel::fail(ColourFault f)noexcept{
     ready_=false;
     if(fault_==ColourFault::None){fault_=f;++counters_.failures;if(!notifying_){notifying_=true;sink_.invalidate(f);notifying_=false;}}

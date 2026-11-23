@@ -1,0 +1,8 @@
+# DSP новых картриджей исполняется только в cache-enabled task context.
+# Точные clocks, IRQ, DAC и таблицы сохранены; SDK/ISR и общий Core noflash не меняются.
+# Standalone objects исключены из UNITY, поэтому правило охватывает также compiler clones.
+[mapping:nes_cartridge_expansion_flash]
+archive: libnes_core.a
+entries:
+    Sunsoft5BAudio (default)
+    Vrc7Audio (default)

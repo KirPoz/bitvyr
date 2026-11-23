@@ -23,7 +23,7 @@ def link(chunks=()):
 # Проверяет строгий допуск, input/observer boundaries и фактические ответы cleanup.
 class Guards(unittest.TestCase):
     def test_default_catalog_uses_loaded_measured_windows(self):
-        """Обычный запуск использует боевой TMNT II и обе боевые версии Just Breed."""
+        """План воспроизводит 38 аппаратных маршрутов и их исходные окна по 120 кадров."""
         import json
         from contextlib import redirect_stdout
         from unittest.mock import patch
@@ -32,12 +32,25 @@ class Guards(unittest.TestCase):
         with patch.object(c, "Link", side_effect=AssertionError("COM opened")), redirect_stdout(output):
             self.assertEqual(c.main(["--expected-volume", "28"]), 0)
         summary = json.loads(output.getvalue())
-        self.assertEqual(len(summary["games"]), 26)
+        self.assertEqual(len(summary["games"]), 38)
         self.assertEqual(summary["movies"]["sha256"], c.MEASURED_CATALOG_SHA256)
-        for crc, interval in {"c9ffbbdb": [3480, 3839], "fcf46dbb": [46440, 46799],
-                              "131b9946": [28080, 28439]}.items():
+        self.assertEqual(summary["expected_C6_ELF"], c.RELEASE_C6_SHA)
+        for crc, interval in {"c9ffbbdb": [1200, 1559], "fcf46dbb": [5760, 6119],
+                              "131b9946": [5760, 6119], "900aaece": [1920, 2279]}.items():
             self.assertEqual(summary["roi_inputs"][crc], interval)
         self.assertTrue(all(end - start + 1 == 360 for start, end in summary["roi_inputs"].values()))
+
+    def test_submission_rates_require_every_window(self):
+        """Пропавшее окно LCD делает замер неполным, даже если все кадры игры учтены."""
+        sample = dict(missing_baseline=False, missing_roi_endpoints=[], discontinuities=[],
+                      roi_fps_range=dict(covered=True),
+                      roi=dict(submitted_coverage_windows=3, windows=3, frames=360,
+                               min_submitted_window_fps=59.7, mean_submitted_fps=60.0,
+                               max_submitted_window_fps=60.1))
+        self.assertEqual(c.release_window_rates(sample)["mean_submitted_fps"], 60.0)
+        sample["roi"]["submitted_coverage_windows"] = 2
+        with self.assertRaisesRegex(ValueError, "Incomplete LCD"):
+            c.release_window_rates(sample)
 
     def test_archived_elf_is_checked_before_opening_uart(self):
         """Для сохранённого образа обязательна сверка SHA256, даже в режиме без UART."""

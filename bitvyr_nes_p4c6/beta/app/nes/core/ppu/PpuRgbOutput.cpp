@@ -90,12 +90,12 @@ bool PpuRgbOutput::bind(PpuColourReplay& replay,std::uint16_t* rgb,std::size_t w
     if(!replay.bound_||replay.error_!=PpuColourReplay::Error::None||replay.cycle_!=7||
        p.frames_!=0||p.scanline_!=-1||p.dot_>(p.pal_?22U:21U)||p.pendingPixels_||!replay.sourceImage_||!replay.sourceBytes_)
         return fail(Error::Boundary);
-    if(!p.pixels_.data())return fail(Error::Pixels);
+    if(!p.pixels_.data()||p.pixels_.rowOnly()!=replay.rgbOnly_)return fail(Error::Pixels);
     if(words<pixelCount||pairs<pairCount||!rgb||!table)return fail(Error::Capacity);
     if((reinterpret_cast<std::uintptr_t>(rgb)&3U)||(reinterpret_cast<std::uintptr_t>(table)&3U))return fail(Error::Alignment);
     Span output,arena,indexed,context,image,actor,target,port;
     if(!span(rgb,pixelCount*sizeof(*rgb),output)||!span(table,pairCount*sizeof(*table),arena)||
-       !span(p.pixels_.data(),pixelCount,indexed)||!span(this,sizeof(*this),context)||
+       !span(p.pixels_.data(),p.pixels_.size(),indexed)||!span(this,sizeof(*this),context)||
        !span(replay.sourceImage_,replay.sourceBytes_,image)||!span(&m,sizeof(m),actor)||!span(&p,sizeof(p),target)||!span(&replay,sizeof(replay),port))return fail(Error::Alias);
     const Span forbidden[]={indexed,context,image,actor,target,port};
     if(overlap(output,arena))return fail(Error::Alias);
@@ -104,6 +104,7 @@ bool PpuRgbOutput::bind(PpuColourReplay& replay,std::uint16_t* rgb,std::size_t w
     owner_=&p;replay_=&replay;sources_[0]=rgb;sources_[1]=nullptr;rgb_=rgb;table_=table;error_=Error::None;counts_={};
     initialise(p);
     rgbContext.store(this,std::memory_order_relaxed);rgbOwner.store(&p,std::memory_order_release);
+    if(replay.rgbOnly_)replay.rgbOnlyReady_=true;
     configuration.clear(std::memory_order_release);return true;
 }
 /**
@@ -116,6 +117,7 @@ void PpuRgbOutput::unbind()noexcept{
     if(rgbOwner.load(std::memory_order_relaxed)==owner_&&rgbContext.load(std::memory_order_relaxed)==this){
         rgbOwner.store(nullptr,std::memory_order_release);rgbContext.store(nullptr,std::memory_order_relaxed);
     }
+    if(replay_->rgbOnly_)replay_->rgbOnlyReady_=false;
     owner_=nullptr;replay_=nullptr;sources_[0]=sources_[1]=nullptr;rgb_=nullptr;table_=nullptr;row_=240;validRows_=0;dirty_=false;
     configuration.clear(std::memory_order_release);
 }
@@ -126,7 +128,7 @@ bool PpuRgbOutput::registerAlternate(PpuColourReplay&replay,std::uint16_t*rgb,st
     if(words<pixelCount||!rgb||(reinterpret_cast<std::uintptr_t>(rgb)&3U))return false;
     Span output,first,arena,indexed,context,image,actor,target,port;
     if(!span(rgb,pixelCount*sizeof(*rgb),output)||!span(sources_[0],pixelCount*sizeof(*rgb),first)||
-       !span(table_,pairCount*sizeof(*table_),arena)||!span(owner_->pixels_.data(),pixelCount,indexed)||
+       !span(table_,pairCount*sizeof(*table_),arena)||!span(owner_->pixels_.data(),owner_->pixels_.size(),indexed)||
        !span(this,sizeof(*this),context)||!span(replay.sourceImage_,replay.sourceBytes_,image)||
        !span(&replay.machine_,sizeof(replay.machine_),actor)||!span(owner_,sizeof(*owner_),target)||
        !span(&replay,sizeof(replay),port))return false;
@@ -151,7 +153,8 @@ bool PpuRgbOutput::retarget(PpuColourReplay&replay,std::uint16_t*rgb,std::uint64
 void PpuRgbOutput::initialise(const Ppu& p)noexcept{
     for(unsigned e=0;e<8;++e)for(unsigned c=0;c<64;++c)colours_[e][c]=displayRgb565(static_cast<std::uint8_t>(c),static_cast<std::uint8_t>(e),p.pal_);
     const auto* indices=p.pixels_.data();
-    for(unsigned y=0;y<240;++y){const auto& lut=colours_[p.lineEmphasis_[y]&7U];for(unsigned x=0;x<256;++x)rgb_[y*256+x]=lut[indices[y*256+x]&63U];}
+    if (p.pixels_.rowOnly()) std::fill_n(rgb_,pixelCount,colours_[0][0]);
+    else for(unsigned y=0;y<240;++y){const auto& lut=colours_[p.lineEmphasis_[y]&7U];for(unsigned x=0;x<256;++x)rgb_[y*256+x]=lut[indices[y*256+x]&63U];}
     counts_.setupPixels+=pixelCount;validRows_=0;row_=240;emittedEnd_=repairPrefix_=0;dirty_=false;
 }
 /**
@@ -174,6 +177,12 @@ void PpuRgbOutput::resetFor(const Ppu& p)noexcept{
  */
 void PpuRgbOutput::beginSpan(const Ppu& p,unsigned row,unsigned start,unsigned count,unsigned emphasis,unsigned oldEmphasis)noexcept{
     if(owner_!=&p||row>=240||start>=256||!count||count>256-start)return;
+    if(p.pixels_.rowOnly()){
+        const auto expectedRow=row_>=239U?0U:row_+1U;
+        if(row!=row_&&(start||row!=expectedRow||(row_!=240U&&emittedEnd_!=256U)))
+            error_=Error::Boundary;
+        if(row==row_&&start!=emittedEnd_)error_=Error::Boundary;
+    }
     if(row_!=row){row_=row;emittedEnd_=repairPrefix_=0;dirty_=false;}
     if((emphasis&7U)!=(oldEmphasis&7U)){dirty_=true;repairPrefix_=start;
     }
@@ -243,7 +252,7 @@ void PpuRgbOutput::uniform(unsigned start,unsigned count,unsigned index,unsigned
  * @param p Точный закреплённый PPU с живой индексной плоскостью; нельзя передавать копию/чужого актора.
  */
 void PpuRgbOutput::recolour(const Ppu& p,unsigned row,unsigned start,unsigned count,unsigned emphasis,bool isFence)noexcept{
-    const auto* in=p.pixels_.data()+row*256U+start;auto* out=rgb_+row*256U+start;const auto& lut=colours_[emphasis&7U];
+    const auto* in=p.pixels_.at(row,start);auto* out=rgb_+row*256U+start;const auto& lut=colours_[emphasis&7U];
     for(unsigned i=0;i<count;++i)out[i]=lut[in[i]&63U];
     (void)isFence;
 }
@@ -263,6 +272,8 @@ void PpuRgbOutput::finishSpan(const Ppu& p)noexcept{
  */
 void PpuRgbOutput::fence(const Ppu& p)noexcept{
     if(owner_!=&p||row_>=240||!dirty_)return;
+    // RGB-only не публикует средину кадра. Сохраняем dirty; suffix ещё не принадлежит строке.
+    if(p.pixels_.rowOnly()&&emittedEnd_<256U)return;
     if(emittedEnd_<256)recolour(p,row_,0,256,p.lineEmphasis_[row_],true);
     else if(repairPrefix_)recolour(p,row_,0,repairPrefix_,p.lineEmphasis_[row_],false);
     dirty_=false;repairPrefix_=0;
@@ -273,7 +284,9 @@ void PpuRgbOutput::fence(const Ppu& p)noexcept{
  * @return Заимствованный указатель результата; срок жизни и допустимость определяются описанной привязкой.
  */
 const std::uint16_t* PpuRgbOutput::pixels()noexcept{
-    if(!owner_)return nullptr;
-    static_cast<void>(owner_->framebuffer());fence(*owner_);return rgb_;
+    if(!owner_||error_!=Error::None)return nullptr;
+    if(owner_->pixels_.rowOnly()&&
+       (!owner_->frames_||owner_->scanline_<241||row_!=239U||emittedEnd_!=256U))return nullptr;
+    owner_->flushPixels();fence(*owner_);return rgb_;
 }
 }

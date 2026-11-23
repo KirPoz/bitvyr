@@ -115,12 +115,12 @@ bool NesApp::videoWorkerReady() const noexcept {
     // Этот getter вызывается на joined границе; mutable Machine занятого Worker не читается.
     if(worker_->coupled){
         if(worker_->framePipeline||worker_->inFlight||!usesCoupledVideo(current_.mapper))return false;
-        return worker_->coupled->matches(machine_,activeRom_,current_.size,
+        return worker_->coupled->matches(machine_,activeRom_,activeRomBytes_,
             current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_)&&
             machine_.observableVideoEnabled()&&machine_.splitVideoEnabled()&&machine_.splitAudio()&&
             machine_.videoFault()==core::VideoFault::None;
     }
-    if(worker_->framePipeline)return worker_->framePipeline->matches(activeRom_,current_.size,
+    if(worker_->framePipeline)return worker_->framePipeline->matches(activeRom_,activeRomBytes_,
         current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_);
     // Без Frame context это только joined startup check; занятую Machine не читаем.
     return !worker_->inFlight&&machine_.cpuCycles()==7U&&!machine_.frames()&&

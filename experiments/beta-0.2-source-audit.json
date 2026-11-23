@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-23",
+  "scope": "Подготовка Beta 0.2. Инвентаризация публичного дерева до копирования нового выпуска и проверенной исходной базы P4+C6.",
+  "inventory": {
+    "repository_source_files": 1220,
+    "repository_directories_containing_files": 179,
+    "versions_before_release": {
+      "bitvyr_nes_p4/beta": 238,
+      "bitvyr_nes_p4c6/beta": 470,
+      "bitvyr_nes_p4c6/beta_0_1": 469
+    },
+    "candidate_source_build_inputs_tools_and_tests": 463,
+    "candidate_directories_containing_files": 67,
+    "candidate_files_by_root": {
+      "CMakeLists.txt": 1,
+      "app": 207,
+      "cmake": 7,
+      "components": 25,
+      "coprocessor": 121,
+      "dependencies.lock": 1,
+      "main": 4,
+      "partitions.csv": 1,
+      "sdkconfig.defaults": 1,
+      "tests": 79,
+      "tools": 16
+    },
+    "empty_or_whitespace_only_files_before_changes": 0,
+    "method": "Каждый вход прочитан и хеширован SHA-256. Старые редакции считались отдельно. Для слепка исключены генерируемый sdkconfig, build, managed_components, .git и кэши. Помимо сборочных входов учтены документация пакетов и тестовые данные.",
+    "release_project_files": 471,
+    "release_files_added_to_working_snapshot": [
+      ".vscode/settings.json",
+      "README.md",
+      "THIRD_PARTY_NOTICES.md",
+      "coprocessor/c6_audio/bluetooth_audio/README.md",
+      "coprocessor/c6_audio/bluetooth_audio/sources.json",
+      "coprocessor/c6_audio/tools/build_bt_audio.py",
+      "docs/01-project.md",
+      "docs/02-architecture.md",
+      "docs/03-guide.md",
+      "docs/04-results.md"
+    ],
+    "release_files_removed_from_working_snapshot": [
+      "app/nes/cpu-quiet-spm-assert.ld",
+      "app/nes/ppu-tick-spm-assert.ld"
+    ]
+  },
+  "dependencies": {
+    "idf_target": "esp32p4",
+    "idf_version": "6.1.0",
+    "managed_components_direct": [
+      "espressif/esp_hosted@2.13.1"
+    ],
+    "sdk_components_in_stock_project_description": 101,
+    "role": "Плата использует ESP-Hosted для передачи по SDIO и Bluetooth HCI. SDK выбирает транзитивные зависимости через MINIMAL_BUILD и требования компонентов.",
+    "companion": {
+      "mapped_source_hashes_verified": 62,
+      "translation_units_in_verified_recipe": 39,
+      "upstream_hosted_project_directory": "coprocessor/c6_audio/project",
+      "upstream_project_files": 62,
+      "reason": "Лицензии и исходные байты поставщика, порядок объектных файлов и SHA-256 проверяются отдельным рецептом C6. Для внешнего SDK и сторонних исходников сохраняются оригинальные комментарии.",
+      "source_map_unique_files": 60
+    },
+    "external_radio_source": {
+      "manifest": "coprocessor/c6_audio/bluetooth_audio/sources.json",
+      "git_commit": "0fafdd428ea26f8bb700d67d72e2dcf12241f4c5",
+      "verified_file_sha256": 36,
+      "mismatched_sha256": 0,
+      "method": "Проверены HEAD локального внешнего checkout и байты всех 36 файлов манифеста, включая LICENSE и NOTICE."
+    }
+  },
+  "removed": {
+    "unlinked_methods": [
+      "Board::setFrameTimingEnabled",
+      "Board::gamePresentationTiming",
+      "Board::pollBorrowedGamePresent",
+      "FrameVideoPipeline::borrowedByWorker",
+      "Cartridge::readExpansion6000",
+      "Cartridge::clockMmc5AudioCpu",
+      "Cartridge::clockMmc5DigitalCpu",
+      "TimingPpu::emitCapture",
+      "TimingPpu::replayMmc5QuietBlock"
+    ],
+    "associated_type": "PresentationTiming",
+    "unused_linker_files": [
+      "app/nes/cpu-quiet-spm-assert.ld",
+      "app/nes/ppu-tick-spm-assert.ld"
+    ],
+    "method": "Проверялись объявления, вызовы и адресные ссылки в исходниках приложения, тестов и сборочных фрагментах. Для девяти удалённых методов дополнительно проверена таблица символов связанного ELF, для файлов .ld — CMake и действующий граф Ninja."
+  },
+  "russian_comments": {
+    "method": "tree-sitter 0.25.2 с грамматикой C++ 0.23.4 и tools/audit_cpp_documentation.py. Счётчик учитывает объявления и определения отдельно. Наличие русского текста проверено по файлам. Проверка синтаксиса дополнялась чтением кода.",
+    "first_party_cpp_files_scanned": 212,
+    "before": {
+      "declarations_or_definitions": 3040,
+      "recognized_russian_doxygen": 2957
+    },
+    "after_audit_patch": {
+      "declarations_or_definitions": 3022,
+      "recognized_russian_doxygen": 2986,
+      "unmatched": 36,
+      "in_sha_pinned_sources": 20
+    },
+    "examples": [
+      "Чтение статуса и IRQ MMC5",
+      "Проводка банков WRAM и незаполненный хвост CHR",
+      "Продвижение графического PPU",
+      "Владение источником кадра PPA/LCD"
+    ],
+    "comment_only_files_token_checked": 11,
+    "limits": "Нераспознанные вхождения включают extern C, условные атрибуты, две условные сигнатуры одного метода, приведение static_cast и закреплённые исходники C6. Метрика не обещает полноту документации для каждого метода.",
+    "remaining_nonpinned_parser_matches": [
+      {
+        "count": 8,
+        "sources": [
+          "main/main.cpp",
+          "main/P4CacheHandoff.cpp",
+          "app/nes/audio/c6/transport/P4RawAsyncPort.cpp",
+          "app/nes/audio/c6/transport/P4RawRx.cpp"
+        ],
+        "inspection": "У всех восьми объявлений или определений комментарий стоит перед extern \"C\". Узел парсера начинается после спецификации связывания; у обёртки старта также присутствует атрибут размещения в памяти."
+      },
+      {
+        "count": 4,
+        "symbols": [
+          "Mmc5Audio::sample",
+          "Machine::advancePpu",
+          "Ppu::fetchRenderMmc5",
+          "Ppu::tile8"
+        ],
+        "inspection": "Русские комментарии находятся перед объявлениями, атрибутами или шаблоном. Описаны целочисленное смешивание уровней, продвижение временного PPU, группировка выборок фона и приоритет спрайтов."
+      },
+      {
+        "count": 1,
+        "symbols": [
+          "CoupledVideoPipeline::destroyJoined"
+        ],
+        "inspection": "После блока Doxygen находятся два пояснения // о владельце и освобождении ROM. Из-за промежутка анализатор перестаёт связывать комментарий с методом."
+      },
+      {
+        "count": 2,
+        "symbols": [
+          "NesApp::finishFramePipelinePresent"
+        ],
+        "inspection": "Две условные сигнатуры относятся к одному выводу кадра. Контракты обеих перегрузок в NesApp.h описывают завершение предыдущей передачи и неблокирующий опрос, сохраняющий источник при Pending."
+      },
+      {
+        "count": 1,
+        "symbols": [
+          "static_cast<void>"
+        ],
+        "inspection": "Выражение внутри FrameVideoPipeline::consume, которое отбрасывает значение abortPrepared(). Нового метода в этой строке нет."
+      }
+    ],
+    "release_file_groups": {
+      "data_or_declarative_config": 5,
+      "cmake_linker_sdkconfig": 27,
+      "markdown": 48,
+      "application_sources_and_headers": 157,
+      "pinned_recipe_and_licenses": 24,
+      "pinned_inputs_to_c6_recipe": 58,
+      "hosted_sdk_project": 62,
+      "tool_scripts": 17,
+      "test_files": 73
+    },
+    "test_and_script_check": "Для C++ и Python распознавались комментарии, для Python также учитывались docstring модулей, классов и функций. Во всех 73 файлах редакции в группе тестов и 17 скриптах/вспомогательных инструментах найдены русские пояснения. Они есть и в 20 Python-файлах общих инструментов. Это проверка покрытия по файлам, без заявления о подробности каждого внутреннего метода теста.",
+    "format_exceptions": {
+      "sdkconfig.defaults": "32 настройки Kconfig, комментарий исходного заголовка сгенерирован ESP-IDF. Подготовлено русское описание профиля с сохранением всех значений и их порядка.",
+      "json_yaml_csv_lock": "В этих файлах сохранён машинный формат, назначение указано в руководствах и манифестах.",
+      "pinned_c6_files_without_inline_russian": {
+        "src/ResolvedColourCodec.h, src/ResolvedColourRun.h": "Заголовки связывают имена кодека и отрисовки строк с файлами реализации по путям рецепта.",
+        "src/ServiceReady.cpp": "Проверяет структуру, поколение и последовательность пакета аудио, вызывает рендерер и возвращает заимствованный PCM с метками кадра.",
+        "src/c6_esp_hosted_coprocessor.c": "Точка входа Hosted для сопроцессора. Обработчик SERIAL1 передаёт вход в очередь worker, HCI обслуживают штатные очереди.",
+        "src/c6_sdio_slave_api.c": "Передаёт ограниченные DMA-буферы ответов по SDIO и сообщает об освобождении буфера транспортом."
+      }
+    }
+  },
+  "tests": {
+    "candidate_test_directory_files": 79,
+    "native_passed": 40,
+    "native_total": 40,
+    "compiler": "GNU C++ 16.2.0, w64devkit",
+    "root_python_tools_tests_passed": 122,
+    "fixtures_kept": {
+      "tests/host/reference64": "Эталон длинной арифметики для побитового сравнения PCM Sunsoft 5B и VRC7. Компилируется целью cartridge_expansion_audio_exact32.",
+      "tests/storage": "Тесты создают временные ZIP и проверяют контрольную сумму, чтение префикса и полного образа, границы буфера и ошибки ввода-вывода.",
+      "tests/frame": "Проверяет владение и возврат буферов между участниками кадра.",
+      "tools/qualification-movies.json": "В корне репозитория. Содержит последовательности ввода для повторения игровых сцен на плате."
+    },
+    "limits": "Нативные тесты выполнены на исходной базе выпуска после удаления мёртвого кода. Дополнительные комментарии проверены сравнением лексем. Стендовый FPS и аппаратная проверка выпуска фиксируются в журнале экспериментов.",
+    "edition_python_tool_tests_passed": 129
+  }
+}

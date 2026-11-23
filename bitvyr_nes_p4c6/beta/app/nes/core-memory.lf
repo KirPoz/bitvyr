@@ -1,5 +1,5 @@
-# The emulation hot path runs from internal SRAM. Keep this board placement
-# outside the portable core; compiler-generated jump tables follow into DRAM.
+# Горячие функции ядра исполняются из внутренней SRAM.
+# Таблицы переходов компилятора размещает связанная схема noflash.
 [mapping:nes_core_internal]
 archive: libnes_core.a
 entries:

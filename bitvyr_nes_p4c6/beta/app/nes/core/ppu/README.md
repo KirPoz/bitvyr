@@ -1,44 +1,7 @@
-# PPU и пакеты вывода
+# PPU и вывод
 
-[TimingPpu](TimingPpu.h) принадлежит CPU-владельцу и ведёт guest raster, Sprite0,
-OAM, scroll, NMI и mapper-провода. [VideoPacket](VideoPacket.h) публикуется с
-полным ключом и cut; [VideoRenderer](VideoRenderer.h) читает sealed packet и
-immutable backing отдельно от живой Machine. Full [Ppu](Ppu.h), цветовой replay
-и [PpuRgbOutput](PpuRgbOutput.h) сохраняют отдельные контракты владения.
+[TimingPpu](TimingPpu.h) ведёт положение луча, регистры, OAM, прокрутку, NMI и видимые мапперу сигналы. Полный [Ppu](Ppu.h) обрабатывает выборки фона и спрайтов. Обычный картридж публикует закрытый [VideoPacket](VideoPacket.h). [VideoRenderer](VideoRenderer.h) читает этот пакет и доступную в том же сеансе память, чтобы получить пиксели RGB565.
 
-Объединённые background/sprite/blank интервалы потребляют только уже разрешённые
-PPU-точки. Partial groups, CPU/MMIO, NMI/render delay, Sprite0, scroll, mapper
-side effects, observer/capture и нехватка packet capacity сохраняют барьеры и
-fallback. MMC3 композиция сохраняет A12 age, reload/counter/pending и каждый
-возможный IRQ-фронт; совпавшая картинка сама по себе этого не доказывает.
+При пакетной обработке число точек ограничено ближайшей видимой границей. У MMC3 важны фронт A12, состояние счётчика и момент IRQ. У MMC5 выбор атрибутов и банков CHR зависит от реальной последовательности обращений. Порции событий передаются в `ThinBridge`, а при запросе наблюдаемого значения стороны синхронизируются на заданной точке гостевого времени.
 
-MMC5 typed fetch/raster/phase/span helpers делят данные и цифровые переходы.
-CHR/CIRAM/ExRAM views заимствуются на синхронный grant, не продлевают ROM lifetime
-и не отменяют проверку mapper policy. Full PPU и Thin primary не подменяют друг
-друга: в сигнальном MMC5 настоящие MMIO/STATUS обслуживает полный PPU, поэтому
-локальная OAM может не вычисляться только при точном primary owner predicate.
-Закрытые native07 ветви для простых mapper 0/7 удалены; MMC5 predicate сохранён.
-
-Прежняя lazy-MMC5 ветвь сейчас не накапливает долг: `tryAppendMmc5Lazy` возвращает
-false, а materializer пуст. Совместимые методы, поля и диагностические счётчики
-сохранены ради текущего layout; их наличие не означает активный experimental path.
-
-Состав алгоритмов задан исходниками и [CMakeLists.txt](../CMakeLists.txt).
-Выбранный OAM terminal-mask путь остаётся PRIVATE с прежним scalar fallback.
-Старые имена экспериментальных CMake-флагов не являются текущими options.
-Неиспользуемое host-trace API удалено. [c6 codec](c6/README.md) сохраняется:
-его исходник действительно входит в отдельный закреплённый worker recipe.
-
-В полном PPU `tickInline` исполняет одну точку с шинными переходами.
-`tickDotsInline` расходует уже выданный бюджет точек и группирует их между
-границами событий. `fetchRenderMmc5` берёт данные тайлов из подготовленного
-плана MMC5, `renderFetchedTiles` сдвигает полученные плоскости. `tile8` и
-`writeTile8` компонуют восемь пикселей с учётом масок, приоритета спрайтов и
-попадания sprite 0.
-
-Проверки: PPU/MMIO/OAM/Sprite0/IRQ/NMI fixtures, полные CPU/RAM/index/RGB/PCM
-Frame comparisons и raw VideoPacket, когда заявляется byte-exact поток.
-Другая допустимая группировка событий не называется byte-exact. Native не
-доказывает target placement, стек/heap, физический LCD или слышимое качество.
-
-[Архитектура](../../../../docs/02-architecture.md) · [Сборка](../../../../docs/03-guide.md).
+`tickInline` обрабатывает одну точку, `tickDotsInline` использует выданный бюджет точек. `fetchRenderMmc5` выбирает данные тайлов с учётом текущего картриджа. Композиция учитывает маски, порядок спрайтов и попадание sprite 0. Нативные проверки сверяют наблюдаемые регистры, CPU/IRQ и результат композиции. [Кодек строк C6](c6/README.md) · [Распределение работы](../../../../docs/02-architecture.md)

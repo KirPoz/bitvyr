@@ -38,7 +38,7 @@ void fme(Cartridge& c,unsigned command,unsigned value) {
 }
 /** @brief Доказывает допуск только известных NES2 подвариантов, без CRC/name bypass. */
 void headers() {
-    for(unsigned mapper:{0U,1U,2U,3U,4U,5U,7U,69U,85U,160U})
+    for(unsigned mapper:{0U,1U,2U,3U,4U,5U,7U,69U,71U,85U,160U})
         CHECK(Cartridge::supportsTimingVideoMapper(static_cast<std::uint16_t>(mapper)));
     for(unsigned mapper:{6U,8U,68U,70U,84U,86U,159U,161U,65535U})
         CHECK(!Cartridge::supportsTimingVideoMapper(static_cast<std::uint16_t>(mapper)));
@@ -64,6 +64,82 @@ void headers() {
     auto knownOther=image(1,true,1);
     CHECK(c.load(knownOther.data(),knownOther.size())==LoadResult::UnsupportedFormat);
 }
+/** @brief Сверяет AxROM submapper с байтом текущего PRG-банка и разводкой CIRAM. */
+void axromSubmappers() {
+    Cartridge c;
+    for (unsigned sub = 0; sub <= 2; ++sub) {
+        auto rom = image(7, true, sub, true);
+        rom[4] = 8;
+        rom[10] = 0;
+        rom.resize(16 + 8 * 16384U);
+        rom[16] = 0x11;
+        rom[16 + 32768 + 1] = 0x02;
+        CHECK(c.load(rom.data(), rom.size()) == LoadResult::Ok);
+        c.cpuWrite(0x8000, 0x13, 0);
+        CHECK(c.cpuRead(0x8002) == (sub == 2 ? 4 : 12));
+        CHECK(c.mirroring() == Mirroring::Single1);
+        c.cpuWrite(0x8001, 0x12, 0);
+        CHECK(c.cpuRead(0x8002) == 8);
+        CHECK(c.mirroring() == (sub == 2 ? Mirroring::Single0 : Mirroring::Single1));
+        if (sub) {
+            c.cpuWrite(0x6000, 0x75, 0);
+            CHECK(c.cpuRead(0x6000, 0x52) == 0x52);
+        }
+        c.chrWrite(0x1fff, 0x29);
+        CHECK(c.chrRead(0x1fff) == 0x29);
+        rom[8] = 0x30;
+        CHECK(c.load(rom.data(), rom.size()) == LoadResult::UnsupportedFormat);
+    }
+}
+
+/** @brief Проверяет аппаратное декодирование Camerica, память и начальное состояние. */
+void camericaBanks() {
+    Cartridge c;
+    auto rom = image(71, false, 0, true);
+    rom[4] = 16;
+    rom[6] |= 1;
+    rom.resize(16 + 16 * 16384U);
+    CHECK(c.load(rom.data(), rom.size()) == LoadResult::Ok);
+    CHECK(c.cpuRead(0x8000) == 0 && c.cpuRead(0xc000) == 30);
+    c.cpuWrite(0x8000, 0x1a, 0);
+    CHECK(c.cpuRead(0x8000) == 0 && c.mirroring() == Mirroring::Vertical);
+    c.cpuWrite(0xc000, 0xfa, 0);
+    CHECK(c.cpuRead(0x8000) == 20 && c.cpuRead(0xbfff) == 21);
+    CHECK(c.cpuRead(0xc000) == 30 && c.cpuRead(0xffff) == 31);
+    c.cpuWrite(0xffff, 1, 0);
+    CHECK(c.cpuRead(0x8000) == 2);
+    c.cpuWrite(0x9000, 0x10, 0);
+    CHECK(c.mirroring() == Mirroring::Single1 && c.cpuRead(0x8000) == 2);
+    c.cpuWrite(0xa000, 3, 0);
+    CHECK(c.mirroring() == Mirroring::Single1 && c.cpuRead(0x8000) == 2);
+    c.cpuWrite(0x7fff, 0x75, 0);
+    CHECK(c.cpuRead(0x7fff, 0x52) == 0x52);
+    c.chrWrite(0x1fff, 0x29);
+    CHECK(c.chrRead(0x1fff) == 0x29 && !c.irqLine());
+    c.reset();
+    CHECK(c.cpuRead(0x8000) == 0 && c.mirroring() == Mirroring::Vertical);
+
+    rom[7] |= 8;
+    rom[11] = 7;
+    CHECK(c.load(rom.data(), rom.size()) == LoadResult::Ok);
+    c.cpuWrite(0x9000, 0x10, 0);
+    CHECK(c.mirroring() == Mirroring::Vertical);
+    rom[8] = 0x10;
+    CHECK(c.load(rom.data(), rom.size()) == LoadResult::UnsupportedFormat);
+    rom[4] = 8;
+    rom.resize(16 + 8 * 16384U);
+    CHECK(c.load(rom.data(), rom.size()) == LoadResult::Ok);
+    c.cpuWrite(0x8000, 0x10, 0);
+    CHECK(c.mirroring() == Mirroring::Single1 && c.cpuRead(0x8000) == 0);
+    c.cpuWrite(0x9fff, 0, 0);
+    c.cpuWrite(0xc000, 0x1b, 0);
+    CHECK(c.mirroring() == Mirroring::Single0 && c.cpuRead(0x8000) == 6);
+    c.reset();
+    CHECK(c.cpuRead(0x8000) == 0 && c.mirroring() == Mirroring::Single0);
+    rom[8] = 0x20;
+    CHECK(c.load(rom.data(), rom.size()) == LoadResult::UnsupportedFormat);
+}
+
 /** @brief Проверяет FME-7 ROM/RAM gate, все страницыCHR и physical CIRAM линии. */
 void fmeBanks() {
     Cartridge c; auto rom=image(69);
@@ -213,8 +289,8 @@ void machineIrq(unsigned mapper) {
 }
 /** @brief Проверяет mapper69/85 цифровые контракты в selected и scalar native domains. */
 int main() {
-    headers(); fmeBanks(); vrcBanks(); fmeIrq(); vrcIrq();
+    headers(); axromSubmappers(); camericaBanks(); fmeBanks(); vrcBanks(); fmeIrq(); vrcIrq();
     batchEquivalence(69); batchEquivalence(85); machineIrq(69); machineIrq(85);
-    std::printf("Mapper69/85 banking/RAM/CHR/mirroring/IRQ/Machine passed; sizeof(Cartridge)=%zu\n",sizeof(Cartridge));
+    std::printf("Mapper7/69/71/85 banking/RAM/CHR/mirroring/IRQ/Machine passed; sizeof(Cartridge)=%zu\n",sizeof(Cartridge));
 }
 

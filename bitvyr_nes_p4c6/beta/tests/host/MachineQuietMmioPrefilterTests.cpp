@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <initializer_list>
 #include <vector>
 
 namespace {
@@ -41,8 +42,16 @@ struct MachineEventKernelTestAccess {
         for(const auto b:m.ram_)r.push_back(b);
         return r;
     }
-    /** @brief Помещает только тестовый RAM-PC; helper обязан сохранить fallback. */
-    static void ramCode(Machine& m){m.ram_[0x300]=0x8D;m.ram_[0x301]=0;m.ram_[0x302]=0x20;}
+    /** @brief Помещает тестовый код с настоящим физическим зеркалированием RAM. */
+    static void ramCode(Machine& m,unsigned pc,std::initializer_list<std::uint8_t> bytes){
+        for (const auto byte : bytes) m.ram_[pc++ & 0x7ffU] = byte;
+    }
+    /** @brief Закрывает временный долг перед сравнением скалярного и quiet cut. */
+    static void synchronize(Machine& m){
+        m.observeCpuReads();m.cpuReadBudget_=0;m.flushPpu();
+    }
+    /** @brief Читает байт рабочего набора теста без нового guest access. */
+    static std::uint8_t ram(const Machine& m,unsigned address){return m.ram_[address & 0x7ffU];}
 };
 }
 
@@ -71,15 +80,47 @@ void matrix(){
         if(expected){CHECK(consumed==0);CHECK(Access::snapshot(*m)==before);}else CHECK(consumed!=0);
     }
 }
-/** @brief Сохраняет старый decoder на page crossing, RAM-PC и неподходящих opcode. */
+/** @brief Проверяет MMIO из RAM и исходный путь вне доказанного окна. */
 void fallbacks(){
     for(const auto pc:{0x9FFEU,0xBFFEU,0xDFFEU}){
         const auto rom=image(0,0x8D,0x2000);auto m=std::make_unique<Machine>();CHECK(m->load(rom.data(),rom.size())==LoadResult::Ok);Access::prepare(*m,std::uint16_t(pc));CHECK(!CpuQuietMmioTestAccess::rejected(Access::cpu(*m)));const auto before=Access::snapshot(*m);CHECK(CpuQuietMmioTestAccess::run(Access::cpu(*m),8)==0);CHECK(Access::snapshot(*m)==before);
     }
     const auto rom=image(0,0xA9,0x2000);auto m=std::make_unique<Machine>();CHECK(m->load(rom.data(),rom.size())==LoadResult::Ok);Access::prepare(*m,0xC100);CHECK(!CpuQuietMmioTestAccess::rejected(Access::cpu(*m)));CHECK(CpuQuietMmioTestAccess::run(Access::cpu(*m),8)!=0);
-    Access::prepare(*m,0x300);Access::ramCode(*m);CHECK(!CpuQuietMmioTestAccess::rejected(Access::cpu(*m)));const auto before=Access::snapshot(*m);CHECK(CpuQuietMmioTestAccess::run(Access::cpu(*m),8)==0);CHECK(Access::snapshot(*m)==before);
+    for(const auto pc:{0x0300U,0x17FDU,0x0FFEU,0x1FFFU}){
+        Access::prepare(*m,std::uint16_t(pc));
+        Access::ramCode(*m,pc,{0x8D,0x05,0x20});
+        const auto before=Access::snapshot(*m);
+        // Три байта инструкции должны целиком находиться в текущем зеркале 2 КиБ RAM.
+        const bool rejected=pc==0x0300U||pc==0x17FDU;
+        CHECK(CpuQuietMmioTestAccess::rejected(Access::cpu(*m))==rejected);
+        CHECK(CpuQuietMmioTestAccess::run(Access::cpu(*m),8)==0);
+        CHECK(Access::snapshot(*m)==before);
+    }
     Cpu6502 foreign(*m);CHECK(!CpuQuietMmioTestAccess::rejected(foreign));CHECK(CpuQuietMmioTestAccess::run(foreign,8)==0);
     auto empty=std::make_unique<Machine>();CHECK(!CpuQuietMmioTestAccess::rejected(Access::cpu(*empty)));
+}
+/** @brief Проверяет live immediate, RAM mirror crossing и следующий настоящий MMIO. */
+void ramWindow(){
+    const auto rom=image(1,0xA9,0x2000);
+    for(const auto pc:{0x0600U,0x0FFEU,0x16FEU}){
+        auto fast=std::make_unique<Machine>();auto scalar=std::make_unique<Machine>();
+        for(auto* m:{fast.get(),scalar.get()}){
+            CHECK(m->load(rom.data(),rom.size())==LoadResult::Ok);
+            Access::prepare(*m,std::uint16_t(pc));
+            const auto immediate=pc+6U;
+            Access::ramCode(*m,pc,{0xA9,0x37,0x8D,std::uint8_t(immediate),std::uint8_t(immediate>>8U),
+                                 0xA9,0x11,0x85,0x21,0x8D,0x05,0x20});
+        }
+        CHECK(CpuQuietMmioTestAccess::run(Access::cpu(*fast),64)==11);
+        for(unsigned i=0;i<4;++i)scalar->stepInstruction();
+        CHECK(fast->cpuState().pc==pc+9U);
+        CHECK(fast->cpuState().a==0x37&&Access::ram(*fast,0x21)==0x37);
+        Access::synchronize(*fast);Access::synchronize(*scalar);
+        CHECK(Access::snapshot(*fast)==Access::snapshot(*scalar));
+        fast->stepInstruction();scalar->stepInstruction(); // STA $2005 идёт только по точной шине.
+        Access::synchronize(*fast);Access::synchronize(*scalar);
+        CHECK(Access::snapshot(*fast)==Access::snapshot(*scalar));
+    }
 }
 /** @brief MMC5 остаётся вне generic prefilter даже при совпавших ROM bytes и PCM mode. */
 void mmc5(){
@@ -88,4 +129,4 @@ void mmc5(){
 }
 
 /** @brief Проверяет pure predicate и полное отсутствие эффектов отклонённого strict entry. */
-int main(){matrix();fallbacks();mmc5();std::printf("quiet MMIO prefilter passed: checks=%u\n",checks);}
+int main(){matrix();fallbacks();ramWindow();mmc5();std::printf("quiet MMIO prefilter passed: checks=%u\n",checks);}

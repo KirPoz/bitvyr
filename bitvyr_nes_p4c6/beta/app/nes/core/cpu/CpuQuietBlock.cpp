@@ -166,8 +166,21 @@ __declspec(noinline)
 bool Cpu6502::rejectQuietMmioEntry() const noexcept {
     if(this!=&bus_.cpu_||!bus_.cartridge_.loaded()||bus_.cartridge_.mapper()==5)return false;
     const unsigned pc=state_.pc,offset=pc&8191U;
+#if defined(NES_EXPERIMENTAL_CPU_RAM_CODE_WINDOW)
+    const auto memory = bus_.quietMemory();
+    const std::uint8_t* bytes;
+    if (pc >= 0x8000U) {
+        if (offset > 8189U) return false;
+        bytes = memory.prg[(pc >> 13U) & 3U] + offset;
+    } else {
+        const unsigned ramOffset = pc & 0x7ffU;
+        if (pc >= 0x2000U || ramOffset > 0x7fdU) return false;
+        bytes = memory.ram + ramOffset;
+    }
+#else
     if(pc<0x8000U||offset>8189U)return false;
     const auto* const bytes=bus_.quietMemory().prg[(pc>>13U)&3U]+offset;
+#endif
     switch(bytes[0]){
     case 0x8C:case 0x8D:case 0x8E: // STY/STA/STX absolute.
         return unsigned(bytes[1])+(unsigned(bytes[2])<<8U)>=0x2000U;
@@ -394,6 +407,14 @@ std::uint32_t Cpu6502::runQuietBlockWithPolicy(unsigned maxCycles) noexcept {
         (!Mmc5Span||(ordinary(static_cast<std::uint16_t>(cursor+1U))&&ordinary(static_cast<std::uint16_t>(cursor+2U))))) {
         codeCursor = dataPrg[(cursor >> 13U) & 3U] + codeOffset;
     }
+#if defined(NES_EXPERIMENTAL_CPU_RAM_CODE_WINDOW)
+    else if constexpr (!Mmc5Span && !BankedWram) {
+        // Окно живёт одну инструкцию. Каждый байт читается в исходном порядке,
+        // поэтому самоперезапись видна следующей инструкции, а зеркальный шов остаётся на peek.
+        const unsigned ramOffset = cursor & 0x7ffU;
+        if (cursor < 0x2000U && ramOffset <= 0x7fdU) codeCursor = ram + ramOffset;
+    }
+#endif
     const auto opcodePc = cursor++;
     const auto opcode = codeCursor ? *codeCursor++ : peek(opcodePc);
     Op op=Op::JAM;
@@ -1126,7 +1147,25 @@ std::uint32_t Cpu6502::runQuietBlockWithPolicy(unsigned maxCycles) noexcept {
     case Op::ISC: if constexpr(Mmc5Span)applyKnown(std::integral_constant<Op,Op::ISC>{}); break;
     case Op::INC: applyKnown(std::integral_constant<Op,Op::INC>{}); break;
     case Op::INX: applyKnown(std::integral_constant<Op,Op::INX>{}); break;
-    case Op::BEQ: applyKnown(std::integral_constant<Op,Op::BEQ>{}); break;
+    case Op::BEQ:
+        applyKnown(std::integral_constant<Op,Op::BEQ>{});
+#if defined(NES_EXPERIMENTAL_MMC5_ZERO_POLL_EXACT)
+        if constexpr(Mmc5Span){
+            // Неподвижная точка LDA zp/BEQ уже исполнена. Допуск не пересекает
+            // наблюдаемую APU/PPU/IRQ границу, helper учитывает только целые периоды.
+            if(bus_.mmc5ZeroPollEnabled_&&take&&(!stableIrq||aluFlag(local,I))&&
+               static_cast<std::uint16_t>(instructionPc-cursor)==2U){
+                const unsigned remaining=budget-consumed-count;
+                if(remaining>=36U){
+                    const auto pcAx=std::uint32_t(cursor)|(std::uint32_t(local.a)<<16U)|(std::uint32_t(local.x)<<24U);
+                    const auto baseOpenP=(std::uint32_t(savedBase)<<16U)|(std::uint32_t(last)<<8U)|local.p;
+                    const auto branchInfo=std::uint32_t(instructionPc)|(std::uint32_t(count)<<16U)|(std::uint32_t(local.jammed)<<24U);
+                    consumed+=bus_.mmc5LocalReadFold(pcAx,baseOpenP,branchInfo,std::min(remaining,80U),ram,wram6000,dataPrg);
+                }
+            }
+        }
+#endif
+        break;
     case Op::SED: applyKnown(std::integral_constant<Op,Op::SED>{}); break;
     }
     if (updateBase) savedBase=base;

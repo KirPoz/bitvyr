@@ -1,0 +1,10 @@
+# Только Frame-размещение; необычные public/foreign режимы сохраняются во Flash.
+# Основные Timing tuples всех19 и все Timing groups остаются в IRAM.
+[mapping:nes_frame_foreign_video_flash]
+archive: libnes_core.a
+entries:
+    unity_0_cxx:_ZN3nes4core7Machine25directVideoBackgroundTileILb0ELb1ELb0ELb0EEENS1_14VideoTileFetchEtjPKNS0_9TimingPpuE (default)
+    unity_0_cxx:_ZN3nes4core7Machine25directVideoBackgroundTileILb0ELb0ELb1ELb0EEENS1_14VideoTileFetchEtjPKNS0_9TimingPpuE (default)
+    unity_0_cxx:_ZN3nes4core7Machine25directVideoBackgroundTileILb1ELb0ELb0ELb0EEENS1_14VideoTileFetchEtjPKNS0_9TimingPpuE (default)
+    unity_0_cxx:_ZN3nes4core7Machine25directVideoBackgroundTileILb1ELb0ELb1ELb0EEENS1_14VideoTileFetchEtjPKNS0_9TimingPpuE (default)
+    unity_0_cxx:_ZN3nes4core7Machine25directVideoBackgroundTileILb1ELb1ELb1ELb0EEENS1_14VideoTileFetchEtjPKNS0_9TimingPpuE (default)

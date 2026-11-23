@@ -146,7 +146,7 @@ bool NesApp::dispatchFrame(std::int64_t inputUs) noexcept {
     if(!worker_->legacyMachine&&!videoWorkerReady()){workerFault("cpu_bench_dispatch");return false;}
     
     if(worker_->coupled){
-        if(!worker_->coupled->matches(machine_,activeRom_,current_.size,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_)){workerFault("coupled_dispatch_lease");return false;}
+        if(!worker_->coupled->matches(machine_,activeRom_,activeRomBytes_,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_)){workerFault("coupled_dispatch_lease");return false;}
         worker_->coupled->startJob();
         if(worker_->c6Audio){
             const auto&b=worker_->c6Audio->binding();const auto&h=worker_->activeAudio->header();
@@ -159,7 +159,7 @@ bool NesApp::dispatchFrame(std::int64_t inputUs) noexcept {
                worker_->snapshot->pcm,sizeof(worker_->snapshot->pcm)/sizeof(worker_->snapshot->pcm[0]),
                worker_->preAckAudioToken,NES_APP_FRAME_INPUT_INDEX)){workerFault("coupled_dsp_offer");return false;}
     }
-    if(worker_->framePipeline&&(!worker_->framePipeline->matches(activeRom_,current_.size,
+    if(worker_->framePipeline&&(!worker_->framePipeline->matches(activeRom_,activeRomBytes_,
        current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_)||
        !worker_->framePipeline->prepareJob(NES_APP_FRAME_INPUT_INDEX,worker_->inputPad,sessionGeneration_))){
         workerFault("frame_pipeline_dispatch");return false;

@@ -5,6 +5,9 @@
  */
 #include <algorithm>
 #include "Machine.h"
+#if defined(NES_EXPERIMENTAL_MMC5_INACTIVE_GRANT)
+#include "Mmc5InactiveGrant.h"
+#endif
 #include "cartridge/Mmc5.h"
 #include "cartridge/Mmc5Audio.h"
 #include "cpu/RomWindow.h"
@@ -110,7 +113,7 @@ void Machine::reset() noexcept {
     refreshNametableMapping();
     ppu_.reset(region_ == Region::Pal);
     const auto mapper = cartridge_.mapper();
-    deferPpuAllowed_ = mapper == 0 || mapper == 1 || mapper == 2 || mapper == 3 || mapper == 7 || mapper == 69 || mapper == 85 || mapper == 160;
+    deferPpuAllowed_ = mapper == 0 || mapper == 1 || mapper == 2 || mapper == 3 || mapper == 7 || mapper == 69 || mapper == 71 || mapper == 85 || mapper == 160;
     deferIrqPpu_ = mapper == 160;
     deferIrqPpu_ = deferIrqPpu_ || mapper == 4;
     deferPpuAllowed_ = deferPpuAllowed_ || mapper == 4;
@@ -149,26 +152,27 @@ void Machine::refreshPpuDeferBudget() const noexcept {
         unsigned budget=std::min(timingPpu_.quietDots(),cartridge_.ppuIrqQuietDotsAny());
         if(timingPpu_.scanline()>=240){
             budget=std::max(budget,timingPpu_.nonVisibleQuietDots());
-        }else if(timingPpu_.canDeferDots(0)){
+        }else if(budget+timingPpu_.dot()<249U&&timingPpu_.canDeferDots(0)){
             const unsigned visible=249U-timingPpu_.dot();
             if(!deferIrqPpu_||(timingPpu_.deferredPrefix()==0&&
-                cartridge_.ppuIrqQuietFor(visible,!timingPpu_.backgroundA12Low())))
-                budget=std::max(budget,visible);
-            if(budget<visible&&cartridge_.ppuIrqQuietVisibleAny())budget=visible;
+                cartridge_.ppuIrqQuietFor(visible,!timingPpu_.backgroundA12Low()))||
+                cartridge_.ppuIrqQuietVisibleAny())budget=visible;
         }
         if(cartridge_.mapper_==4U&&outputOwner_&&
            region_==Region::Ntsc&&!thin_&&!videoObserver_&&!timingPpu_.capture_&&
-           timingPpu_.canDeferDots(0)&&(timingPpu_.control_&0x30U)==0x20U&&
+           timingPpu_.canDeferDots(0)&&!(timingPpu_.control_&0x10U)&&
            cartridge_.irqEnabled_&&!cartridge_.irqPending_){
             const unsigned rises=cartridge_.irqCounter_&&!cartridge_.irqReload_?
                 unsigned(cartridge_.irqCounter_):unsigned(cartridge_.irqLatch_)+1U;
-            if(rises>=6U){
-                // Один подъём зарезервирован для незавершённой входной фазы.
-                // У восьми sprite-слотов не более четырёх подъёмов с низким интервалом >=8.
-                const unsigned rows=(rises-2U)/4U;
-                // На 240:0 гашение может дать фронт A12 вне области спрайтов.
+            // При фоне в нижней таблице штатные фронты дают выборки спрайтов.
+            // Для 8×8 первый подъём проходит фильтр A12, у 8×16 их до четырёх.
+            const unsigned risesPerLine=(timingPpu_.control_&0x20U)?4U:1U;
+            if(rises>=2U+risesPerLine){
+                // Запас покрывает переход из незавершённой входной фазы.
+                const unsigned rows=(rises-2U)/risesPerLine;
+                // Первая точка гашения может выставить высокий A12 из v.
                 const unsigned visibleDots=(240U-unsigned(timingPpu_.scanline()))*341U-timingPpu_.dot();
-                const unsigned candidate=std::min(visibleDots,341U*rows+257U-timingPpu_.dot());
+                const unsigned candidate=std::min({65535U,visibleDots,341U*rows+257U-timingPpu_.dot()});
                 budget=std::max(budget,candidate);
             }
         }
@@ -306,11 +310,24 @@ unsigned Machine::mmc5QuietCpuBudget(unsigned remaining,bool insideStep) noexcep
         static_assert(maximum<=255U,"Fused grant must fit pending/credits u8 invariant");
         unsigned upper=std::min({remaining,maximum,timingApu_.quietCpuCycles()});
         // Capacity нехватка не отменяет прежний 80grant и не меняет fault.
+#if defined(NES_EXPERIMENTAL_MMC5_GRANT_SINGLE_AUDIO_CHECK)
+        if(upper<8U)return 0;
+        if(!audioPacket_->canAppendMmc5QuietBounded(cycles_,upper,maximum)){
+            // Повтор той же pure проверки даст тот же результат. Второй вызов нужен только
+            // для действительно уменьшенного предельного интервала.
+            if(upper<=80U)return 0;
+            upper=80U;
+            if(!audioPacket_->canAppendMmc5QuietBounded(cycles_,upper,maximum))return 0;
+        }
+        if(cycles_>~std::uint64_t{0}-upper||
+           cycles_-thin_->base_.cycle>ColourPacket::maximumCycles-upper)return 0;
+#else
         if(!audioPacket_->canAppendMmc5QuietBounded(cycles_,upper,maximum))
             upper=std::min({remaining,80U,timingApu_.quietCpuCycles()});
         const bool audioRoom=audioPacket_->canAppendMmc5QuietBounded(cycles_,upper,maximum);
         if(upper<8U||cycles_>~std::uint64_t{0}-upper||!audioRoom||
            cycles_-thin_->base_.cycle>ColourPacket::maximumCycles-upper)return 0;
+#endif
         for(const auto*page:cartridge_.prgPages_)if(!page)return 0;
         // Все прежние динамические CPU/APU/DMC/MMIO/audio/lease/page guards уже
         // прошли. RenderingNext==enabled, dot<=340 и repeat<=3 также проверены.
@@ -327,6 +344,16 @@ unsigned Machine::mmc5QuietCpuBudget(unsigned remaining,bool insideStep) noexcep
             mmc5ReadQuantum_.previewClocks=0;
             return upper;
         }
+#if defined(NES_EXPERIMENTAL_MMC5_INACTIVE_GRANT)
+        if(mmc5InactiveGrantEnabled_&&(!p.renderingEnabled_||p.scanline_>=240)){
+            const auto grant=mmc5InactiveGrantClocks(p.scanline_,p.dot_,upper);
+            if(grant<8U)return 0; // Отказ, как раньше, не отзывает предыдущий endpoint.
+            // Из idle3 не возникает IRQ. Actual replay заново строит точный endpoint
+            // только для расходованных M2, с прежним idle reset/read/commit протоколом.
+            mmc5ReadQuantum_.previewClocks=0;
+            return grant;
+        }
+#endif
         ThinMmc5SignalPlan plan;
         const unsigned safe=planThinMmc5Signals(upper,plan);
         if(safe>=8U){
@@ -679,7 +706,7 @@ std::uint8_t Machine::memoryReadIo(std::uint16_t address) noexcept {
         address < 0x4000U && (address & 7U) == 2U && splitVideoEnabled() &&
         cartridge_.loaded() &&
         (cartridge_.mapper()==0 || cartridge_.mapper()==1 || cartridge_.mapper()==2 ||
-         cartridge_.mapper()==3 || cartridge_.mapper()==7 ||
+         cartridge_.mapper()==3 || cartridge_.mapper()==7 || cartridge_.mapper()==71 ||
          (cartridge_.mapper()==4 && (!cartridge_.irqEnabled_ || cartridge_.irqPending_)))
         ) {
         std::uint8_t cached;
@@ -724,7 +751,7 @@ std::uint8_t Machine::memoryReadIo(std::uint16_t address) noexcept {
 bool Machine::canRetainPrgRamWindow() const noexcept {
     if(!cpu_.inStep_||!cartridge_.loaded())return false;
     switch(cartridge_.mapper()){
-    case 0:case 1:case 2:case 3:case 4:case 7:case 69:case 85:case 160:break;
+    case 0:case 1:case 2:case 3:case 4:case 7:case 69:case 71:case 85:case 160:break;
     default:return false;
     }
     if(videoObserver_)return false;
@@ -752,8 +779,9 @@ void Machine::refreshCpuReadBudget() noexcept {
     }
     if (!deferPpuAllowed_ || pendingPpuDots_ > ppuDeferBudget_) return;
     const unsigned dots = ppuDeferBudget_ - pendingPpuDots_;
-    const unsigned rate = region_ == Region::Pal ? 16U : 15U;
-    unsigned cycles = (5U * (dots + 1U) - 1U - ppuRemainder_) / rate;
+    unsigned cycles = region_ == Region::Pal
+        ? (5U * dots + 4U - ppuRemainder_) >> 4U
+        : dots / 3U;
     cycles = std::min(cycles, audioQuietCpuCycles());
     cycles = std::min(cycles, cartridge_.cpuIrqQuietCycles());
     cpuReadBudget_ = static_cast<std::uint8_t>(std::min(cycles, 255U));
@@ -799,6 +827,23 @@ void Machine::commitCpuReads() noexcept {
 __declspec(noinline)
 #endif
 std::uint8_t Machine::readSlow(std::uint16_t address) noexcept {
+#if defined(NES_EXPERIMENTAL_RETAIN_DISCRETE_STATUS)
+    if (address >= 0x2000U && address < 0x4000U && (address & 7U) == 2U &&
+        cpuReadBudget_ && !dmaPending_ && !dmcStalls_ && region_ == Region::Ntsc &&
+        (cartridge_.mapper_ == 7U || cartridge_.mapper_ == 71U) &&
+        outputOwner_ && !thin_ && !videoObserver_ && !colourCapture_ && !timingPpu_.capture_) {
+        // STATUS должен увидеть все точки до этого M2 включительно. Уже выданный
+        // бюджет ограничен IRQ/NMI и DMC, а классификатор проверяет эффекты самого STATUS.
+        const unsigned dots = pendingPpuDots_ + 3U * (pendingCpuReads_ + 1U);
+        std::uint8_t value;
+        if (dots <= ppuDeferBudget_ && timingPpu_.tryReadDeferredStatus(dots, value)) {
+            ++pendingCpuReads_;
+            --cpuReadBudget_;
+            openBus_ = value;
+            return value;
+        }
+    }
+#endif
     const bool prgRamWindow=address>=0x6000U&&address<0x8000U&&canRetainPrgRamWindow();
     if(prgRamWindow&&cpuReadBudget_&&!dmaPending_&&!dmcStalls_){
         // Это тот же настоящий read-M2. CPU-visible RAM/open bus выбираются на
@@ -833,6 +878,33 @@ std::uint8_t Machine::readSlow(std::uint16_t address) noexcept {
 }
 
 /**
+ * @brief Проводит смену PRG 7/71 без закрытия тихого участка CPU и PPU.
+ * @details В уже выданном интервале отсутствуют DMC-чтения из PRG и фронты IRQ/NMI.
+ * AxROM проверяет итоговую CIRAM-защёлку после конфликта шины, Camerica допускает только PRG-регистр.
+ * Следующее чтение CPU увидит новый банк сразу; прежний CPU open bus хранит исходный байт записи.
+ */
+#if defined(__GNUC__) || defined(__clang__)
+[[gnu::noinline]]
+#endif
+bool Machine::tryRetainDiscretePrgWrite(std::uint16_t address, std::uint8_t value) noexcept {
+    if (!cpu_.inStep_ || !outputOwner_ || thin_ || videoObserver_ || colourCapture_ || timingPpu_.capture_)
+        return false;
+    if (cartridge_.mapper_ == 7U) {
+        const auto latch = cartridge_.axromLatchValue(address, value);
+        if (!cartridge_.fourScreen_ && ((cartridge_.bank_ ^ latch) & 0x10U)) return false;
+        cartridge_.writeAxromLatch(latch);
+    } else {
+        if (address < 0xc000U) return false;
+        cartridge_.cpuWrite(address, value, cpuCycles() + 1U);
+    }
+    ++pendingCpuReads_;
+    --cpuReadBudget_;
+    openBus_ = value;
+    cpu_.setIrqLine(cartridge_.irqLine() || audioIrqLine());
+    return true;
+}
+
+/**
  * @brief Записывает байт через протокол устройства или шины.
  * @details Сохраняет порядок регистровых, RAM- и mapper-эффектов; запись не означает завершения физического вывода платы.
  * @param address Гостевой адрес в пространстве данного шинного контракта; не физический указатель ROM.
@@ -840,6 +912,8 @@ std::uint8_t Machine::readSlow(std::uint16_t address) noexcept {
  */
 void Machine::write(std::uint16_t address, std::uint8_t value) noexcept {
     if(thin_&&thin_->fault()!=ColourFault::None)return;
+    if(address>=0x8000U&&cpuReadBudget_&&!dmaPending_&&!dmcStalls_&&
+       (cartridge_.mapper_==7U||cartridge_.mapper_==71U)&&tryRetainDiscretePrgWrite(address,value))return;
     if(address>=0x6000U&&address<0x8000U&&cpuReadBudget_&&!dmaPending_&&!dmcStalls_&&
        canRetainPrgRamWindow()){
         ++pendingCpuReads_;--cpuReadBudget_;
@@ -898,7 +972,7 @@ void Machine::write(std::uint16_t address, std::uint8_t value) noexcept {
         const auto mappingMapper=cartridge_.mapper();
         // Эти модели меняют CHR только через refreshChrPages; флаг лишь читается,
         // его единственный acknowledge остаётся у успешного prepareVideoBgView.
-        const bool trackedPpuMapping=address>=0x8000U&&cartridge_.loaded()&&(mappingMapper==4U||mappingMapper==69U||mappingMapper==85U);
+        const bool trackedPpuMapping=address>=0x8000U&&cartridge_.loaded()&&(mappingMapper==4U||mappingMapper==7U||mappingMapper==69U||mappingMapper==71U||mappingMapper==85U);
         const auto priorMirroring=trackedPpuMapping?cartridge_.mirroring():Mirroring::Horizontal;
         cartridge_.cpuWrite(address, value, cycles_);
         if(spanTarget!=~0U&&videoPacket_)static_cast<void>(videoPacket_->addMmc5PhysicalWrite(2048U+spanTarget,value));
@@ -1145,31 +1219,53 @@ bool Machine::pureStatusPollContract() const noexcept {
  */
 unsigned Machine::collapseStatusPollLoop(std::uint16_t branchPc, unsigned branchCycles,
                                          std::uint64_t deadline) noexcept {
-    if(thin_)return 0;
+    if (thin_ || cpuReadBudget_ < 14U) return 0;
     const unsigned base = cpu_.state_.pc;
-    /**
-     * @brief Читает только уже допущенную обычную RAM/PRG без продвижения clock; MMIO фильтруется до вызова.
-     * @note Не сохраняется после возврата внешнего метода; захваченные ссылки/указатели остаются у текущего владельца.
-     */
-    const auto peek = [this](unsigned address) {
-        return cartridge_.cpuRead(static_cast<std::uint16_t>(address), openBus_);
-    };
     const bool shortPoll = branchPc == base + 3U;
-    const bool pageCross = shortPoll && (base & 0xFF00U) != ((base + 5U) & 0xFF00U);
+    const bool pageCross = (base & 0xFF00U) != ((base + (shortPoll ? 5U : 7U)) & 0xFF00U);
+    if (base < 0x8000U || base > (shortPoll ? 0xFFFAU : 0xFFF8U) ||
+        branchCycles != 3U + unsigned(pageCross && shortPoll) ||
+        !splitVideoEnabled() || !deferPpuAllowed_ || region_ != Region::Ntsc ||
+        !cartridge_.loaded() || videoFrameReady() || cpu_.inStep_ || cpu_.state_.jammed ||
+        cpu_.nmiReady_ || cpu_.nmiPending_ || cpu_.irqPending_ ||
+        (cpu_.irqLine_ && !(cpu_.state_.p & 4U)) || dmaPending_ || dmcStalls_) return 0;
+    const auto mapper = cartridge_.mapper();
+    if (mapper == 5U) return 0; // MMC5 владеет собственным временным и PRG-контрактом.
+    const bool discrete = mapper == 7U || mapper == 71U;
     if (shortPoll) {
-        if (cpu_.baseAddress_ != 0x2002U || branchCycles != 3U + unsigned(pageCross) || base < 0x8000U || base > 0xFFFAU ||
-            !splitVideoEnabled() || !deferPpuAllowed_ || region_ != Region::Ntsc ||
-            !cartridge_.loaded() || videoFrameReady() || cpu_.inStep_ || cpu_.state_.jammed ||
-            cpu_.nmiReady_ || cpu_.nmiPending_ || cpu_.irqPending_ ||
-            (cpu_.irqLine_ && !(cpu_.state_.p & 4U)) || dmaPending_ || dmcStalls_) return 0;
+        if (cpu_.baseAddress_ != 0x2002U) return 0;
+    } else if (branchPc != base + 5U || pageCross || (mapper != 2U && !discrete) ||
+               cpu_.state_.a || (cpu_.state_.p & 0x82U) != 2U || cpu_.baseAddress_ != base + 4U) {
+        return 0;
+    }
+    // Границы уже выданного quiet-бюджета проверяются до чтения байтов кода.
+    const unsigned loopCycles = shortPoll ? (pageCross ? 8U : 7U) : 9U;
+    const unsigned heldDots = pendingPpuDots_ + 3U * pendingCpuReads_;
+    if (heldDots >= ppuDeferBudget_) return 0;
+    const auto now = cpuCycles();
+    const unsigned leastCycles = 2U * loopCycles;
+    if (now >= deadline || deadline - now < leastCycles ||
+        cpuReadBudget_ < leastCycles || 255U - pendingCpuReads_ < leastCycles ||
+        heldDots + (3U * leastCycles) > ppuDeferBudget_) return 0;
 
+    // Выше проверены cartridge.loaded(), адреса PRG и отсутствие MMC5.
+    // Для таких чтений Cartridge::cpuRead использует те же текущие прямые страницы.
+    const auto* const* pages = quietCpuReadPages();
+    const auto peek = [pages](unsigned address) noexcept {
+        return pages[(address >> 13U) & 3U][address & 8191U];
+    };
+    bool allowLatchedSpriteZero = false;
+    if (shortPoll) {
         const auto read = peek(base);
         const auto branch = peek(base + 3U);
-        const bool bit = read == 0x2CU && branch == 0x50U; // BIT STATUS; BVC
+        const bool vblankMapper = discrete || mapper == 1U;
+        const bool bit = read == 0x2CU &&
+            (branch == 0x50U || (vblankMapper && branch == 0x10U) || (discrete && branch == 0xF0U));
         const bool lda = read == 0xADU && branch == 0x10U; // LDA STATUS; BPL
         if ((!bit && !lda) || peek(base + 1U) != 0x02U ||
             peek(base + 2U) != 0x20U || peek(base + 4U) != 0xFBU) return 0;
-        if ((lda || cartridge_.mapper() != 2U || pageCross) && !pureStatusPollContract()) return 0;
+        if ((lda || mapper != 2U || pageCross) && !pureStatusPollContract()) return 0;
+        allowLatchedSpriteZero = vblankMapper && branch == 0x10U;
 
         // Последнее физическое чтение уже установило наблюдаемый байт STATUS.
         // Повтор допустим только при неизменных A и затронутых флагах.
@@ -1180,30 +1276,22 @@ unsigned Machine::collapseStatusPollLoop(std::uint16_t branchPc, unsigned branch
                 (cpu_.state_.p & 0x82U) != flags) return 0;
         } else {
             const unsigned flags = (value & 0xC0U) | ((cpu_.state_.a & value) ? 0U : 2U);
-            if ((cpu_.state_.p & 0xC2U) != flags || (cpu_.state_.p & 0x40U)) return 0;
+            // BEQ проверяет пересечение A и байта STATUS через Z; BPL/BVC проверяют N/V.
+            const bool taken = branch == 0xF0U ? (flags & 2U) != 0 :
+                (flags & (branch == 0x10U ? 0x80U : 0x40U)) == 0;
+            if (!taken || (cpu_.state_.p & 0xC2U) != flags) return 0;
         }
         // При пересечении страницы второе фиктивное чтение исправляет PCH.
         const unsigned finalRead = pageCross ? ((base + 5U) & 0xFF00U) | (base & 0xFFU) : base + 5U;
         if (openBus_ != peek(finalRead)) return 0;
-    } else
-    {
-    if (branchCycles != 3 || base < 0x8000U || base > 0xFFF8U || branchPc != base + 5U ||
-        (base & 0xFF00U) != ((base + 7U) & 0xFF00U) || !splitVideoEnabled() ||
-        !deferPpuAllowed_ || region_ != Region::Ntsc || !cartridge_.loaded() ||
-        cartridge_.mapper() != 2 || videoFrameReady() || cpu_.inStep_ || cpu_.state_.jammed ||
-        cpu_.nmiReady_ || cpu_.nmiPending_ || cpu_.irqPending_ ||
-        (cpu_.irqLine_ && !(cpu_.state_.p & 4U)) || dmaPending_ || dmcStalls_ ||
-        cpu_.state_.a || (cpu_.state_.p & 0x82U) != 2U || cpu_.baseAddress_ != base + 4U)
-        return 0;
-    // Неизменяемый ROM проверяется после каждого переключения банка. BEQ в одной странице
-    // делает три чтения; LDA absolute и AND immediate — четыре и два.
-    constexpr std::uint8_t bytes[] = {0xAD,0x02,0x20,0x29,0x40,0xF0,0xF9};
-    for (unsigned i = 0; i < sizeof(bytes); ++i) if (peek(base + i) != bytes[i]) return 0;
-    if (openBus_ != peek(base + 7U)) return 0;
+    } else {
+        if (discrete && !pureStatusPollContract()) return 0;
+        // Неизменяемые байты читаются после последнего переключения банка.
+        constexpr std::uint8_t bytes[] = {0xAD,0x02,0x20,0x29,0x40,0xF0,0xF9};
+        for (unsigned i = 0; i < sizeof(bytes); ++i) if (peek(base + i) != bytes[i]) return 0;
+        if (openBus_ != peek(base + 7U)) return 0;
     }
-    const unsigned loopCycles = shortPoll ? (pageCross ? 8U : 7U) : 9U;
-    const auto now = cpuCycles();
-    if (now >= deadline || videoHasFault()) return 0;
+    if (videoHasFault()) return 0;
     unsigned available = std::min<unsigned>(cpuReadBudget_, 255U - pendingCpuReads_);
     available = static_cast<unsigned>(std::min<std::uint64_t>(available, deadline - now));
     if (audioFault() != AudioFault::None) return 0;
@@ -1213,13 +1301,20 @@ unsigned Machine::collapseStatusPollLoop(std::uint16_t branchPc, unsigned branch
         available = static_cast<unsigned>(std::min<std::uint64_t>(available, 65535U - (now - origin)));
     }
     unsigned iterations = available / loopCycles;
-    // При фиксированном состоянии увеличивается только конец интервала:
-    // same-row, S0-mask и overflow-count допускают ровно начальный префикс.
-    const auto repeatable = [this, loopCycles](unsigned count) noexcept {
-        const unsigned dots = pendingPpuDots_ + 3U * (pendingCpuReads_ + count * loopCycles);
-        return dots <= ppuDeferBudget_ && timingPpu_.canRepeatStatusPoll(dots);
-    };
-    iterations = statuspollsearch::maximumIterations(iterations, repeatable);
+    if (iterations < 2U) return 0;
+    if (discrete) {
+        const unsigned stepDots = 3U * loopCycles;
+        const unsigned limit = std::min<unsigned>(ppuDeferBudget_, heldDots + stepDots * iterations);
+        const unsigned horizon = timingPpu_.repeatStatusPollDots(limit, allowLatchedSpriteZero);
+        if (horizon <= heldDots) return 0;
+        iterations = (horizon - heldDots) / stepDots;
+    } else {
+        const auto repeatable = [this, heldDots, loopCycles, allowLatchedSpriteZero](unsigned count) noexcept {
+            const unsigned dots = heldDots + 3U * count * loopCycles;
+            return dots <= ppuDeferBudget_ && timingPpu_.canRepeatStatusPoll(dots, allowLatchedSpriteZero);
+        };
+        iterations = statuspollsearch::maximumIterations(iterations, repeatable);
+    }
     if (iterations < 2) return 0;
     const unsigned elapsed = iterations * loopCycles;
     cpu_.state_.cycles += elapsed;
@@ -1335,10 +1430,10 @@ RunStatus Machine::stepFrameImpl() noexcept {
     if(videoHasFault())return RunStatus::VideoFault;
 
         if (audioFault() != AudioFault::None) return RunStatus::AudioFault;
-        if (collapseStatusPollLoop(beforePc, instructionCycles, deadline)) {
+        const unsigned backwards = static_cast<std::uint16_t>(beforePc - cpu_.state_.pc);
+        if ((backwards == 3U || backwards == 5U) && collapseStatusPollLoop(beforePc, instructionCycles, deadline)) {
             if (audioFault() != AudioFault::None) return RunStatus::AudioFault;
         }
-        const unsigned backwards = static_cast<std::uint16_t>(beforePc - cpu_.state_.pc);
         if (backwards >= 1 && backwards <= 3 && havePrevious && previousPc == cpu_.state_.pc) {
             collapseIdleLoop(previousPc, beforePc, previousCycles, instructionCycles, deadline);
             // Отложенное CPU-время может пересечь предел timestamp пакета даже

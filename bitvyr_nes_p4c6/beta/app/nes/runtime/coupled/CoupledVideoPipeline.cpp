@@ -259,6 +259,12 @@ struct CoupledVideoPipeline::Impl final {
  * @param[in] region Регион NTSC/PAL, совпадающий с producer и C0.
  * @param[in] generation Ненулевое App generation, записываемое в неизменный transport lease.
  */
+#if defined(NES_DIAGNOSTIC_MMC5_INDEX_MEMORY)
+void CoupledVideoPipeline::setIndexedMemoryProbe(bool enableHp)noexcept{
+    coupled_hot::indexedInHpSram=enableHp;
+}
+/** @brief Резервирует управляющий блок во внутренней памяти и долговечные графические буферы в PSRAM, затем связывает их с текущим поколением игры. */
+#endif
 CoupledVideoPipeline* CoupledVideoPipeline::create(core::Machine&m,const std::uint8_t*rom,std::size_t bytes,core::Region region,std::uint64_t generation,std::uint16_t*alternate)noexcept{
     auto*c=static_cast<bridge::Control*>(heap_caps_aligned_calloc(alignof(bridge::Control),1,sizeof(bridge::Control),MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT));
     auto*rgb=static_cast<std::uint16_t*>(heap_caps_malloc(122880,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
@@ -280,9 +286,14 @@ CoupledVideoPipeline* CoupledVideoPipeline::create(core::Machine&m,const std::ui
         unsigned(m.observableVideoEnabled()),unsigned(m.splitVideoEnabled()),unsigned(m.splitAudio()),unsigned(s->shadow.legacyVideoReady()),unsigned(m.videoFault()),unsigned(m.audioFault()),static_cast<void*>(s->slots.data()),unsigned(reinterpret_cast<std::uintptr_t>(s->slots.data())%alignof(bridge::Slot)),static_cast<void*>(&s->reply),unsigned(reinterpret_cast<std::uintptr_t>(&s->reply)%alignof(bridge::Reply)));
     s->lease={&m,rom,bytes,m.colourTransportEpoch(),generation,region};
     // До внешнего bind нет attached endpoints/Worker loans; отказ полностью локален Main.
-    const bool hotReady=s->hot.create(s->shadow,s,sizeof(Impl),m,s->lease,rgb);
-    const bool externalBound=hotReady&&s->actor.bindExternalPpu(s->hot.value->ppu);
-    s->hot.report(externalBound);
+    bool indexedRow=false;
+#if defined(NES_DIAGNOSTIC_MMC5_INDEX_MEMORY)
+    indexedRow=coupled_hot::indexedInHpSram&&cartridge.mapper()==5U;
+#endif
+    const bool hotReady=s->hot.create(s->shadow,s,sizeof(Impl),m,s->lease,rgb,indexedRow);
+    const bool externalBound=hotReady&&(indexedRow?s->actor.bindExternalRgbOnlyPpu(s->hot.value->ppu):
+                                                  s->actor.bindExternalPpu(s->hot.value->ppu));
+    s->hot.report(externalBound,indexedRow,generation);
     if(!externalBound){
         s->~Impl();c->~Control();heap_caps_free(c);heap_caps_free(rgb);heap_caps_free(s);result->~CoupledVideoPipeline();heap_caps_free(result);return nullptr;
     }
@@ -291,7 +302,7 @@ CoupledVideoPipeline* CoupledVideoPipeline::create(core::Machine&m,const std::ui
         {&s->producer,sizeof(s->producer)},{&s->consumer,sizeof(s->consumer)},{&s->adapter,sizeof(s->adapter)},{&s->thin,sizeof(s->thin)},
         {&s->timed,sizeof(s->timed)},{s->scratch.data(),sizeof(s->scratch)},{s->selectedTable().data(),sizeof(s->selectedTable())},{&s->selectedOutput(),sizeof(s->selectedOutput())},{rgb,122880},
         {&s->selectedMapper(),sizeof(core::Mmc5)},{&s->selectedAudio(),sizeof(core::Mmc5Audio)}
-        ,{s->hot.value,sizeof(coupled_hot::HotRaster)},{s->hot.value->ppu.framebuffer(),61440}
+        ,{s->hot.value,sizeof(coupled_hot::HotRaster)},{s->hot.value->ppu.indexedStorageIdentity(),s->hot.value->ppu.indexedStorageBytes()}
         ,{alternate,122880}
     };
     s->deadline=esp_timer_get_time()+1500000;
@@ -400,11 +411,16 @@ bool CoupledVideoPipeline::acceptRemoteAudioJoined(core::Machine&m,std::uint64_t
  * @brief На Main обслуживает очередной доступный запрос receiver и накапливает его wall time.
  * @details Producer Machine не наблюдает; опциональный proven Empty не вызывает bridge/timer, Ready измеряется прежним путём.
  */
-bool CoupledVideoPipeline::pump()noexcept{auto&s=*state_;
-    const auto b=esp_timer_get_time();const auto r=s.consumer.pump();
-    if(r==bridge::Result::Ready){const auto end=esp_timer_get_time();s.times.consumer+=end-b;
+coupled_done::VideoResult CoupledVideoPipeline::pump()noexcept{
+    auto&s=*state_;
+    const auto begin=esp_timer_get_time();
+    const auto result=s.consumer.pump();
+    if(result==bridge::Result::Ready){
+        s.times.consumer+=esp_timer_get_time()-begin;
+        return coupled_done::VideoResult::Processed;
     }
-    return r==bridge::Result::Ready||r==bridge::Result::Empty;}
+    return result==bridge::Result::Empty?coupled_done::VideoResult::Empty:coupled_done::VideoResult::Fault;
+}
 
 /**
  * @brief Сравнивает монотонное время с deadline задания.

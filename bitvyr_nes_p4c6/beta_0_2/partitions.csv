@@ -1,0 +1,6 @@
+# Name, Type, SubType, Offset, Size, Flags
+nvs, data, nvs, 0x9000, 0x6000,
+phy_init, data, phy, 0xf000, 0x1000,
+factory, app, factory, 0x10000, 4M,
+nes_roms, data, 0x40, 0x410000, 8M,
+nes_saves, data, fat, 0xc10000, 2M,

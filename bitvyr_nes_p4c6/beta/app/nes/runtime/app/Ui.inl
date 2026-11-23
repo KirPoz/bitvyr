@@ -208,7 +208,7 @@ void NesApp::resetGame() noexcept {
     invalidateSnapshot();
     current_.pal = settings_.effectivePal(currentPalHint_);
     if(!releaseCoupledForLoad()){workerFault("coupled_load_lease");return;}
-    const auto result = machine_.load(activeRom_,current_.size,current_.pal?core::Region::Pal:core::Region::Ntsc);
+    const auto result = machine_.load(activeRom_,activeRomBytes_,current_.pal?core::Region::Pal:core::Region::Ntsc);
     if (result != core::LoadResult::Ok) { stopPlayback(); return; }
     if(!configureVideoWorker()){workerFault("cpu_bench_reset");return;}
     resetCounters();

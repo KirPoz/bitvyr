@@ -34,7 +34,7 @@ public:
     /** @brief Возможность timing-video модели mapper; не аппаратная квалификация ROM/платы. */
     static constexpr bool supportsTimingVideoMapper(std::uint16_t mapper) noexcept {
         switch (mapper) {
-        case 0: case 1: case 2: case 3: case 4: case 5: case 7: case 69: case 85: case 160: return true;
+        case 0: case 1: case 2: case 3: case 4: case 5: case 7: case 69: case 71: case 85: case 160: return true;
         default: return false;
         }
     }
@@ -295,7 +295,7 @@ public:
     unsigned statusPollCapabilities() const noexcept {
         if (!prg_) return 0;
         switch (mapper_) {
-        case 0: case 1: case 2: case 3: case 7:
+        case 0: case 1: case 2: case 3: case 7: case 71:
             return PureCpuPrgRead | CpuWritesOnlyPrgMapping | NoPpuReadLatch |
                    NoCpuClockEvent | NoCpuWriteStrobe;
         default: return 0;
@@ -345,7 +345,17 @@ public:
     std::uint8_t* ram() noexcept { return prgRam_.data(); }
 
 private:
-    friend class Machine;
+    friend class Machine;
+    /** @brief Возвращает байт регистра AxROM с учётом конфликта на текущем PRG-отображении. */
+    std::uint8_t axromLatchValue(std::uint16_t address, std::uint8_t value) const noexcept {
+        return submapper_ == 2 ? static_cast<std::uint8_t>(value & cpuRead(address)) : value;
+    }
+    /** @brief Применяет защёлку AxROM после разрешения конфликта на шине. */
+    void writeAxromLatch(std::uint8_t value) noexcept {
+        const bool prgChanged = ((bank_ ^ value) & 7U) != 0;
+        bank_ = value;
+        if (prgChanged) refreshPrgPages();
+    }
     /** @brief Декодирует FME-7 command/data; CPU-такты уже принадлежат общей Machine. */
     void writeFme7(std::uint16_t address, std::uint8_t value) noexcept;
     /** @brief Декодирует VRC7 по A3/A4 выбранной платы; audio получает canonical9010/9030. */
@@ -364,15 +374,9 @@ private:
     void clockExpansionCpu(unsigned count) noexcept;
     /** @brief Число CPU-тактов строго до следующего IRQ; фронт остаётся scalar boundary. */
     unsigned expansionIrqQuietCycles() const noexcept;
-    /** @brief Выбирает ROM/RAM/open bus окна 6000 mapper69/85 без чтения побочных регистров. */
-    std::uint8_t readExpansion6000(std::uint16_t address, std::uint8_t openBus) const noexcept;
 
     /** @brief Выполняет mapper5 CPU-read, включая PCM и подтверждение IRQ. */
     std::uint8_t readMmc5Cpu(std::uint16_t address,std::uint8_t openBus) const noexcept;
-    /** @brief Один real-M2 clock только audio; digital остаётся completed replay владельца. */
-    void clockMmc5AudioCpu() noexcept;
-    /** @brief Один serial replay clock только MMC5 digital; audio/PCM не тактируется повторно. */
-    void clockMmc5DigitalCpu() noexcept;
     /** @brief Чистый digital certificate phi0: без pending IRQ/scanline/idle перехода внутри H2. */
     bool canCompleteMmc5H2() const noexcept;
     /** @brief Передаёт один ограниченный M2-интервал цифровому MMC5 и его звуку. */
@@ -610,6 +614,8 @@ private:
     // CHR-RAM content меняется отдельно, без смены физической идентичности.
     bool chrMappingDirty_ = true;
     std::uint8_t bank_ = 0;
+    // Первый адрес регистра выбора страницы CIRAM в варианте Camerica.
+    std::uint16_t camericaMirrorStart_ = 0xa000;
     std::uint8_t mmc1Shift_ = 0x10, mmc1Control_ = 0x0c;
     std::uint8_t mmc1Chr0_ = 0, mmc1Chr1_ = 0, mmc1Prg_ = 0;
     std::uint64_t mmc1LastWrite_ = ~std::uint64_t{0};

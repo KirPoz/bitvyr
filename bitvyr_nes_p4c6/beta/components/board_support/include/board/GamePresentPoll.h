@@ -18,7 +18,7 @@ namespace detail {
  * @param tryPpa,tryLcd Однократные неблокирующие получения аппаратных семафоров.
  * @param submit Подаёт сохранённый native index; может снова установить lcdPending.
  * @return Submitted после принятого запроса; Fault/Pending не разрешают снять source loan.
- * @pre Один владелец Main, валидный immutable ticket и три native-буфера.
+ * @pre Один владелец Main, проверенное владение источником и три native-буфера.
  */
 template<class TryPpa,class TryLcd,class Submit>
 GamePresentPollResult pollGamePresentation(bool&ppaReady,bool&lcdPending,bool&gamePending,

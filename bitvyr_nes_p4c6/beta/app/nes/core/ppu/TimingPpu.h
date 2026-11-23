@@ -87,9 +87,13 @@ public:
      * @brief Проверяет дополнительные условия идемпотентного свёрнутого STATUS-опроса.
      * @details Стабильных верхних битов недостаточно: учитываются toggle, NMI и открытая шина.
      * @param dots Число уже прошедших точек PPU.
+     * @param allowLatchedSpriteZero Разрешён для опроса VBlank через BPL. Уже установленные
+     * Sprite Zero Hit и Overflow позволяют повторять чтение через строки до точки 240:0.
      * @return Результат описанной проверки либо успешность перехода состояния; false обрабатывается вызывающим путём.
      */
-    bool canRepeatStatusPoll(unsigned dots) const noexcept;
+    bool canRepeatStatusPoll(unsigned dots, bool allowLatchedSpriteZero = false) const noexcept;
+    /** @brief Возвращает наибольшее число точек с прежним постоянным STATUS. */
+    unsigned repeatStatusPollDots(unsigned limit, bool allowLatchedSpriteZero) const noexcept;
     /**
      * @brief Обслуживает регистровую запись CPU и её отдельный mapper-строб.
      * @details Для некоторых Legacy-режимов запись RAM также является временным событием; такие эффекты нельзя терять в quiet-пути.
@@ -327,15 +331,6 @@ private:
      * @return true допускает только данный H2 prefix; false сохраняет старый scalar путь.
      */
     bool canCompleteMmc5H2(unsigned dots) const noexcept;
-    /**
-     * @brief Повторяет целые группы 24 dots/8M2 внутри уже допущенного B3.
-     * @param clocks Фактически завершённые CPU M2; не новый grant.
-     * @return Число уже повторённых M2, кратное 8. При отказе 0 без мутации.
-     * @details Состояние плоскостей call-local, материализуется до возврата.
-     * Не меняет Machine time внутри run. Единственный caller немедленно добавляет
-     * возвращённые M2 до полной IRQ/NMI проверки и любого scalar/observer пути.
-     */
-    unsigned replayMmc5QuietBlock(unsigned clocks) noexcept;
     /** @brief Локальный невидимый BG pipeline; не хранится в Machine/packet и не передаётся Main. */
     struct Mmc5TrustedState {
         std::array<std::uint32_t,6> atoms{};
@@ -353,6 +348,8 @@ private:
      * читает только цветной consumer; последние три пары нужны live PPU.
      * Первые tiles публикует существующим BgRun, с прежними logical credits. */
     void runMmc5InplaceBg(unsigned tiles,Mmc5& mapper) noexcept;
+    /** @brief Публикует буквальные выборки CHR для MMC5 с неполным образом. */
+    void runMmc5IrregularBg(unsigned tiles,Mmc5& mapper) noexcept;
     /**
      * @brief Выполняет тот же packet/raster алгоритм через подготовленную аппаратную policy.
      * @param tiles Уже разрешённые 3..32 целых тайла; MMIO/Sprite0/IRQ ограничены caller.
@@ -702,12 +699,6 @@ private:
          */
         CaptureScope& operator=(const CaptureScope&)=delete;
     };
-    /**
-     * @brief Передаёт текущее событие временному захвату PPU.
-     * @details Захват не является постоянным владельцем и не допускает элиминации данных по политике чужого основного PPU.
-     * @param sprite Различает sprite/background-траекторию выборки; не заменяет проверку сигналов маппера.
-     */
-    void emitCapture(const Capture&,bool sprite) noexcept;
     /**
      * @brief Вычисляет адрес плоскости спрайта по текущей высоте, строке, тайлу и flip.
      * @details В 8x16 режиме младший бит tile выбирает таблицу; это влияет и на A12.

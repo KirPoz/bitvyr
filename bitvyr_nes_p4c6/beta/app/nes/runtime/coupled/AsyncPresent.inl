@@ -43,7 +43,7 @@ bool NesApp::completeCoupledPresent()noexcept{
 void NesApp::presentCoupledFrameAsync() noexcept {
     auto&w=*worker_;auto&s=*w.snapshot;auto&c=*w.coupled;
     if(w.inFlight||executionMode_!=ExecutionMode::Worker||!s.ready||!playing_||s.generation!=sessionGeneration_)return;
-    const auto valid=[&]()noexcept{return s.generation==sessionGeneration_&&c.matches(machine_,activeRom_,current_.size,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_);};
+    const auto valid=[&]()noexcept{return s.generation==sessionGeneration_&&c.matches(machine_,activeRom_,activeRomBytes_,current_.pal?core::Region::Pal:core::Region::Ntsc,sessionGeneration_);};
     if(!valid()||!c.pixels()){workerFault("coupled_present_lease");return;}
     const bool previous=w.presentPending;
     if(!finishCoupledPresent()){workerFault("coupled_previous_ppa");return;}

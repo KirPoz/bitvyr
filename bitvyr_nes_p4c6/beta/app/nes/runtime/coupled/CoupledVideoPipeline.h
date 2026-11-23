@@ -1,4 +1,5 @@
 #pragma once
+#include "DonePollBatch.h"
 // Типы handoff объявлены независимо от PRIVATE выбора backend: все consumers
 // видят одинаковые сигнатуры, не включая SDK или реализацию remote-пакета.
 namespace nes::c6audio::async {class AudioPublished;struct PublishedKey;struct JoinedFrame;}
@@ -40,6 +41,10 @@ public:
      * @li 5 — Ненулевое App generation, записываемое в неизменный transport lease.
      */
     static CoupledVideoPipeline* create(core::Machine&,const std::uint8_t*,std::size_t,core::Region,std::uint64_t,std::uint16_t*alternate=nullptr)noexcept;
+#if defined(NES_DIAGNOSTIC_MMC5_INDEX_MEMORY)
+    /** @brief Для следующей сессии выбирает RGB-only строку в HP SRAM для MMC5. */
+    static void setIndexedMemoryProbe(bool enableHp)noexcept;
+#endif
     // Producer сброшен и явно detached, пока endpoint/ROM ещё живы;
     // его job loop joined. Main последовательно принимает простаивающую producer-роль.
     
@@ -120,7 +125,7 @@ public:
      * @brief На Main обслуживает очередной доступный запрос receiver и накапливает его wall time.
      * @details Producer Machine не наблюдает; Empty также проходит через измеряемый вызов.
      */
-    bool pump()noexcept; // Только Main, без наблюдения producer и ожиданий.
+    coupled_done::VideoResult pump()noexcept; // Только Main. Обрабатывает до одного запроса.
     
     /**
      * @brief Сравнивает монотонное время с deadline задания.

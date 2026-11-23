@@ -77,6 +77,58 @@ void NesApp::command(const char* line) noexcept {
     if (!std::strncmp(line,"padat ",6)) { schedulePad(line+6); return; }
     if (!std::strncmp(line,"pad ",4)) { serialButtons_=static_cast<std::uint8_t>(std::strtoul(line+4,nullptr,0)); return; }
     if (!prepareSnapshotAudio()) return;
+#if defined(NES_EXPERIMENTAL_MMC5_ZERO_POLL_EXACT)
+    if(!std::strcmp(line,"mmc5_poll exact")||!std::strcmp(line,"mmc5_poll normal")){
+        if(playing_||pausedGame_||screen_!=Screen::Library||executionMode_==ExecutionMode::Faulted||
+           (worker_&&(worker_->inFlight||worker_->coupled||worker_->framePipeline))){
+            std::printf("NES_MMC5_POLL_CONTROL status=reject reason=joined_library_required\n");
+            return;
+        }
+        const bool exact=!std::strcmp(line,"mmc5_poll exact");
+        machine_.selectMmc5ZeroPoll(exact);
+        std::printf("NES_MMC5_POLL_CONTROL status=ok method=%s nvs=0 applies=next_game\n",exact?"exact":"normal");
+        return;
+    }
+#endif
+#if defined(NES_EXPERIMENTAL_MMC5_INACTIVE_GRANT)
+    if(!std::strcmp(line,"mmc5_grant closed")||!std::strcmp(line,"mmc5_grant forecast")){
+        if(playing_||pausedGame_||screen_!=Screen::Library||executionMode_==ExecutionMode::Faulted||
+           (worker_&&(worker_->inFlight||worker_->coupled||worker_->framePipeline))){
+            std::printf("NES_MMC5_GRANT_CONTROL status=reject reason=joined_library_required\n");
+            return;
+        }
+        const bool closed=!std::strcmp(line,"mmc5_grant closed");
+        machine_.selectMmc5InactiveGrant(closed);
+        std::printf("NES_MMC5_GRANT_CONTROL status=ok method=%s nvs=0 applies=next_game\n",closed?"closed":"forecast");
+        return;
+    }
+#endif
+#if defined(NES_DIAGNOSTIC_MMC5_INDEX_MEMORY)
+    if(!std::strcmp(line,"indexed_memory hp")||!std::strcmp(line,"indexed_memory psram")){
+        if(!worker_||executionMode_!=ExecutionMode::Worker||playing_||pausedGame_||screen_!=Screen::Library||
+           worker_->inFlight||worker_->coupled||worker_->framePipeline){
+            std::printf("NES_INDEXED_MEMORY status=reject reason=joined_library_required\n");return;
+        }
+        const bool hp=!std::strcmp(line,"indexed_memory hp");
+        CoupledVideoPipeline::setIndexedMemoryProbe(hp);
+        std::printf("NES_INDEXED_MEMORY status=ok mode=%s indexed_policy=%s nvs=0\n",hp?"hp":"psram",hp?"row_256":"full_61440");return;
+    }
+#endif
+#if defined(NES_EXPERIMENTAL_FRAME_DIRECT_POLL)
+    if(!std::strcmp(line,"frame_native_overlap off")||!std::strcmp(line,"frame_native_overlap on")){
+        const bool enabled=!std::strcmp(line,"frame_native_overlap on");
+        const bool owned=board_.supportsDirectGamePresentPoll();
+        if(!worker_||executionMode_!=ExecutionMode::Worker||playing_||pausedGame_||screen_!=Screen::Library||
+           worker_->inFlight||pairingHelp_||worker_->framePipeline||worker_->coupled||
+           worker_->pipelinePresentPending||worker_->presentPending||(enabled&&!owned)){
+            std::printf("NES_FRAME_NATIVE_OVERLAP schema=1 status=reject triple_owned=%u reason=joined_library_required\n",unsigned(owned));return;
+        }
+        std::printf("NES_FRAME_NATIVE_OVERLAP schema=1 status=ok enabled=%u triple_owned=%u prior_early_submitted=%u prior_source_reused=%u nvs=0\n",
+                    unsigned(enabled),unsigned(owned),unsigned(frameDirectPresent.earlySubmitted),unsigned(frameDirectPresent.sourceReused));
+        frameDirectPresent={false,enabled,0,0};
+        return;
+    }
+#endif
     if(!std::strcmp(line,"ram_witness full")||!std::strcmp(line,"ram_witness sparse")){
         // Retained activeRom_ допустим: stopPlayback завершил и уничтожил pipeline.
         if(!worker_||executionMode_!=ExecutionMode::Worker||playing_||pausedGame_||screen_!=Screen::Library||
@@ -200,7 +252,7 @@ void NesApp::command(const char* line) noexcept {
             if(!releaseFramePipelineForLoad()){workerFault("frame_pipeline_region_lease");return;}
             invalidateSnapshot();
     if(!releaseCoupledForLoad()){workerFault("coupled_load_lease");return;}
-            const auto loaded = machine_.load(activeRom_,current_.size,pal?core::Region::Pal:core::Region::Ntsc);
+            const auto loaded = machine_.load(activeRom_,activeRomBytes_,pal?core::Region::Pal:core::Region::Ntsc);
             if (loaded == core::LoadResult::Ok) {
                 if(!configureVideoWorker()){workerFault("cpu_bench_region");return;}
                 current_.pal=pal; resetCounters();

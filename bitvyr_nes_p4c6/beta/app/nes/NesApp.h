@@ -243,6 +243,10 @@ private:
      * @brief Завершает прежнюю асинхронную передачу Frame-изображения и обновляет счётчики только по подтверждённому результату Board.
      */
     bool finishFramePipelinePresent()noexcept;
+    /** @brief Опрашивает прежний Frame без освобождения при Pending. */
+    bool finishFramePipelinePresent(bool poll)noexcept;
+    /** @brief Проверяет единственный pending Frame по поколению, номеру и паре счётчиков. */
+    [[nodiscard]] bool framePipelinePresentMatches(std::uint64_t previousFrame)const noexcept;
     /**
      * @brief Публикует принятый кадр Frame-тракта в PPA/LCD. Заимствование RGB сохраняется до соответствующего аппаратного завершения.
      */
@@ -419,6 +423,7 @@ private:
     bool prepareCartridgeSession(std::uint16_t nextMapper) noexcept;
     void* mmc5Session_ = nullptr;
     std::uint8_t* activeRom_ = nullptr;
+    std::size_t activeRomBytes_ = 0; // Полный диапазон рабочей копии, включая хвост CHR.
     EmulationWorkerState* worker_ = nullptr;
     ExecutionMode executionMode_ = ExecutionMode::Synchronous;
     std::uint64_t sessionGeneration_ = 0;
